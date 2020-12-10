@@ -1,0 +1,18 @@
+language: r
+
+sudo: false
+cache: packages
+
+notifications:
+  email: false
+
+jobs:
+  fast_finish: true
+  include:
+    - r: oldrel
+    - r: release
+      after_success:
+        - Rscript -e 'covr::codecov()'
+    - r: devel
+  allow_failures:
+    - r: devel

@@ -1,0 +1,30 @@
+Type: Package
+Package: drda
+Title: Dose-response data analysis
+Version: 0.1.0
+Authors@R: c(
+    person(
+      given = "Alberto",
+      family = "Pessia",
+      email = "dev@albertopessia.com",
+      role = c("aut", "cre"),
+      comment = c(ORCID = "0000-0001-8607-9191")
+    ),
+    person(
+      given = "Alina",
+      family = "Malyutina",
+      role = "ctb",
+      comment = c(ORCID = "0000-0001-8220-5859")
+    )
+  )
+Description: Fit the 4-parameter logistic function to drug response data.
+License: MIT + file LICENSE
+URL: https://github.com/albertopessia/drda
+BugReports: https://github.com/albertopessia/drda/issues
+Encoding: UTF-8
+LazyData: yes
+Suggests:
+    covr,
+    testthat
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
