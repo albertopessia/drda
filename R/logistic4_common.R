@@ -42,28 +42,77 @@ logistic4_suff_stat <- function(
 #'
 #' @return Numeric vector of length 4 with a (hopefully) good starting point.
 #'
-#' @importFrom stats cov var
+#' @importFrom stats cov median var
 logistic4_init <- function(
   stats
 ) {
-  alpha <- min(stats[, 3])
-  beta <- max(stats[, 3])
+  k <- nrow(stats)
+  delta <- mean(diff(stats[, 1]))
 
-  # perform an approximate linearisation and solve for the remaining two
-  # parameters
-  a <- alpha - 1.0e-10
-  b <- beta + 1.0e-10
+  rss <- logistic4_rss(stats)
 
-  z <- (stats[, 3] - a) / (b - a)
-  w <- log(z / (1 - z))
+  n <- stats[, 2]
 
-  # we now assume that `w` is approximately eta * (x - phi)
-  # the following two formulas are the least square estimators, i.e.
-  # the variables that minimize sum((w - eta * (x - phi))^2)
-  eta <- cov(stats[, 1], w) / var(stats[, 1])
-  phi <- mean(stats[, 1]) - mean(w) / eta
+  growth_rate <- seq(-2, -0.01, length.out = 15)
 
-  c(alpha, beta, eta, phi)
+  x_midpoint <- seq(
+    stats[1, 1] - 0.5 * delta, stats[k, 1] + 0.5 * delta, length.out = 15
+  )
+
+  theta <- c(
+    min(stats[, 3]),
+    max(stats[, 3]),
+    -1,
+    stats[which.min(abs(stats[, 3] - median(stats[, 3]))), 1]
+  )
+
+  if (stats[k, 3] > stats[k, 1]) {
+    theta[3] <- 1
+  }
+
+  best_rss <- rss(theta)
+
+  for (xm in x_midpoint) {
+    for (gr in growth_rate) {
+      f <- exp(-log1p(exp(-gr * (stats[, 1] - xm))))
+
+      minimum_numer <- 0
+      maximum_numer <- 0
+      denom <- 0
+
+      for (i1 in seq_len(k)) {
+        x1 <- n[i1] * f[i1]
+        x2 <- n[i1] * (f[i1] - 1)
+
+        tmp_numer <- 0
+        tmp_denom <- 0
+        for (i2 in seq_len(k)) {
+          x3 <- n[i2] * stats[i2, 3]
+          x4 <- f[i1] - f[i2]
+
+          tmp_numer <- tmp_numer + x3 * x4
+          tmp_denom <- tmp_denom + n[i2] * x4
+        }
+
+        minimum_numer <- minimum_numer + x1 * tmp_numer
+        maximum_numer <- maximum_numer + x2 * tmp_numer
+        denom <- denom + x1 * tmp_denom
+      }
+
+      minimum <- minimum_numer / denom
+      maximum <- maximum_numer / denom
+
+      current_par <- c(minimum, maximum, gr, xm)
+      current_rss <- rss(current_par)
+
+      if (!is.nan(current_rss) && (current_rss < best_rss)) {
+        theta <- current_par
+        best_rss <- current_rss
+      }
+    }
+  }
+
+  theta
 }
 
 #' Variance estimator
