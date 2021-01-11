@@ -137,23 +137,22 @@ ntrm_solve_tr_subproblem <- function(
       lambda_lb <- -H_ev_min + 1.0e-12
       lambda <- ntrm_safeguard(lambda_lb, G, H, delta)
 
-      # relative tolerance for computing the matrix rank as in Julia:
-      # min(size(A)) * eps(Float64) * max(eigenvalues(A))
-      rtol <- k * .Machine$double.eps
-
       for (i in seq_len(10)) {
         diag(B) <- diag(H) + lambda
 
-        B_eig <- eigen(B)$values
-        if (B_eig[k] < rtol * B_eig[1]) {
-          # B is singular or almost singular
-          lambda <- lambda * 2
+        R <- tryCatch(
+          chol(B),
+          error = function(e) {
+            NULL
+          }
+        )
+
+        if (is.null(R)) {
+          lambda <- 10 * lambda
           next
         }
 
-        R <- chol(B)
-
-        p <- -solve(B, G)
+        p <- -solve(R, solve(t(R), G))
         q <- solve(t(R), p)
 
         p_norm_2 <- sum(p^2)
