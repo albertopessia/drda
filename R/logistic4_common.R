@@ -55,7 +55,7 @@ logistic4_init <- function(
 
   growth_rate <- seq(-2, -0.01, length.out = 15)
 
-  x_midpoint <- seq(
+  logx_midpoint <- seq(
     stats[1, 1] - 0.5 * delta, stats[k, 1] + 0.5 * delta, length.out = 15
   )
 
@@ -72,7 +72,7 @@ logistic4_init <- function(
 
   best_rss <- rss(theta)
 
-  for (xm in x_midpoint) {
+  for (xm in logx_midpoint) {
     for (gr in growth_rate) {
       f <- exp(-log1p(exp(-gr * (stats[, 1] - xm))))
 

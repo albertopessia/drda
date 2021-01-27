@@ -1,6 +1,6 @@
 context("Four-parameter logistic common functions")
 
-test_that("Value of the four-parameter logistic function", {
+test_that("Function value", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
   param <- c(4 / 10, 9 / 10, -2, -3 / 2)
 
@@ -15,7 +15,7 @@ test_that("Value of the four-parameter logistic function", {
   expect_equal(value, true_value)
 })
 
-test_that("Gradient of the four-parameter logistic function", {
+test_that("Gradient", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
   param <- c(4 / 10, 9 / 10, -2, -3 / 2)
 
@@ -44,7 +44,7 @@ test_that("Gradient of the four-parameter logistic function", {
   expect_equal(gradient, true_value)
 })
 
-test_that("Hessian of the four-parameter logistic function", {
+test_that("Hessian", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
   param <- c(4 / 10, 9 / 10, -2, -3 / 2)
 

@@ -627,6 +627,8 @@ sigma.drda <- function(
   object$sigma
 }
 
+#' @importFrom stats qnorm
+#'
 #' @export
 summary.drda <- function(
   object,
@@ -634,13 +636,26 @@ summary.drda <- function(
 ) {
   object$pearson_resid <- residuals(object, type = "pearson")
 
+  std_err <- tryCatch(
+    {
+      L <- chol(object$fisher.info)
+      V <- chol2inv(L)
+      sqrt(diag(V)[-5])
+    },
+    error = function(e) rep(NA, 4)
+  )
+
   object$param <- object$coefficients
   object$param <- matrix(
-    object$param,
-    ncol = 1,
+    c(
+      object$param,
+      object$param + qnorm(0.025) * std_err,
+      object$param + qnorm(0.975) * std_err
+    ),
+    ncol = 3,
     dimnames = list(
       names(object$param),
-      "Estimate"
+      c("Estimate", "Lower .95", "Upper .95")
     )
   )
 
@@ -653,4 +668,18 @@ summary.drda <- function(
   class(object) <- "summary.drda"
 
   object
+}
+
+#' @importFrom stats naresid weights
+#'
+#' @export
+weights.drda <- function(
+  object,
+  ...
+) {
+  if (is.null(object$na.action)) {
+    object$weights
+  } else {
+    naresid(object$na.action, object$weights)
+  }
 }

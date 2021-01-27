@@ -1,5 +1,40 @@
 context("four-parameter logistic fit")
 
+test_that("logistic4_fisher_info", {
+  stats <- matrix(
+    c(
+      -log(c(10000, 1000, 100, 10, 1, 0.1, 0.01)),
+      rep(3, 7),
+      c(0.85777, 0.90623, 0.82218, 0.51285, 0.11214, 0.07049, 0.0325),
+      c(0.00101, 0.00447, 0.00412, 7e-05, 0.01114, 3e-04, 0.0028)
+    ),
+    nrow = 7,
+    ncol = 4
+  )
+  colnames(stats) <- c("x", "n", "m", "v")
+  param <- c(0.05, 0.9, -1.5, -2)
+  sigma <- 0.07
+
+  true_value <- matrix(
+    c(
+      1870.6712073826437, 186.31033844604499, 33.423679753536860,
+      107.18330814627171, 0, 186.31033844604499, 2042.4224014395520,
+      -47.989631045699760, 130.36237337243564, 0, 33.423679753536860,
+      -47.989631045699760, 7.0397756134557709, -9.2598379346301116, 0,
+      107.18330814627171, 130.36237337243564, -9.2598379346301116,
+      58.570645838394806, 0, 0, 0, 0, 0, 8571.4285714285714
+    ),
+    nrow = 5,
+    ncol = 5
+  )
+
+  fim <- logistic4_fisher_info(stats, param, sigma)
+
+  expect_type(fim, "double")
+  expect_length(fim, 5 * 5)
+  expect_equal(fim, true_value)
+})
+
 test_that("logistic4_fit_unconstrained", {
   max_iter <- 10000
 
@@ -17,7 +52,7 @@ test_that("logistic4_fit_unconstrained", {
     "minimum" = 0.20363741036518857,
     "maximum" = 2.4851366482692220,
     "growth_rate" = -1.9444176076033746,
-    "x_midpoint" = -1.0185895274452179
+    "logx_midpoint" = -1.0185895274452179
   )
   sigma <- 0.050499678048221869
   loglik <- 41.350661959289913
@@ -78,7 +113,7 @@ test_that("logistic4_fit_constrained: inequalities I", {
     "minimum" = 0.20363741036518857,
     "maximum" = 2.4851366482692220,
     "growth_rate" = -1.9444176076033746,
-    "x_midpoint" = -1.0185895274452179
+    "logx_midpoint" = -1.0185895274452179
   )
   sigma <- 0.050499678048221869
   loglik <- 41.350661959289913
@@ -163,7 +198,7 @@ test_that("logistic4_fit_constrained: inequalities II", {
     "minimum" = 0,
     "maximum" = 2,
     "growth_rate" = -2,
-    "x_midpoint" = -0.50584907039612223
+    "logx_midpoint" = -0.50584907039612223
   )
   sigma <- 0.39519075737116401
   loglik <- -10.084378475791494
@@ -248,7 +283,7 @@ test_that("logistic4_fit_constrained: equalities", {
     "minimum" = 0,
     "maximum" = 3,
     "growth_rate" = -0.89810058089211118,
-    "x_midpoint" = -1.3988129648706804
+    "logx_midpoint" = -1.3988129648706804
   )
   sigma <- 0.32357815255700665
   loglik <- -6.2233279732074851
@@ -333,7 +368,7 @@ test_that("logistic4_fit_constrained: equalities and inequalities", {
     "minimum" = 0,
     "maximum" = 3,
     "growth_rate" = -1,
-    "x_midpoint" = -2
+    "logx_midpoint" = -2
   )
   sigma <- 0.40018269077966560
   loglik <- -11.535340488553747
@@ -422,7 +457,7 @@ test_that("logistic4_fit_constrained", {
     "minimum" = 0,
     "maximum" = 1,
     "growth_rate" = -0.64478026194068988,
-    "x_midpoint" = -2.4237429873134359
+    "logx_midpoint" = -2.4237429873134359
   )
   sigma <- 0.087699027767824044
   loglik <- 22.363900894124325
