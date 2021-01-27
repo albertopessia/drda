@@ -477,6 +477,64 @@ logLik.drda <- function(
   object$loglik
 }
 
+#' @importFrom graphics axis box curve plot.default
+#' @importFrom grDevices dev.flush dev.hold extendrange
+#'
+#' @export
+plot.drda <- function(
+  x,
+  xlab = "log(dose)",
+  ylab = "Response",
+  ...
+) {
+  theta <- coef(x)
+
+  f <- function(z) {
+    logistic4_function(z, theta)
+  }
+
+  xv <- x$model[, 2]
+  yv <- x$model[, 1]
+
+  xlim <- extendrange(xv, f = 0.08)
+  ylim <- extendrange(yv, f = 0.08)
+
+  dev.hold()
+
+  plot.default(
+    xv, yv, type = "p", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+    axes = FALSE, ...
+  )
+
+  lines(
+    x = rep(theta[4], 2), y = c(ylim[1] - 1, f(theta[4])), lty = 2, col = "gray"
+  )
+
+  lines(
+    x = c(xlim[1] - 1, theta[4]), y = rep(f(theta[4]), 2), lty = 2, col = "gray"
+  )
+
+  axis(1, at = pretty(xv))
+  axis(2, at = pretty(yv))
+  box()
+
+  curve(f(x), add = TRUE, lty = 2, col = "red")
+
+  location <- if (theta[3] <= 0) {
+    "bottomleft"
+  } else {
+    "topleft"
+  }
+
+  legend(
+    location, legend = "Maximum likelihood fit", col = "red", lty = 2, bty = "n"
+  )
+
+  dev.flush()
+
+  invisible(NULL)
+}
+
 #' @importFrom stats predict
 #'
 #' @export
