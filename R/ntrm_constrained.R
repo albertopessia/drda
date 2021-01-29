@@ -172,7 +172,7 @@ ntrm_inertia_correction <- function(
     )
   )
 
-  eigval <- eigen(X, symmetric = TRUE)$values
+  eigval <- eigen(X, symmetric = TRUE, only.values = TRUE)$values
 
   some_zero <- any(abs(eigval) < eps)
   some_negative <- any(eigval[idx] < -eps)
@@ -204,7 +204,7 @@ ntrm_inertia_correction <- function(
         )
       )
 
-      eigval <- eigen(X, symmetric = TRUE)$values
+      eigval <- eigen(X, symmetric = TRUE, only.values = TRUE)$values
 
       some_zero <- any(abs(eigval) < eps)
       some_negative <- any(eigval[idx] < -eps)

@@ -142,6 +142,53 @@ logistic4_weighted_ntrm_unconstrained <- function(
 
 #' 4-parameter logistic fit
 #'
+#' Evaluate the Fisher information matrix at the maximum likelihood estimate.
+#'
+#' @details
+#' The 4-parameter logistic function is defined in this package as
+#'
+#' `f(x; theta) = alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#'
+#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+#' asymptote, `beta` is the upper horizontal asymptote, `eta` is the steepness
+#' of the curve or growth rate (also known as the Hill coefficient), and `phi`
+#' is the value of `x` at which the curve is equal to its mid-point. The model
+#' is extended by also assuming that `y = f(x; theta) + sigma * z / w`, where
+#' `z` is a standard normal random variable. The 5-by-5 (symmetric) Fisher
+#' information matrix is the expected value of the negative Hessian matrix of
+#' the log-likelihood function.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param w numeric vector of observation weights.
+#' @param param numeric vector with the four parameters in the form
+#'   `c(alpha, beta, eta, phi)`.
+#' @param sigma estimate of the standard deviation.
+#'
+#' @return Fisher information matrix evaluated at `param`.
+logistic4_weighted_fisher_info <- function(
+  x,
+  w,
+  param,
+  sigma
+) {
+  g <- logistic4_gradient(x, param)
+
+  tmp <- array(0, dim = c(length(x), 4, 4))
+  tmp[, , 1] <- w * g[, 1] * g
+  tmp[, , 2] <- w * g[, 2] * g
+  tmp[, , 3] <- w * g[, 3] * g
+  tmp[, , 4] <- w * g[, 4] * g
+
+  fim <- matrix(0, nrow = 5, ncol = 5)
+  fim[1:4, 1:4] <- apply(tmp, 2:3, sum)
+  fim[5, 5] <- 3 * sum(w) - length(x)
+  fim <- fim / sigma^2
+
+  fim
+}
+
+#' 4-parameter logistic fit
+#'
 #' Fit a 4-parameter logistic function to observed data with a Maximum
 #' Likelihood approach.
 #'
@@ -336,7 +383,7 @@ logistic4_weighted_fit_constrained <- function(
   result$estimated <- !constraint[, 2]
 
   param_names <- c(
-    "minimum", "maximum", "growth_rate", "x_midpoint"
+    "minimum", "maximum", "growth_rate", "logx_midpoint"
   )
 
   names(result$coefficients) <- param_names
@@ -439,7 +486,7 @@ logistic4_weighted_fit_unconstrained <- function(
   result$estimated <- rep(TRUE, 4)
 
   param_names <- c(
-    "minimum", "maximum", "growth_rate", "x_midpoint"
+    "minimum", "maximum", "growth_rate", "logx_midpoint"
   )
 
   names(result$coefficients) <- param_names
@@ -450,20 +497,9 @@ logistic4_weighted_fit_unconstrained <- function(
 
   result$weights <- w_complete
 
-  g <- logistic4_gradient(x, result$coefficients)
-
-  tmp <- array(0, dim = c(length(x), 4, 4))
-  tmp[, , 1] <- w * g[, 1] * g
-  tmp[, , 2] <- w * g[, 2] * g
-  tmp[, , 3] <- w * g[, 3] * g
-  tmp[, , 4] <- w * g[, 4] * g
-
-  fim <- matrix(0, nrow = 5, ncol = 5)
-  fim[1:4, 1:4] <- apply(tmp, 2:3, sum)
-  fim[5, 5] <- 3 * sum(w) - n
-  fim <- fim / result$sigma^2
-
-  result$fisher.info <- fim
+  result$fisher.info <- logistic4_weighted_fisher_info(
+    x, w, result$coefficients, result$sigma
+  )
 
   result
 }
