@@ -4,7 +4,7 @@
 \alias{ntrm_update_solution}
 \title{Update the solution}
 \usage{
-ntrm_update_solution(obj, candidate, gradient, hessian, mu)
+ntrm_update_solution(obj, candidate, gh, mu)
 }
 \arguments{
 \item{obj}{list containing all relevant variables of the current best
@@ -13,11 +13,8 @@ solution.}
 \item{candidate}{list containing all relevant variables of the proposed new
 solution.}
 
-\item{gradient}{function handle to evaluate the gradient of the function to
-minimize.}
-
-\item{hessian}{function handle to evaluate the Hessian of the function to
-minimize.}
+\item{gh}{function handle to evaluate both the gradient and Hessian of the
+function to minimize.}
 
 \item{mu}{barrier penalty parameter.}
 }

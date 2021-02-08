@@ -43,21 +43,21 @@ unset. The ‘factory-fresh’ default is \code{\link[stats]{na.omit}}. Another
 possible value is \code{NULL}, no action. Value \code{\link[stats]{na.exclude}}
 can be useful.}
 
-\item{mean_function}{the model to be fitted. Currently only "logistic4" is
-supported.}
+\item{mean_function}{the model to be fitted. See \code{details} for available
+models.}
 
-\item{lower_bound}{numeric vector of length 4 with the minimum admissible
-values of the parameters.}
+\item{lower_bound}{numeric vector with the minimum admissible values of the
+parameters.}
 
-\item{upper_bound}{numeric vector of length 4 with the maximum admissible
-values of the parameters.}
+\item{upper_bound}{numeric vector with the maximum admissible values of the
+parameters.}
 
 \item{start}{starting values for the parameters.}
 
 \item{max_iter}{maximum number of iterations in the optimization algorithm.}
 }
 \value{
-An object of class "drda", that is a list containing the following
+An object of class \code{drda}, that is a list containing the following
 components:
 \describe{
 \item{converged}{boolean value assessing if the optimization algorithm
@@ -66,17 +66,20 @@ converged or not.}
 optimization algorithm}
 \item{constrained}{boolean value set to \code{TRUE} if optimization was
 constrained.}
-\item{coefficients}{maximum likelihood estimates of the model
-parameters.}
-\item{sigma}{corrected maximum likelihood estimate of the standard
-deviation.}
-\item{loglik}{maximum value of the log-likelihood function.}
-\item{df.residuals}{residual degrees of freedom.}
 \item{estimated}{boolean vector indicating which parameters were
 estimated from the data.}
+\item{coefficients}{maximum likelihood estimates of the model
+parameters.}
+\item{rss}{minimum value (found) of the residual sum of squares.}
+\item{df.residuals}{residual degrees of freedom.}
 \item{fitted.values}{fitted mean values.}
 \item{residuals}{residuals, that is response minus fitted values.}
 \item{weights}{(only for weighted fits) the specified weights.}
+\item{mean_function}{model that was used for fitting.}
+\item{n}{effective sample size.}
+\item{sigma}{corrected maximum likelihood estimate of the standard
+deviation.}
+\item{loglik}{maximum value (found) of the log-likelihood function.}
 \item{fisher.info}{Fisher information matrix evaluated at the maximum
 likelihood estimator.}
 \item{call}{the matched call.}
@@ -88,4 +91,127 @@ likelihood estimator.}
 }
 \description{
 Use a Newton trust-region method to fit a curve to dose-response data.
+}
+\details{
+\subsection{Generalized logistic function}{
+
+The most general model in this package is the generalized logistic function
+and can be selected by setting \verb{mean_function = "logistic6}. It is defined in
+this package as the 6-parameter function
+
+\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+
+where \code{beta > alpha}, \code{eta != 0}, \code{nu > 0}, and \code{xi > 0}. If \code{eta} is
+positive, the curve is monotonically increasing. If \code{eta} is negative, the
+curve is monotonically decreasing.
+
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{beta} is related to the upper horizontal asymptote of the curve.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+Parameter \code{xi} affects the value of the upper asymptote.
+
+\strong{Note}: the 6-parameter logistic function is usually non-identifiable from
+data and should not be used in real applications. It is available only for
+theoretical research convenience.
+}
+
+\subsection{5-parameter logistic function}{
+
+The 5-parameter logistic function can be selected by setting
+\code{mean_function = "logistic5"}. The function is defined in this package as
+
+\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+
+where \code{beta > alpha}, \code{eta != 0}, and \code{nu > 0}. If \code{eta} is positive, the
+curve is monotonically increasing. If \code{eta} is negative, the curve is
+monotonically decreasing.
+
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{beta} represents the upper horizontal asymptote of the curve.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+}
+
+\subsection{4-parameter logistic function}{
+
+The 4-parameter logistic function is the default model of \code{drda}. It can be
+explicitly selected by setting \code{mean_function = "logistic4"}. The function is
+defined in this package as
+
+\code{alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))}
+
+where \code{beta > alpha} and \code{eta != 0}. If \code{eta} is positive, the curve is
+monotonically increasing. If \code{eta} is negative, the curve is monotonically
+decreasing.
+
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{beta} represents the upper horizontal asymptote of the curve.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
+mid-point, i.e. \verb{f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2}.
+}
+
+\subsection{3-parameter logistic function}{
+
+There is no unique way in defining a 3-parameter logistic function because it
+is possible to fix either the lower asymptote or the upper asymptote. To fit
+a 3-parameter logistic function, simply set \code{mean_function = "logistic4"} and
+fix the desired parameter by using the \code{lower_bound} and \code{upper_bound}
+arguments.
+
+For example, to fit function \code{beta / (1 + exp(-eta * (x - phi)))} use
+\code{lower_bound = c(0, 0, -Inf, -Inf)} and \verb{upper_bound = c(0, Inf, Inf, Inf))}.
+To fit function \code{alpha + 1 / (1 + exp(-eta * (x - phi)))} use
+\code{lower_bound = c(-Inf, 1, -Inf, -Inf)} and
+\verb{upper_bound = c(Inf, 1, Inf, Inf))}.
+}
+
+\subsection{2-parameter logistic function}{
+
+The 2-parameter logistic function can be selected by setting
+\code{mean_function = "logistic2"}. The function is defined in this package as
+
+\code{1 / (1 + exp(-eta * (x - phi)))}
+
+where \code{eta != 0}. If \code{eta} is positive, the curve is monotonically
+increasing. If \code{eta} is negative, the curve is monotonically decreasing.
+
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
+mid-point, i.e. \verb{f(phi; eta, phi) = 1 / 2}.
+}
+
+\subsection{1-parameter logistic function}{
+
+There is no unique way in defining a 1-parameter logistic function because it
+is possible to fix either \code{eta} or \code{phi}. To fit a 1-parameter logistic
+function, simply set \code{mean_function = "logistic2"} and fix the desired
+parameter by using the \code{lower_bound} and \code{upper_bound} arguments.
+
+For example, to fit function \code{1 / (1 + exp(-eta * x))} use
+\code{lower_bound = c(-Inf, 0)} and \verb{upper_bound = c(Inf, 0))}.
+To fit function \code{1 + 1 / (1 + exp(-(x - phi)))} use
+\code{lower_bound = c(1, -Inf)} and \verb{upper_bound = c(1, Inf))}.
+To fit function \code{1 + 1 / (1 + exp(x - phi))} use
+\code{lower_bound = c(-1, -Inf)} and \verb{upper_bound = c(-1, Inf))}.
+}
+
+\subsection{Gompertz function}{
+
+The Gompertz function is the limit for \code{nu -> 0} of the logistic function
+\code{logistic5(0, beta, eta, phi, nu)}. It can be selected by setting
+\code{mean_function = "gompertz"}. The function is defined in this package as
+
+\code{beta * exp(-phi * exp(-eta * x))}
+
+where \code{eta != 0}. If \code{beta} is positive, the curve is monotonically
+incrasing. If \code{beta} is negative, the curve is monotonically decreasing.
+
+Parameter \code{beta} represents the horizontal asymptote of the curve.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+}
 }

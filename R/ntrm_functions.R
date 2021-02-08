@@ -6,9 +6,7 @@
 #' @param x numeric vector.
 #'
 #' @return Maximum absolute value in `x`.
-ntrm_max_abs <- function(
-  x
-) {
+ntrm_max_abs <- function(x) {
   min_max <- range(x)
   max(abs(min_max[1]), min_max[2])
 }
@@ -20,9 +18,7 @@ ntrm_max_abs <- function(
 #' @param x numeric vector.
 #'
 #' @return Euclidean norm of `x`.
-ntrm_norm <- function(
-  x
-) {
+ntrm_norm <- function(x) {
   sqrt(sum(x^2))
 }
 
@@ -38,11 +34,7 @@ ntrm_norm <- function(
 #'
 #' @return Numeric vector of length 2 with the solutions of the quadratic
 #'   equation.
-ntrm_solve_quadratic_equation <- function(
-  a,
-  b,
-  c
-) {
+ntrm_solve_quadratic_equation <- function(a, b, c) {
   eps <- 1.0e-12
 
   # this should really be done by Kahan's method and fused multiply-add (fma),
@@ -101,11 +93,7 @@ ntrm_solve_quadratic_equation <- function(
 #' @references
 #' William H. Press et al. **Numerical recipes**. Cambridge University Press,
 #' Cambridge, UK, third edition, 2007. ISBN 978-0-511-33555-6.
-ntrm_line_search <- function(
-  f,
-  a,
-  b
-) {
+ntrm_line_search <- function(f, a, b) {
   # 1 - golden_ratio
   k <- 0.381966
 
@@ -159,8 +147,8 @@ ntrm_line_search <- function(
 
       if (
         (abs(p) >= abs(0.5 * q * e_tmp)) ||
-        (p <= q * (a - x)) ||
-        (p >= q * (b - x))
+          (p <= q * (a - x)) ||
+          (p >= q * (b - x))
       ) {
         e <- if (x >= xm) {
           a - x
