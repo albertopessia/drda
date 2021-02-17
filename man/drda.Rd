@@ -57,8 +57,8 @@ parameters.}
 \item{max_iter}{maximum number of iterations in the optimization algorithm.}
 }
 \value{
-An object of class \code{drda}, that is a list containing the following
-components:
+An object of class \code{drda} and \code{model_fit}, where \code{model} is the
+chosen mean function. It is a list containing the following components:
 \describe{
 \item{converged}{boolean value assessing if the optimization algorithm
 converged or not.}
@@ -96,8 +96,8 @@ Use a Newton trust-region method to fit a curve to dose-response data.
 \subsection{Generalized logistic function}{
 
 The most general model in this package is the generalized logistic function
-and can be selected by setting \verb{mean_function = "logistic6}. It is defined in
-this package as the 6-parameter function
+selected by setting \code{mean_function = "logistic6"}. It is defined in this
+package as the 6-parameter function
 
 \code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
@@ -154,21 +154,6 @@ Parameter \code{phi} represents the \code{x} value at which the curve is equal t
 mid-point, i.e. \verb{f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2}.
 }
 
-\subsection{3-parameter logistic function}{
-
-There is no unique way in defining a 3-parameter logistic function because it
-is possible to fix either the lower asymptote or the upper asymptote. To fit
-a 3-parameter logistic function, simply set \code{mean_function = "logistic4"} and
-fix the desired parameter by using the \code{lower_bound} and \code{upper_bound}
-arguments.
-
-For example, to fit function \code{beta / (1 + exp(-eta * (x - phi)))} use
-\code{lower_bound = c(0, 0, -Inf, -Inf)} and \verb{upper_bound = c(0, Inf, Inf, Inf))}.
-To fit function \code{alpha + 1 / (1 + exp(-eta * (x - phi)))} use
-\code{lower_bound = c(-Inf, 1, -Inf, -Inf)} and
-\verb{upper_bound = c(Inf, 1, Inf, Inf))}.
-}
-
 \subsection{2-parameter logistic function}{
 
 The 2-parameter logistic function can be selected by setting
@@ -182,21 +167,6 @@ increasing. If \code{eta} is negative, the curve is monotonically decreasing.
 Parameter \code{eta} represents the steepness (growth rate) of the curve.
 Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
 mid-point, i.e. \verb{f(phi; eta, phi) = 1 / 2}.
-}
-
-\subsection{1-parameter logistic function}{
-
-There is no unique way in defining a 1-parameter logistic function because it
-is possible to fix either \code{eta} or \code{phi}. To fit a 1-parameter logistic
-function, simply set \code{mean_function = "logistic2"} and fix the desired
-parameter by using the \code{lower_bound} and \code{upper_bound} arguments.
-
-For example, to fit function \code{1 / (1 + exp(-eta * x))} use
-\code{lower_bound = c(-Inf, 0)} and \verb{upper_bound = c(Inf, 0))}.
-To fit function \code{1 + 1 / (1 + exp(-(x - phi)))} use
-\code{lower_bound = c(1, -Inf)} and \verb{upper_bound = c(1, Inf))}.
-To fit function \code{1 + 1 / (1 + exp(x - phi))} use
-\code{lower_bound = c(-1, -Inf)} and \verb{upper_bound = c(-1, Inf))}.
 }
 
 \subsection{Gompertz function}{

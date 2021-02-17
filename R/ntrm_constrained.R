@@ -948,7 +948,6 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   # - Update parameter mu if necessary.
   # - Repeat.
   # -------
-
   eps <- 9.0e-10
 
   delta <- 1

@@ -1,5 +1,189 @@
 context("4-parameter logistic - core functions")
 
+test_that("Constructor", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  )
+
+  n <- length(y)
+
+  w <- rep(1, n)
+
+  stats <- matrix(
+    c(
+      -6.908, -4.605, -2.303, 0, 2.303, 4.605, 6.908, 3, 2, 2, 5, 3, 4, 1,
+      0.932, 0.902, 0.89, 0.5542, 0.2556666667, 0.16425, 0.092, 0.0014186667,
+      0.002116, 0.000049, 0.00160656, 0.0000862222, 0.0014676875, 0
+    ),
+    nrow = 7,
+    ncol = 4
+  )
+  colnames(stats) <- c("x", "n", "m", "v")
+
+  start <- c(0, 1, -1, 0)
+
+  max_iter <- 10000
+
+  lower_bound <- c(-Inf, 1, -Inf, -10)
+  upper_bound <- c(1, Inf, 0, Inf)
+
+  object <- logistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
+
+  expect_true(inherits(object, "logistic4"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_false(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_null(object$start)
+  expect_null(object$lower_bound)
+  expect_null(object$upper_bound)
+
+  object <- logistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+
+  expect_true(inherits(object, "logistic4"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_true(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_equal(object$start, c(0, 0, -1, 0))
+  expect_equal(object$lower_bound, c(-Inf, -Inf, -Inf, -10))
+  expect_equal(object$upper_bound, upper_bound)
+
+  w <- c(
+    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
+    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
+  )
+
+  stats <- matrix(
+    c(
+      -6.908, -4.605, -2.303, 0.0, 2.303, 4.605, 6.908, 4.549, 0.96, 1.126,
+      3.756, 1.797, 2.61, 0.157, 0.9353000659, 0.948, 0.8836838366, 0.55221459,
+      0.2606149137, 0.1807233716, 0.092, 0.0014467345, 0, 0.0000091061,
+      0.0007707846, 0.0000597738, 0.0014230308, 0
+    ),
+    nrow = 7,
+    ncol = 4
+  )
+  colnames(stats) <- c("x", "n", "m", "v")
+
+  object <- logistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
+
+  expect_true(inherits(object, "logistic4"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_false(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_null(object$start)
+  expect_null(object$lower_bound)
+  expect_null(object$upper_bound)
+
+  object <- logistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+
+  expect_true(inherits(object, "logistic4"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_true(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_equal(object$start, c(0, 0, -1, 0))
+  expect_equal(object$lower_bound, c(-Inf, -Inf, -Inf, -10))
+  expect_equal(object$upper_bound, upper_bound)
+})
+
+test_that("Constructor: errors", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  )
+
+  w <- c(
+    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
+    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
+  )
+
+  max_iter <- 10000
+
+  expect_error(
+    logistic4_new(x, y, w, c(0, 1, -1, 0, 1), max_iter, NULL, NULL),
+    "'start' must be of length 4"
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, c(1, 0, -1, 0), max_iter, NULL, NULL),
+    "parameter 'beta' is smaller than 'alpha'"
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, c(0, 1, 0, 0), max_iter, NULL, NULL),
+    "parameter 'eta' cannot be initialized to zero"
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 5), rep(Inf, 5)),
+    "'lower_bound' must be of length 4"
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 5), rep(Inf, 4)),
+    "'lower_bound' must be of length 4"
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, NULL, max_iter, c(0, -1, -Inf, -Inf), rep(Inf, 4)),
+    "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
+    fixed = TRUE
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), rep(Inf, 5)),
+    "'upper_bound' must be of length 4"
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 0, Inf, Inf)),
+    "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
+    fixed = TRUE
+  )
+
+  expect_error(
+    logistic4_new(x, y, w, NULL, max_iter, c(-0.5, 0, -1, 0), c(0.5, 1, 0, 1)),
+    "'lower_bound[2]' cannot be smaller than 'upper_bound[1]'",
+    fixed = TRUE
+  )
+})
+
 test_that("Function value", {
   x <- -log(c(1000, 100, 10, 1, 0.1, 0.01))
   theta <- c(4 / 100, 9 / 10, -2, -3 / 2)
@@ -9,7 +193,18 @@ test_that("Function value", {
     0.080786250932707432, 0.040427955721356054, 0.040004281666562474
   )
 
-  value <- logistic4_function(x, theta)
+  value <- logistic4_fn(x, theta)
+
+  expect_type(value, "double")
+  expect_length(value, 6)
+  expect_equal(value, true_value)
+
+  object <- structure(
+    list(stats = matrix(x, nrow = 6, ncol = 1)),
+    class = "logistic4"
+  )
+
+  value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
   expect_length(value, 6)
@@ -79,7 +274,12 @@ test_that("Gradient and Hessian", {
     dim = c(6, 4, 4)
   )
 
-  gradient_hessian <- logistic4_gradient_hessian(x, theta)
+  object <- structure(
+    list(stats = matrix(x, nrow = 6, ncol = 1)),
+    class = "logistic4"
+  )
+
+  gradient_hessian <- gradient_hessian(object, theta)
 
   expect_type(gradient_hessian, "list")
   expect_type(gradient_hessian$G, "double")
@@ -96,37 +296,38 @@ context("4-parameter logistic - RSS functions")
 
 test_that("Value of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
-  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
-
   n <- c(3, 3, 2, 4, 3)
-
   m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-
   v <- c(
     643663 / 450000000, 31087 / 112500000, 961 / 160000,
     177363 / 25000000, 560629 / 112500000
   )
 
-  stats <- cbind(x, n, m, v)
+  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
 
   true_value <- 0.11303184522146127
 
-  rss <- logistic4_rss(stats)
+  object <- structure(
+    list(stats = cbind(x, n, m, v), m = 5),
+    class = "logistic4"
+  )
 
-  expect_type(rss, "closure")
+  rss_fn <- rss(object)
 
-  value <- rss(theta)
+  expect_type(rss_fn, "closure")
+
+  value <- rss_fn(theta)
 
   expect_type(value, "double")
   expect_length(value, 1)
   expect_equal(value, true_value)
 
   known_param <- c(4 / 100, NA, NA, -3 / 2)
-  rss <- logistic4_rss_fixed(stats, known_param)
+  rss_fn <- rss_fixed(object, known_param)
 
-  expect_type(rss, "closure")
+  expect_type(rss_fn, "closure")
 
-  value <- rss(c(log(43 / 50), -2))
+  value <- rss_fn(c(log(43 / 50), -2))
 
   expect_type(value, "double")
   expect_length(value, 1)
@@ -135,18 +336,14 @@ test_that("Value of the RSS", {
 
 test_that("Gradient and Hessian of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
-  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
-
   n <- c(3, 3, 2, 4, 3)
-
   m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-
   v <- c(
     643663 / 450000000, 31087 / 112500000, 961 / 160000,
     177363 / 25000000, 560629 / 112500000
   )
 
-  stats <- cbind(x, n, m, v)
+  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
 
   true_gradient <- c(
     -0.78088225962005132, -0.28930436711562624, 0.011139573467794527,
@@ -172,11 +369,16 @@ test_that("Gradient and Hessian of the RSS", {
     ncol = 4
   )
 
-  gh <- logistic4_rss_gradient_hessian(stats)
+  object <- structure(
+    list(stats = cbind(x, n, m, v), m = 5),
+    class = "logistic4"
+  )
 
-  expect_type(gh, "closure")
+  rss_gh <- rss_gradient_hessian(object)
 
-  gradient_hessian <- gh(theta)
+  expect_type(rss_gh, "closure")
+
+  gradient_hessian <- rss_gh(theta)
 
   expect_type(gradient_hessian$G, "double")
   expect_type(gradient_hessian$H, "double")
@@ -188,11 +390,11 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$H, true_hessian)
 
   known_param <- c(4 / 100, NA, NA, -3 / 2)
-  gh <- logistic4_rss_gradient_hessian_fixed(stats, known_param)
+  rss_gh <- rss_gradient_hessian_fixed(object, known_param)
 
-  expect_type(gh, "closure")
+  expect_type(rss_gh, "closure")
 
-  gradient_hessian <- gh(c(log(43 / 50), -2))
+  gradient_hessian <- rss_gh(c(log(43 / 50), -2))
 
   expect_type(gradient_hessian$G, "double")
   expect_type(gradient_hessian$H, "double")
@@ -206,33 +408,34 @@ test_that("Gradient and Hessian of the RSS", {
 
 context("4-parameter logistic - general functions")
 
-test_that("logistic4_init", {
+test_that("init", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
-  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
-
   n <- c(3, 3, 2, 4, 3)
-
   m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-
   v <- c(
     643663 / 450000000, 31087 / 112500000, 961 / 160000, 177363 / 25000000,
     560629 / 112500000
   )
 
+  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
+
   true_value <- c(
     0.10241913285726964, -0.17645537182325855, -2, -1.4802332740676008
   )
 
-  stats <- cbind(x, n, m, v)
+  object <- structure(
+    list(stats = cbind(x, n, m, v), m = 5),
+    class = "logistic4"
+  )
 
-  start <- logistic4_init(stats)
+  start <- init(object)
 
   expect_type(start, "double")
   expect_length(start, 4)
   expect_equal(start, true_value)
 })
 
-test_that("logistic4_fisher_info_normal", {
+test_that("fisher_info", {
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
@@ -242,18 +445,13 @@ test_that("logistic4_fisher_info_normal", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
-  stats <- suff_stats(x, y)
-
   n <- length(y)
+
+  w <- rep(1, n)
 
   theta <- c(
     alpha = 4 / 100,
@@ -288,7 +486,12 @@ test_that("logistic4_fisher_info_normal", {
     "alpha", "beta", "eta", "phi", "sigma"
   )
 
-  fim <- logistic4_fisher_info_normal(stats, n, theta, sigma)
+  object <- structure(
+    list(stats = suff_stats(x, y, w), n = n, m = 7),
+    class = "logistic4"
+  )
+
+  fim <- fisher_info(object, theta, sigma)
 
   expect_type(fim, "double")
   expect_length(fim, 5 * 5)
@@ -297,7 +500,7 @@ test_that("logistic4_fisher_info_normal", {
 
 context("4-parameter logistic - fit")
 
-test_that("logistic4_fit: fit", {
+test_that("fit", {
   max_iter <- 10000
 
   x <- round(
@@ -309,14 +512,13 @@ test_that("logistic4_fit: fit", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
@@ -327,7 +529,7 @@ test_that("logistic4_fit: fit", {
     phi = 0.13714073896752300
   )
 
-  rss <- 0.030080292750857811
+  rss_value <- 0.030080292750857811
 
   fitted_values <- c(
     rep(0.93329083211408324, 3), rep(0.92353786225971087, 2),
@@ -346,30 +548,38 @@ test_that("logistic4_fit: fit", {
     0.06238449617626938, -0.05220322010290019
   )
 
-  result <- logistic4_fit(x, y, NULL, max_iter)
+  object <- logistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
-  result <- logistic4_fit(x, y, c(0, 0, -1, 0), max_iter)
+  object <- logistic4_new(x, y, w, c(0, 1, -1, 0), max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic4_fit_constrained: inequalities", {
+test_that("fit_constrained: inequalities", {
   max_iter <- 10000
 
   x <- round(
@@ -381,92 +591,98 @@ test_that("logistic4_fit_constrained: inequalities", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.12654836760564175,
-    beta = 0.12654836760564175 + exp(-0.2),
-    eta = -0.81946721811752066,
-    phi = 0.16558638357709105
+    alpha = 0.14236056369990913,
+    beta = 0.14236056369990913 + exp(-0.23272371082134849),
+    eta = -0.89523277708640703,
+    phi = 0.13714073896752746
   )
 
-  rss <- 0.031021869952591774
+  rss_value <- 0.030080292750857811
 
   fitted_values <- c(
-    rep(0.94279939044917876, 3), rep(0.92918328145981286, 2),
-    rep(0.84963760209486180, 2), rep(0.56364513570595485, 5),
-    rep(0.24760017802035200, 3), rep(0.14753394255411784, 4),
-    0.12979816009612679
+    rep(0.93329083211408334, 3), rep(0.92353786225971078, 2),
+    rep(0.85458328542759977, 2), rep(0.56283675776095450, 5),
+    rep(0.24201206136017883, 3), rep(0.15661550382373023, 4),
+    0.14420322010289948
   )
 
   residuals <- c(
-    -0.01479939044917876, -0.05479939044917876, 0.03720060955082124,
-    0.01881671854018714, -0.07318328145981286, 0.04736239790513820,
-    0.03336239790513820, -0.07564513570595485, -0.03164513570595485,
-    0.02235486429404515, 0.00235486429404515, 0.03535486429404515,
-    0.01139982197964800, 0.01739982197964800, -0.00460017802035200,
-    -0.03053394255411784, -0.00453394255411784, 0.03046605744588216,
-    0.07146605744588216, -0.03779816009612679
+    -0.00529083211408334, -0.04529083211408334, 0.04670916788591666,
+    0.02446213774028922, -0.06753786225971078, 0.04241671457240023,
+    0.02841671457240023, -0.07483675776095450, -0.03083675776095450,
+    0.02316324223904550, 0.00316324223904550, 0.03616324223904550,
+    0.01698793863982117, 0.02298793863982117, 0.00098793863982117,
+    -0.03961550382373023, -0.01361550382373023, 0.02138449617626977,
+    0.06238449617626977, -0.05220322010289948
   )
 
-  result <- logistic4_fit_constrained(
-    x, y, NULL, max_iter,
-    lower_bound = c(0, -0.2, -1, 0),
-    upper_bound = c(1,  0.2,  0, 1)
+  object <- logistic4_new(
+    x, y, w, NULL, max_iter, c(-0.5, 0.5, -1, 0), c(0.5, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic4_fit_constrained(
-    x, y, c(0.5, 0, -0.5, 0.5), max_iter,
-    lower_bound = c(0, -0.2, -1, 0),
-    upper_bound = c(1,  0.2,  0, 1)
+  object <- logistic4_new(
+    x, y, w, c(0, 0.75, -0.5, 0.5), max_iter, c(-0.5, 0.5, -1, 0),
+    c(0.5, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic4_fit_constrained(
-    x, y, c(2, -1, -3, -1), max_iter,
-    lower_bound = c(0, -0.2, -1, 0),
-    upper_bound = c(1,  0.2,  0, 1)
+  object <- logistic4_new(
+    x, y, w, c(-1, 2, 3, -1), max_iter, c(-0.5, 0.5, -1, 0), c(0.5, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic4_fit_constrained: equalities", {
+test_that("fit_constrained: equalities", {
   max_iter <- 10000
 
   x <- round(
@@ -478,14 +694,13 @@ test_that("logistic4_fit_constrained: equalities", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE)
 
@@ -496,7 +711,7 @@ test_that("logistic4_fit_constrained: equalities", {
     phi = 0.55079105348629506
   )
 
-  rss <- 0.061009639061112450
+  rss_value <- 0.061009639061112450
 
   fitted_values <- c(
     rep(0.973588472981552128, 3), rep(0.92367933936267506, 2),
@@ -515,55 +730,61 @@ test_that("logistic4_fit_constrained: equalities", {
     0.09560641001335459, 0.04782626569077058
   )
 
-  result <- logistic4_fit_constrained(
-    x, y, NULL, max_iter,
-    lower_bound = c(0, 0, -Inf, -Inf),
-    upper_bound = c(0, 0,  Inf,  Inf)
+  object <- logistic4_new(
+    x, y, w, NULL, max_iter, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values with same equalities
-  result <- logistic4_fit_constrained(
-    x, y, c(0, 0, -1, 0), max_iter,
-    lower_bound = c(0, 0, -Inf, -Inf),
-    upper_bound = c(0, 0,  Inf,  Inf)
+  object <- logistic4_new(
+    x, y, w, c(0, 1, -1, 0), max_iter, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values with different equalities
-  result <- logistic4_fit_constrained(
-    x, y, c(1, 3, -1, 0), max_iter,
-    lower_bound = c(0, 0, -Inf, -Inf),
-    upper_bound = c(0, 0,  Inf,  Inf)
+  object <- logistic4_new(
+    x, y, w, c(1, 3, -1, 0), max_iter, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic4_fit_constrained: equalities and inequalities", {
+test_that("fit_constrained: equalities and inequalities", {
   max_iter <- 10000
 
   x <- round(
@@ -575,14 +796,13 @@ test_that("logistic4_fit_constrained: equalities and inequalities", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE)
 
@@ -593,7 +813,7 @@ test_that("logistic4_fit_constrained: equalities and inequalities", {
     phi = 0.55079105348629506
   )
 
-  rss <- 0.061009639061112450
+  rss_value <- 0.061009639061112450
 
   fitted_values <- c(
     rep(0.973588472981552128, 3), rep(0.92367933936267506, 2),
@@ -612,85 +832,81 @@ test_that("logistic4_fit_constrained: equalities and inequalities", {
     0.09560641001335459, 0.04782626569077058
   )
 
-  result <- logistic4_fit_constrained(
-    x, y, NULL, max_iter,
-    lower_bound = c(0, 0, -1, 0),
-    upper_bound = c(0, 0,  0, 1)
+  object <- logistic4_new(
+    x, y, w, NULL, max_iter, c(0, 1, -1, 0), c(0, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic4_fit_constrained(
-    x, y, c(0, 0, -0.8, 0.5), max_iter,
-    lower_bound = c(0, 0, -1, 0),
-    upper_bound = c(0, 0,  0, 1)
+  object <- logistic4_new(
+    x, y, w, c(0, 1, -0.8, 0.5), max_iter, c(0, 1, -1, 0), c(0, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic4_fit_constrained(
-    x, y, c(1, 2, -5, -1), max_iter,
-    lower_bound = c(0, 0, -1, 0),
-    upper_bound = c(0, 0,  0, 1)
+  object <- logistic4_new(
+    x, y, w, c(1, 2, -5, -1), max_iter, c(0, 1, -1, 0), c(0, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
 context("4-parameter logistic - weighted fit")
 
-test_that("logistic4_fit_weighted: fit", {
+test_that("fit (weighted)", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
@@ -702,7 +918,7 @@ test_that("logistic4_fit_weighted: fit", {
     phi = -0.0061161452508493088
   )
 
-  rss <- 0.015426894657174924
+  rss_value <- 0.015426894657174924
 
   fitted_values <- c(
     rep(0.94105809852012520, 3), rep(0.93306866024846045, 1),
@@ -720,169 +936,159 @@ test_that("logistic4_fit_weighted: fit", {
     0.03727067853820100, -0.08183247345211985
   )
 
-  result <- logistic4_fit_weighted(x, y, w, NULL, max_iter)
+  object <- logistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
-  result <- logistic4_fit_weighted(x, y, w, c(0, 0, -1, 0), max_iter)
+  object <- logistic4_new(x, y, w, c(0, 1, -1, 0), max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 4)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic4_fit_weighted_constrained: inequalities", {
+test_that("fit_constrained (weighted): inequalities", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.13727313366883312,
-    beta = 0.13727313366883312 + exp(-0.2),
-    eta = -0.79858420471931035,
-    phi = 0.078372236750389013
+    alpha = 0.17216952053201601,
+    beta = 0.17216952053201601 + exp(-0.26177206344682202),
+    eta = -0.96298267666336590,
+    phi = 0
   )
 
-  rss <- 0.018015759502831172
+  rss_value <- 0.015429695947432222
 
   fitted_values <- c(
-    rep(0.95292434651090841, 3), rep(0.93700817267641609, 1),
-    rep(0.84963993729419210, 2), rep(0.55944477087279272, 4),
-    rep(0.25576749618362561, 3), rep(0.15873543600035093, 3),
-    0.14076156632218356
+    rep(0.94086352653159934, 3), rep(0.93283404368653074, 1),
+    rep(0.86629746358312263, 2), rep(0.55701274222675176, 4),
+    rep(0.24772802087038089, 3), rep(0.18119144076697278, 3),
+    0.17316195792190418
   )
 
   residuals <- c(
-    -0.02492434651090841, -0.06492434651090841, 0.02707565348909159,
-    0.01099182732358391, 0.04736006270580790, 0.03336006270580790,
-    -0.07144477087279272, -0.02744477087279272, 0.00655522912720728,
-    0.03955522912720728, 0.00323250381637439, 0.00923250381637439,
-    -0.01276749618362561, -0.01573543600035093, 0.01926456399964907,
-    0.06026456399964907, -0.04876156632218356
+    -0.01286352653159934, -0.05286352653159934, 0.03913647346840066,
+    0.01516595631346926, 0.03070253641687737, 0.01670253641687737,
+    -0.06901274222675176, -0.02501274222675176, 0.00898725777324824,
+    0.04198725777324824, 0.01127197912961911, 0.01727197912961911,
+    -0.00472802087038089, -0.03819144076697278, -0.00319144076697278,
+    0.03780855923302722, -0.08116195792190418
   )
 
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, NULL, max_iter,
-    lower_bound = c(0, -0.2, -1, 0),
-    upper_bound = c(1,  0.2,  0, 1)
+  object <- logistic4_new(
+    x, y, w, NULL, max_iter, c(-0.5, 0.5, -1, 0), c(0.5, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 2.0e-7)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-7)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, c(0.5, 0, -0.5, 0.5), max_iter,
-    lower_bound = c(0, -0.2, -1, 0),
-    upper_bound = c(1,  0.2,  0, 1)
+  object <- logistic4_new(
+    x, y, w, c(0, 0.75, -0.5, 0.5), max_iter, c(-0.5, 0.5, -1, 0),
+    c(0.5, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 2.0e-7)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-7)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, c(2, -1, -3, -1), max_iter,
-    lower_bound = c(0, -0.2, -1, 0),
-    upper_bound = c(1,  0.2,  0, 1)
+  object <- logistic4_new(
+    x, y, w, c(-1, 2, -3, -1), max_iter, c(-0.5, 0.5, -1, 0), c(0.5, 1, 0, 1)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 2.0e-7)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-7)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 4)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic4_fit_weighted_constrained: equalities", {
+test_that("fit_constrained (weighted): equalities", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE)
@@ -894,7 +1100,7 @@ test_that("logistic4_fit_weighted_constrained: equalities", {
     phi = 0.56172839498959692
   )
 
-  rss <- 0.040269628142735194
+  rss_value <- 0.040269628142735194
 
   fitted_values <- c(
     rep(0.96836185505275455, 3), rep(0.91423176703152800, 1),
@@ -912,86 +1118,79 @@ test_that("logistic4_fit_weighted_constrained: equalities", {
     0.08334723527233228, 0.04017581752055293
   )
 
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, NULL, max_iter,
-    lower_bound = c(0, 0, -Inf, -Inf),
-    upper_bound = c(0, 0,  Inf,  Inf)
+  object <- logistic4_new(
+    x, y, w, NULL, max_iter, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
   # initial values with same equalities
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, c(0, 0, -1, 0), max_iter,
-    lower_bound = c(0, 0, -Inf, -Inf),
-    upper_bound = c(0, 0,  Inf,  Inf)
+  object <- logistic4_new(
+    x, y, w, c(0, 1, -1, 0), max_iter, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
   # initial values with different equalities
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, c(1, 3, -1, 0), max_iter,
-    lower_bound = c(0, 0, -Inf, -Inf),
-    upper_bound = c(0, 0,  Inf,  Inf)
+  object <- logistic4_new(
+    x, y, w, c(1, 3, -1, 0), max_iter, c(0, 1, -Inf, -Inf), c(0, 1, Inf,Inf)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic4_fit_weighted_constrained: equalities and inequalities", {
+test_that("fit_constrained (weighted): equalities and inequalities", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE)
@@ -1003,7 +1202,7 @@ test_that("logistic4_fit_weighted_constrained: equalities and inequalities", {
     phi = 0.56172839498959692
   )
 
-  rss <- 0.040269628142735194
+  rss_value <- 0.040269628142735194
 
   fitted_values <- c(
     rep(0.96836185505275455, 3), rep(0.91423176703152800, 1),
@@ -1021,52 +1220,58 @@ test_that("logistic4_fit_weighted_constrained: equalities and inequalities", {
     0.08334723527233228, 0.04017581752055293
   )
 
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, NULL, max_iter,
-    lower_bound = c(0, 0, -2, 0),
-    upper_bound = c(0, 0,  0, 2)
+  object <- logistic4_new(
+    x, y, w, NULL, max_iter, c(0, 1, -2, 0), c(0, 1, 0, 2)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, c(0, 0, -0.8, 0.5), max_iter,
-    lower_bound = c(0, 0, -2, 0),
-    upper_bound = c(0, 0,  0, 2)
+  object <- logistic4_new(
+    x, y, w, c(0, 1, -0.8, 0.5), max_iter, c(0, 1, -2, 0), c(0, 1, 0, 2)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic4_fit_weighted_constrained(
-    x, y, w, c(1, 2, -5, -1), max_iter,
-    lower_bound = c(0, 0, -2, 0),
-    upper_bound = c(0, 0,  0, 2)
+  object <- logistic4_new(
+    x, y, w, c(1, 2, -5, -1), max_iter, c(0, 1, -2, 0), c(0, 1, 0, 2)
   )
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic4_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
 context("4-parameter logistic - drda fit")
@@ -1081,13 +1286,8 @@ test_that("drda: 'lower_bound' argument errors", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
   expect_error(
@@ -1140,7 +1340,7 @@ test_that("drda: 'lower_bound' argument errors", {
       lower_bound = rep(-Inf, 5),
       upper_bound = rep(Inf, 5)
     ),
-    "'lower_bound' and 'upper_bound' must be of length 4"
+    "'lower_bound' must be of length 4"
   )
 
   expect_error(
@@ -1164,13 +1364,8 @@ test_that("drda: 'upper_bound' argument errors", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
   expect_error(
@@ -1205,7 +1400,7 @@ test_that("drda: 'upper_bound' argument errors", {
       lower_bound = rep(-Inf, 5),
       upper_bound = rep(Inf, 5)
     ),
-    "'lower_bound' and 'upper_bound' must be of length 4"
+    "'lower_bound' must be of length 4"
   )
 
   expect_error(
@@ -1229,13 +1424,8 @@ test_that("drda: 'start' argument errors", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
   expect_error(

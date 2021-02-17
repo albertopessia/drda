@@ -2,12 +2,9 @@
 % Please edit documentation in R/common.R
 \name{suff_stats}
 \alias{suff_stats}
-\alias{suff_stats_weighted}
 \title{Sufficient statistics}
 \usage{
-suff_stats(x, y)
-
-suff_stats_weighted(x, y, w)
+suff_stats(x, y, w)
 }
 \arguments{
 \item{x}{numeric vector representing the fixed predictor variable.}
@@ -18,9 +15,9 @@ suff_stats_weighted(x, y, w)
 }
 \value{
 Numeric matrix where the first column are the sorted unique values of
-input vector \code{x}, second column are the corresponding number of
-observations (or total weights), third column are the (weighted) sample
-means, and fourth column are the uncorrected (weighted) sample variances.
+input vector \code{x}, second column are the total weights (sample size if no
+weights), third column are the (weighted) sample means, and fourth column
+are the uncorrected (weighted) sample variances.
 }
 \description{
 Compute sufficient statistics for each unique value of the predictor

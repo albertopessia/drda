@@ -1,3 +1,64 @@
+#' @rdname logistic6_new
+logistic2_new <-  function(
+  x, y, w, start, max_iter, lower_bound, upper_bound
+) {
+  if (!is.null(start)) {
+    if (length(start) != 2) {
+      stop("'start' must be of length 2", call. = FALSE)
+    }
+
+    if (start[1] == 0) {
+      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
+    }
+  }
+
+  if (!is.null(lower_bound)) {
+    if (length(lower_bound) != 2) {
+      stop("'lower_bound' must be of length 2", call. = FALSE)
+    }
+  }
+
+  if (!is.null(upper_bound)) {
+    if (length(upper_bound) != 2) {
+      stop("''upper_bound' must be of length 2", call. = FALSE)
+    }
+  }
+
+  object <- structure(
+    list(
+      x = x,
+      y = y,
+      w = w,
+      n = length(y),
+      stats = suff_stats(x, y, w),
+      constrained = FALSE,
+      start = start,
+      max_iter = max_iter
+    ),
+    class = "logistic2"
+  )
+
+  object$m <- nrow(object$stats)
+
+  if (!is.null(lower_bound) || !is.null(upper_bound)) {
+    object$constrained <- TRUE
+
+    object$lower_bound <- if (!is.null(lower_bound)) {
+      lower_bound
+    } else {
+      rep(-Inf, 2)
+    }
+
+    object$upper_bound <- if (!is.null(upper_bound)) {
+      upper_bound
+    } else {
+      rep(Inf, 2)
+    }
+  }
+
+  object
+}
+
 #' 2-parameter logistic function
 #'
 #' Evaluate at a particular set of parameters the 2-parameter logistic function.
@@ -12,18 +73,45 @@
 #' which the curve is equal to its mid-point, i.e. 1 / 2.
 #'
 #' @param x numeric vector at which the logistic function is to be evaluated.
-#' @param theta numeric vector with the four parameters in the form
-#'   `c(eta, phi)`.
+#' @param theta numeric vector with the parameters in the form `c(eta, phi)`.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
 #'
 #' @export
-logistic2_function <- function(x, theta) {
+logistic2_fn <- function(x, theta) {
   eta <- theta[1]
   phi <- theta[2]
 
   1 / (1 + exp(-eta * (x - phi)))
+}
+
+#' 2-parameter logistic function
+#'
+#' Evaluate at a particular set of parameters the 2-parameter logistic function.
+#'
+#' @details
+#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#'
+#' `1 / (1 + exp(-eta * (x - phi)))`
+#'
+#' where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
+#' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
+#' which the curve is equal to its mid-point, i.e. 1 / 2.
+#'
+#' @param object object of class `logistic2`.
+#' @param x numeric vector at which the logistic function is to be evaluated.
+#' @param theta numeric vector with the parameters in the form `c(eta, phi)`.
+#'
+#' @return Numeric vector of the same length of `x` with the values of the
+#'   logistic function.
+fn.logistic2 <- function(object, x, theta) {
+  logistic2_fn(x, theta)
+}
+
+#' @rdname fn.logistic2
+fn.logistic2_fit <- function(object, x, theta) {
+  logistic2_fn(x, theta)
 }
 
 #' 2-parameter logistic function
@@ -40,16 +128,13 @@ logistic2_function <- function(x, theta) {
 #' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
 #' which the curve is equal to its mid-point, i.e. 1 / 2.
 #'
-#' @param x numeric vector at which the logistic function is to be evaluated.
-#' @param theta numeric vector with the four parameters in the form
-#'   `c(eta, phi)`.
+#' @param object object of class `logistic2`.
+#' @param theta numeric vector with the parameters in the form `c(eta, phi)`.
 #'
-#' @return List of two elements. Element `G` is a numeric matrix of dimension
-#'   length(x)-by-2, where each row is the gradient of the logistic function at
-#'   the corresponding element of `x`. Element `H` is an array of dimension
-#'   length(x)-by-2-by-2, where `H[k, , ]` is the 2-by-2 Hessian matrix at
-#'   `x[k]`.
-logistic2_gradient_hessian <- function(x, theta) {
+#' @return List of two elements: `G` the gradient and `H` the Hessian.
+gradient_hessian.logistic2 <- function(object, theta) {
+  x <- object$stats[, 1]
+
   eta <- theta[1]
   phi <- theta[2]
 
@@ -92,21 +177,21 @@ logistic2_gradient_hessian <- function(x, theta) {
 #' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
 #' which the curve is equal to its mid-point, i.e. 1 / 2.
 #'
-#' @param stats matrix of sufficient statistics.
+#' @param object object of class `logistic2`.
 #' @param known_param numeric vector with the known fixed values of the model
 #'   parameters, if any.
 #'
-#' @return Function handle `f(theta)` to evaluate the RSS associated to a
-#'   particular parameter choice `theta`.
-logistic2_rss <- function(stats) {
+#' @return Function handle `f(p)` to evaluate the RSS associated to a particular
+#'   parameter choice `p`.
+rss.logistic2 <- function(object) {
   function(theta) {
-    mu <- logistic2_function(stats[, 1], theta)
-    sum(stats[, 2] * (stats[, 3] - mu)^2)
+    mu <- fn(object, object$stats[, 1], theta)
+    sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
 
-#' @rdname logistic2_rss
-logistic2_rss_fixed <- function(stats, known_param) {
+#' @rdname rss.logistic2
+rss_fixed.logistic2 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
 
@@ -114,8 +199,8 @@ logistic2_rss_fixed <- function(stats, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
-    mu <- logistic2_function(stats[, 1], theta)
-    sum(stats[, 2] * (stats[, 3] - mu)^2)
+    mu <- fn(object, object$stats[, 1], theta)
+    sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
 
@@ -133,34 +218,34 @@ logistic2_rss_fixed <- function(stats, known_param) {
 #' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
 #' which the curve is equal to its mid-point, i.e. 1 / 2.
 #'
-#' @param stats matrix of sufficient statistics.
+#' @param object object of class `logistic2`.
 #' @param known_param numeric vector with the known fixed values of the model
 #'   parameters, if any.
 #'
 #' @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #'   the RSS associated to a particular parameter choice `theta`.
-logistic2_rss_gradient_hessian <- function(stats) {
+rss_gradient_hessian.logistic2 <- function(object) {
   function(theta) {
-    mu <- logistic2_function(stats[, 1], theta)
-    mu_gradient_hessian <- logistic2_gradient_hessian(stats[, 1], theta)
+    mu <- fn(object, object$stats[, 1], theta)
+    mu_gradient_hessian <- gradient_hessian(object, theta)
 
-    r <- mu - stats[, 3]
+    r <- mu - object$stats[, 3]
 
     G <- mu_gradient_hessian$G
     H <- mu_gradient_hessian$H
 
-    gradient <- stats[, 2] * r * G
+    gradient <- object$stats[, 2] * r * G
 
-    hessian <- array(0, dim = c(nrow(stats), 2, 2))
-    hessian[, , 1] <- stats[, 2] * (r * H[, , 1] + G[, 1] * G)
-    hessian[, , 2] <- stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    hessian <- array(0, dim = c(object$m, 2, 2))
+    hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
 
     list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
   }
 }
 
-#' @rdname logistic2_rss_gradient_hessian
-logistic2_rss_gradient_hessian_fixed <- function(stats, known_param) {
+#' @rdname rss_gradient_hessian.logistic2
+rss_gradient_hessian_fixed.logistic2 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
 
@@ -168,19 +253,19 @@ logistic2_rss_gradient_hessian_fixed <- function(stats, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
-    mu <- logistic2_function(stats[, 1], theta)
-    mu_gradient_hessian <- logistic2_gradient_hessian(stats[, 1], theta)
+    mu <- fn(object, object$stats[, 1], theta)
+    mu_gradient_hessian <- gradient_hessian(object, theta)
 
-    r <- mu - stats[, 3]
+    r <- mu - object$stats[, 3]
 
     G <- mu_gradient_hessian$G
     H <- mu_gradient_hessian$H
 
-    gradient <- stats[, 2] * r * G
+    gradient <- object$stats[, 2] * r * G
 
-    hessian <- array(0, dim = c(nrow(stats), 2, 2))
-    hessian[, , 1] <- stats[, 2] * (r * H[, , 1] + G[, 1] * G)
-    hessian[, , 2] <- stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    hessian <- array(0, dim = c(object$m, 2, 2))
+    hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
 
     list(
       G = apply(gradient[, idx, drop = FALSE], 2, sum),
@@ -189,39 +274,63 @@ logistic2_rss_gradient_hessian_fixed <- function(stats, known_param) {
   }
 }
 
+#' Maximum likelihood estimators
+#'
+#' Given a set of parameters, compute the maximum likelihood estimates of the
+#' lower and upper horizontal asymptotes.
+#'
+#' @param object object of class `logistic2`.
+#' @param theta vector of parameters.
+#'
+#' @return Numeric vector `theta`.
+mle_asy.logistic2 <- function(object, theta) {
+  theta
+}
+
 #' Initialize vector of parameters
 #'
 #' Given the sufficient statistics, try to guess a good approximation to the
 #' Maximum Likelihood estimator of the four parameters of the logistic function.
 #'
-#' @param stats numeric matrix of sufficient statistics.
+#' @param object object of class `logistic2`.
 #'
 #' @return Numeric vector of length 2 with a (hopefully) good starting point.
 #'
-#' @importFrom stats median
-logistic2_init <- function(stats) {
-  k <- nrow(stats)
+#' @importFrom stats lm median
+init.logistic2 <- function(object) {
+  m <- object$m
+  stats <- object$stats
+
+  linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 3]))
+  linear_coef <- linear_fit$coefficients
+
+  if (linear_coef[2, 4] > 0.2) {
+    # we are in big problems as a flat horizontal line is likely the best model
+    return(c(-10, stats[m, 1] + 1000))
+  }
+
   delta <- mean(diff(stats[, 1]))
 
-  rss <- logistic2_rss(stats)
+  rss_fn <- rss(object)
 
   eta_set <- seq(-2, -0.01, length.out = 15)
   phi_set <- seq(
-    stats[1, 1] - 0.5 * delta, stats[k, 1] + 0.5 * delta, length.out = 15
+    stats[1, 1] - 0.5 * delta, stats[m, 1] + 0.5 * delta, length.out = 15
   )
 
   theta <- c(-1, stats[which.min(abs(stats[, 3] - median(stats[, 3]))), 1])
 
-  if (stats[k, 3] > stats[1, 3]) {
+  if (linear_coef[2, 1] > 0) {
+    eta_set <- seq(0.01, 2, length.out = 15)
     theta[1] <- 1
   }
 
-  best_rss <- rss(theta)
+  best_rss <- rss_fn(theta)
 
   for (phi in phi_set) {
     for (eta in eta_set) {
       current_par <- c(eta, phi)
-      current_rss <- rss(current_par)
+      current_rss <- rss_fn(current_par)
 
       if (!is.nan(current_rss) && (current_rss < best_rss)) {
         theta <- current_par
@@ -233,132 +342,6 @@ logistic2_init <- function(stats) {
   names(theta) <- NULL
 
   theta
-}
-
-#' 2-parameter logistic fit
-#'
-#' Evaluate the Fisher information matrix at the maximum likelihood estimate.
-#'
-#' @details
-#' Let `mu(x; theta)` be the 2-parameter logistic function. We assume that our
-#' observations `y` are independent and such that
-#' `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
-#' distribution `N(0, 1)`.
-#'
-#' The 2-by-2 (symmetric) Fisher information matrix is the expected value of
-#' the negative Hessian matrix of the log-likelihood function.
-#'
-#' @param stats numeric matrix of sufficient statistics.
-#' @param n effective sample size.
-#' @param theta numeric vector with the model parameters.
-#' @param sigma estimate of the standard deviation.
-#'
-#' @return Fisher information matrix evaluated at `theta`.
-logistic2_fisher_info_normal <- function(stats, n, theta, sigma) {
-  eta <- theta[1]
-  phi <- theta[2]
-
-  b <- exp(-eta * (stats[, 1] - phi))
-
-  f <- 1 + b
-
-  q <- (stats[, 1] - phi) * b
-  r <- -eta * b
-
-  gradient <- matrix(1, nrow = nrow(stats), ncol = 2)
-
-  gradient[, 1] <- q / f^2
-  gradient[, 2] <- r / f^2
-
-  tmp <- array(0, dim = c(nrow(stats), 2, 2))
-  tmp[, , 1] <- stats[, 2] * gradient[, 1] * gradient
-  tmp[, , 2] <- stats[, 2] * gradient[, 2] * gradient
-
-  fim <- matrix(0, nrow = 3, ncol = 3)
-  fim[1:2, 1:2] <- apply(tmp, 2:3, sum)
-  fim[3, 3] <- n - 3
-  fim <- fim / sigma^2
-
-  lab <- c(names(theta), "sigma")
-  rownames(fim) <- lab
-  colnames(fim) <- lab
-
-  fim
-}
-
-#' Fit a 2-parameter logistic function
-#'
-#' Use a Newton trust-region method to fit a 2-parameter logistic function to
-#' observed data.
-#'
-#' @param stats numeric matrix of sufficient statistics.
-#' @param start starting values for the parameters.
-#' @param max_iter maximum number of iterations in the optimization algorithm.
-#' @param constraint boolean matrix with a representation of the constraints.
-#' @param lower_bound numeric vector of length 2 with the minimum admissible
-#'   values.
-#' @param upper_bound numeric vector of length 2 with the maximum admissible
-#'   values.
-#' @param known_param numeric vector of fixed known parameters.
-#'
-#' @return A list with the following components:
-#'   \describe{
-#'     \item{optimum}{maximum likelihood estimates of the model parameters.}
-#'     \item{minimum}{(local) minimum of the residual sum of squares around the
-#'      means.}
-#'     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
-#'       `FALSE` otherwise.}
-#'     \item{iterations}{total number of iterations performed by the
-#'       optimization algorithm}
-#'   }
-logistic2_ntrm <- function(stats, start, max_iter) {
-  init <- if (!is.null(start)) {
-    start
-  } else {
-    logistic2_init(stats)
-  }
-
-  fn <- logistic2_rss(stats)
-  gh <- logistic2_rss_gradient_hessian(stats)
-
-  ntrm(fn, gh, init, max_iter)
-}
-
-#' @rdname logistic2_ntrm
-logistic2_ntrm_constrained <- function(
-  stats, start, max_iter, constraint, lower_bound, upper_bound, known_param
-) {
-  init <- if (!is.null(start)) {
-    # equality constraints have the priority over the provided starting values
-    ifelse(is.na(known_param), start, known_param)
-  } else {
-    ifelse(is.na(known_param), logistic2_init(stats), known_param)
-  }
-
-  if (any(constraint[, 2])) {
-    # there are equality constraints, so we must subset the gradient and Hessian
-    idx <- which(!constraint[, 2])
-
-    fn <- logistic2_rss_fixed(stats, known_param)
-    gh <- logistic2_rss_gradient_hessian_fixed(stats, known_param)
-
-    if (all(constraint[idx, 1])) {
-      # we only have equality constraints, so after fixing the parameters what
-      # remains is an unconstrained optimization
-      ntrm(fn, gh, init[idx], max_iter)
-    } else {
-      ntrm_constrained(
-        fn, gh, init[idx], max_iter, lower_bound[idx], upper_bound[idx]
-      )
-    }
-  } else {
-    fn <- logistic2_rss(stats)
-    gh <- logistic2_rss_gradient_hessian(stats)
-
-    ntrm_constrained(
-      fn, gh, init, max_iter, lower_bound, upper_bound
-    )
-  }
 }
 
 #' 2-parameter logistic fit
@@ -375,15 +358,7 @@ logistic2_ntrm_constrained <- function(
 #' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
 #' which the curve is equal to its mid-point, i.e. 1 / 2.
 #'
-#' @param x numeric vector representing the fixed predictor variable.
-#' @param y numeric vector of observed values.
-#' @param w numeric vector of optional weights.
-#' @param start starting values for the parameters.
-#' @param max_iter maximum number of iterations in the optimization algorithm.
-#' @param lower_bound numeric vector of length 2 with the minimum admissible
-#'   value of `eta` and `phi` respectively. Values can be equal to `-Inf`.
-#' @param upper_bound numeric vector of length 4 with the maximum admissible
-#'   value of `eta` and `phi` respectively. Values can be equal to `Inf`.
+#' @param object object of class `logistic2`.
 #'
 #' @return A list with the following components:
 #'   \describe{
@@ -403,10 +378,8 @@ logistic2_ntrm_constrained <- function(
 #'     \item{residuals}{residuals, that is response minus fitted values.}
 #'     \item{weights}{vector of weights used for the fit.}
 #'   }
-logistic2_fit <- function(x, y, start, max_iter) {
-  stats <- suff_stats(x, y)
-
-  solution <- logistic2_ntrm(stats, start, max_iter)
+fit.logistic2 <- function(object) {
+  solution <- find_optimum(object)
 
   result <- list(
     converged = solution$converged,
@@ -414,25 +387,26 @@ logistic2_fit <- function(x, y, start, max_iter) {
     constrained = FALSE,
     estimated = rep(TRUE, 2),
     coefficients = solution$optimum,
-    rss = sum(stats[, 2] * stats[, 4]) + solution$minimum,
-    df.residual = length(y) - 2,
-    fitted.values = logistic2_function(x, solution$optimum)
+    rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
+    df.residual = length(object$y) - 2,
+    fitted.values = logistic2_fn(object$x, solution$optimum),
+    weights = object$w
   )
 
-  result$residuals <- y - result$fitted.values
+  result$residuals <- object$y - result$fitted.values
 
   param_names <- c("eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
+  class(result) <- "logistic2_fit"
+
   result
 }
 
-#' @rdname logistic2_fit
-logistic2_fit_constrained <- function(
-  x, y, start, max_iter, lower_bound, upper_bound
-) {
+#' @rdname fit.logistic2
+fit_constrained.logistic2 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
   # second column is for equality parameters
@@ -440,10 +414,10 @@ logistic2_fit_constrained <- function(
   constraint <- matrix(FALSE, 2, 3)
 
   for (i in seq_len(2)) {
-    lb_is_inf <- is.infinite(lower_bound[i])
-    ub_is_inf <- is.infinite(upper_bound[i])
+    lb_is_inf <- is.infinite(object$lower_bound[i])
+    ub_is_inf <- is.infinite(object$upper_bound[i])
 
-    if (lower_bound[i] == upper_bound[i]) {
+    if (object$lower_bound[i] == object$upper_bound[i]) {
       constraint[i, 2] <- TRUE
     } else if (!lb_is_inf || !ub_is_inf) {
       constraint[i, 3] <- TRUE
@@ -452,15 +426,11 @@ logistic2_fit_constrained <- function(
     }
   }
 
-  known_param <- ifelse(constraint[, 2], lower_bound, NA_real_)
+  known_param <- ifelse(constraint[, 2], object$lower_bound, NA_real_)
 
-  stats <- suff_stats(x, y)
+  solution <- find_optimum_constrained(object, constraint, known_param)
 
-  solution <- logistic2_ntrm_constrained(
-    stats, start, max_iter, constraint, lower_bound, upper_bound, known_param
-  )
-
-  theta <- lower_bound
+  theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
 
   estimated <- !constraint[, 2]
@@ -471,157 +441,128 @@ logistic2_fit_constrained <- function(
     constrained = !all(constraint[estimated, 1]),
     estimated = estimated,
     coefficients = theta,
-    rss = sum(stats[, 2] * stats[, 4]) + solution$minimum,
-    df.residual = length(y) - sum(estimated),
-    fitted.values = logistic2_function(x, theta)
+    rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
+    df.residual = length(object$y) - sum(estimated),
+    fitted.values = logistic2_fn(object$x, theta),
+    weights = object$w
   )
 
-  result$residuals <- y - result$fitted.values
+  result$residuals <- object$y - result$fitted.values
 
   param_names <- c("eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
+
+  class(result) <- "logistic2_fit"
 
   result
 }
 
-#' @rdname logistic2_fit
-logistic2_fit_weighted <- function(x, y, w, start, max_iter) {
-  w_zero <- w == 0
-  w_positive <- !w_zero
+#' 2-parameter logistic fit
+#'
+#' Evaluate the Fisher information matrix at the maximum likelihood estimate.
+#'
+#' @details
+#' Let `mu(x; theta)` be the 2-parameter logistic function. We assume that our
+#' observations `y` are independent and such that
+#' `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
+#' distribution `N(0, 1)`.
+#'
+#' The 2-by-2 (symmetric) Fisher information matrix is the expected value of
+#' the negative Hessian matrix of the log-likelihood function.
+#'
+#' @param object object of class `logistic2`.
+#' @param theta numeric vector with the model parameters.
+#' @param sigma estimate of the standard deviation.
+#'
+#' @return Fisher information matrix evaluated at `theta`.
+fisher_info.logistic2 <- function(object, theta, sigma) {
+  eta <- theta[1]
+  phi <- theta[2]
 
-  if (any(w_zero)) {
-    w <- w[w_positive]
-    x <- x[w_positive]
-    y <- y[w_positive]
+  b <- exp(-eta * (object$stats[, 1] - phi))
 
-    if (length(y) == 0) {
-      # all cases have weight zero
-      return(
-        list(
-          converged = FALSE,
-          iterations = 0L,
-          constrained = FALSE,
-          estimated = rep(NA_real_, 2),
-          coefficients = rep(NA_real_, 2),
-          rss = NA_real_,
-          df.residual = 0L,
-          fitted.values = numeric(0),
-          residuals = numeric(0),
-          weights = numeric(0)
-        )
-      )
-    }
-  }
+  f <- 1 + b
 
-  stats <- suff_stats_weighted(x, y, w)
+  q <- (object$stats[, 1] - phi) * b
+  r <- -eta * b
 
-  solution <- logistic2_ntrm(stats, start, max_iter)
+  gradient <- matrix(1, nrow = object$m, ncol = 2)
 
-  result <- list(
-    converged = solution$converged,
-    iterations = solution$iterations,
-    constrained = FALSE,
-    estimated = rep(TRUE, 2),
-    coefficients = solution$optimum,
-    rss = sum(stats[, 2] * stats[, 4]) + solution$minimum,
-    df.residual = length(y) - 2,
-    fitted.values = logistic2_function(x, solution$optimum),
-    weights = w
-  )
+  gradient[, 1] <- q / f^2
+  gradient[, 2] <- r / f^2
 
-  result$residuals <- y - result$fitted.values
+  tmp <- array(0, dim = c(object$m, 2, 2))
+  tmp[, , 1] <- object$stats[, 2] * gradient[, 1] * gradient
+  tmp[, , 2] <- object$stats[, 2] * gradient[, 2] * gradient
 
-  param_names <- c("eta", "phi")
+  fim <- matrix(0, nrow = 3, ncol = 3)
+  fim[1:2, 1:2] <- apply(tmp, 2:3, sum)
+  fim[3, 3] <- object$n - 3
+  fim <- fim / sigma^2
 
-  names(result$coefficients) <- param_names
-  names(result$estimated) <- param_names
+  lab <- c(names(theta), "sigma")
+  rownames(fim) <- lab
+  colnames(fim) <- lab
 
-  result
+  fim
 }
 
-#' @rdname logistic2_fit
-logistic2_fit_weighted_constrained <- function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
-) {
-  w_zero <- w == 0
-  w_positive <- !w_zero
+#' 2-parameter logistic fit
+#'
+#' Evaluate the normalized area under the curve (AUC) and area above the curve
+#' (AAC).
+#'
+#' @details
+#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#'
+#' `1 / (1 + exp(-eta * (x - phi)))`
+#'
+#' where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
+#' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
+#' which the curve is equal to its mid-point, i.e. 1 / 2.
+#'
+#' The area under the curve (AUC) is simply the integral of `f(x; theta)`
+#' between `lower_bound` and `upper_bound` with respect to `x`.
+#'
+#' When the interval of integration is fixed, since the maximum value the curve
+#' can attain is 1, the curve `f(x; theta)` is contained into the rectangle
+#' of height 1 and width `upper_bound - lower_bound`. The maximum area the curve
+#' can have is obviously `upper_bound - lower_bound`.
+#'
+#' The normalized AUC is simply `NAUC = AUC / (upper_bound - lower_bound)`. As a
+#' consequence, the normalized area above the curve is `NAAC = 1 - NAUC`.
+#'
+#' Default values of `lower_bound` and `upper_bound` were chosen based on common
+#' dose ranges used in the literature. They are also symmetric around zero
+#' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
+#'
+#' @param object object of class `logistic2_fit`.
+#' @param lower_bound numeric value with the lower bound of the integration
+#'   interval.
+#' @param upper_bound numeric value with the upper bound of the integration
+#'   interval.
+#'
+#' @return Numeric value with the requested area.
+#'
+#' @export
+nauc.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+  eta <- object$coefficients[1]
+  phi <- object$coefficients[2]
 
-  if (any(w_zero)) {
-    w <- w[w_positive]
-    x <- x[w_positive]
-    y <- y[w_positive]
+  t1 <- 1 + exp(-eta * (upper_bound - phi))
+  t2 <- 1 + exp(-eta * (lower_bound - phi))
 
-    if (length(y) == 0) {
-      # all cases have weight zero
-      return(
-        list(
-          converged = FALSE,
-          iterations = 0L,
-          constrained = TRUE,
-          estimated = rep(NA_real_, 2),
-          coefficients = rep(NA_real_, 2),
-          rss = NA_real_,
-          df.residual = 0L,
-          fitted.values = numeric(0),
-          residuals = numeric(0),
-          weights = numeric(0)
-        )
-      )
-    }
-  }
+  nauc <- 1 + log(t1 / t2) / (eta * (upper_bound - lower_bound))
+  names(nauc) <- NULL
 
-  # process constraints
-  # first column is for unconstrained parameters
-  # second column is for equality parameters
-  # third column is for inequality parameters
-  constraint <- matrix(FALSE, 2, 3)
+  nauc
+}
 
-  for (i in seq_len(2)) {
-    lb_is_inf <- is.infinite(lower_bound[i])
-    ub_is_inf <- is.infinite(upper_bound[i])
-
-    if (lower_bound[i] == upper_bound[i]) {
-      constraint[i, 2] <- TRUE
-    } else if (!lb_is_inf || !ub_is_inf) {
-      constraint[i, 3] <- TRUE
-    } else {
-      constraint[i, 1] <- TRUE
-    }
-  }
-
-  known_param <- ifelse(constraint[, 2], lower_bound, NA_real_)
-
-  stats <- suff_stats_weighted(x, y, w)
-
-  solution <- logistic2_ntrm_constrained(
-    stats, start, max_iter, constraint, lower_bound, upper_bound, known_param
-  )
-
-  theta <- lower_bound
-  theta[!constraint[, 2]] <- solution$optimum
-
-  estimated <- !constraint[, 2]
-
-  result <- list(
-    converged = solution$converged,
-    iterations = solution$iterations,
-    constrained = !all(constraint[estimated, 1]),
-    estimated = estimated,
-    coefficients = theta,
-    rss = sum(stats[, 2] * stats[, 4]) + solution$minimum,
-    df.residual = length(y) - sum(estimated),
-    fitted.values = logistic2_function(x, theta),
-    weights = w
-  )
-
-  result$residuals <- y - result$fitted.values
-
-  param_names <- c("eta", "phi")
-
-  names(result$coefficients) <- param_names
-  names(result$estimated) <- param_names
-
-  result
+#' @rdname nauc.logistic2_fit
+#'
+#' @export
+naac.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+  1 - nauc(object, lower_bound, upper_bound)
 }

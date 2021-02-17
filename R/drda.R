@@ -35,8 +35,8 @@
 #' ## Generalized logistic function
 #'
 #' The most general model in this package is the generalized logistic function
-#' and can be selected by setting `mean_function = "logistic6`. It is defined in
-#' this package as the 6-parameter function
+#' selected by setting `mean_function = "logistic6"`. It is defined in this
+#' package as the 6-parameter function
 #'
 #' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
@@ -90,20 +90,6 @@
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
 #' mid-point, i.e. `f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2`.
 #'
-#' ## 3-parameter logistic function
-#'
-#' There is no unique way in defining a 3-parameter logistic function because it
-#' is possible to fix either the lower asymptote or the upper asymptote. To fit
-#' a 3-parameter logistic function, simply set `mean_function = "logistic4"` and
-#' fix the desired parameter by using the `lower_bound` and `upper_bound`
-#' arguments.
-#'
-#' For example, to fit function `beta / (1 + exp(-eta * (x - phi)))` use
-#' `lower_bound = c(0, 0, -Inf, -Inf)` and `upper_bound = c(0, Inf, Inf, Inf))`.
-#' To fit function `alpha + 1 / (1 + exp(-eta * (x - phi)))` use
-#' `lower_bound = c(-Inf, 1, -Inf, -Inf)` and
-#' `upper_bound = c(Inf, 1, Inf, Inf))`.
-#'
 #' ## 2-parameter logistic function
 #'
 #' The 2-parameter logistic function can be selected by setting
@@ -117,20 +103,6 @@
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
 #' mid-point, i.e. `f(phi; eta, phi) = 1 / 2`.
-#'
-#' ## 1-parameter logistic function
-#'
-#' There is no unique way in defining a 1-parameter logistic function because it
-#' is possible to fix either `eta` or `phi`. To fit a 1-parameter logistic
-#' function, simply set `mean_function = "logistic2"` and fix the desired
-#' parameter by using the `lower_bound` and `upper_bound` arguments.
-#'
-#' For example, to fit function `1 / (1 + exp(-eta * x))` use
-#' `lower_bound = c(-Inf, 0)` and `upper_bound = c(Inf, 0))`.
-#' To fit function `1 + 1 / (1 + exp(-(x - phi)))` use
-#' `lower_bound = c(1, -Inf)` and `upper_bound = c(1, Inf))`.
-#' To fit function `1 + 1 / (1 + exp(x - phi))` use
-#' `lower_bound = c(-1, -Inf)` and `upper_bound = c(-1, Inf))`.
 #'
 #' ## Gompertz function
 #'
@@ -147,8 +119,8 @@
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
 #'
-#' @return An object of class `drda`, that is a list containing the following
-#'   components:
+#' @return An object of class `drda` and `model_fit`, where `model` is the
+#' chosen mean function. It is a list containing the following components:
 #'   \describe{
 #'     \item{converged}{boolean value assessing if the optimization algorithm
 #'       converged or not.}
@@ -211,33 +183,50 @@ drda <- function(
   # `a` as our `x` variable
   x <- model_matrix[, attr(model_matrix, "assign") == 1, drop = TRUE]
   n <- length(x)
+
   if (n == 0) {
-    stop("0 (non-NA) cases")
+    stop("0 (non-NA) cases", call. = FALSE)
   }
 
   y <- model.response(model_frame, "numeric")
 
   if (is.matrix(y)) {
-    stop("response variable must be a vector")
+    stop("response variable must be a vector", call. = FALSE)
   }
 
   if (length(y) != n) {
-    stop("incompatible dimensions")
+    stop("incompatible dimensions", call. = FALSE)
   }
 
   w <- as.vector(model.weights(model_frame))
 
   if (!is.null(w)) {
     if (!is.numeric(w)) {
-      stop("'weights' must be a numeric vector")
+      stop("'weights' must be a numeric vector", call. = FALSE)
     }
 
     if (length(w) != n) {
-      stop("incompatible dimensions")
+      stop("incompatible dimensions", call. = FALSE)
     }
 
     if (any(w < 0 | is.na(w))) {
-      stop("missing or negative weights not allowed")
+      stop("missing or negative weights not allowed", call. = FALSE)
+    }
+  } else {
+    w <- rep(1, length(y))
+  }
+
+  w_zero <- w == 0
+
+  if (any(w_zero)) {
+    w_positive <- !w_zero
+
+    x <- x[w_positive]
+    y <- y[w_positive]
+    w <- w[w_positive]
+
+    if (length(y) == 0) {
+      stop("weights cannot be all zero", call. = FALSE)
     }
   }
 
@@ -290,56 +279,42 @@ drda <- function(
     }
   }
 
-  result <- switch(mean_function,
-    logistic2 = drda_fit_logistic2(
-      x, y, start, max_iter, lower_bound, upper_bound, w
+  object <- switch(mean_function,
+    logistic2 = logistic2_new(
+      x, y, w, start, max_iter, lower_bound, upper_bound
     ),
-    logistic4 = drda_fit_logistic4(
-      x, y, start, max_iter, lower_bound, upper_bound, w
+    logistic4 = logistic4_new(
+      x, y, w, start, max_iter, lower_bound, upper_bound
     ),
-    logistic5 = drda_fit_logistic5(
-      x, y, start, max_iter, lower_bound, upper_bound, w
+    logistic5 = logistic5_new(
+      x, y, w, start, max_iter, lower_bound, upper_bound
     ),
-    logistic6 = drda_fit_logistic6(
-      x, y, start, max_iter, lower_bound, upper_bound, w
+    logistic6 = logistic6_new(
+      x, y, w, start, max_iter, lower_bound, upper_bound
     )
   )
 
-  n <- length(result$fitted.values)
-
-  log_w <- if (is.null(result$weights)) {
-    0
-  } else {
-    sum(log(result$weights))
+  if (is.null(object)) {
+    stop(
+      "provided 'mean_function' is wrongly typed or not yet available",
+      call. = FALSE
+    )
   }
 
-  stats <- if (is.null(w)) {
-    suff_stats(x, y)
+  result <- if (!object$constrained) {
+    fit(object)
   } else {
-    suff_stats_weighted(x, y, w)
+    fit_constrained(object)
   }
 
+  log_w <- sum(log(result$weights))
   v <- variance_normal(result$rss, result$df.residual)
 
-  result$n <- n
+  result$n <- object$n
   result$sigma <- sqrt(v)
-  result$loglik <- loglik_normal(result$rss, n, log_w)
+  result$loglik <- loglik_normal(result$rss, object$n, log_w)
 
-  result$fisher.info <- switch(mean_function,
-    logistic2 = logistic2_fisher_info_normal(
-      stats, result$n, result$coefficients, result$sigma
-    ),
-    logistic4 = logistic4_fisher_info_normal(
-      stats, result$n, result$coefficients, result$sigma
-    ),
-    logistic5 = logistic5_fisher_info_normal(
-      stats, result$n, result$coefficients, result$sigma
-    ),
-    logistic6 = logistic6_fisher_info_normal(
-      stats, result$n, result$coefficients, result$sigma
-    )
-  )
-
+  result$fisher.info <- fisher_info(object, result$coefficients, result$sigma)
   result$vcov <- approx_vcov(result$fisher.info)
 
   result$call <- match.call()
@@ -347,461 +322,7 @@ drda <- function(
   result$model <- model_frame
   result$na.action <- attr(model_frame, "na.action")
 
-  class(result) <- "drda"
-
-  result
-}
-
-#' Fit dose-response data
-#'
-#' Use a Newton trust-region method to fit a logistic function to dose-response
-#' data.
-#'
-#' @param x numeric vector representing the fixed predictor variable.
-#' @param y numeric vector of observed values.
-#' @param start starting values for the parameters.
-#' @param max_iter maximum number of iterations in the optimization algorithm.
-#' @param lower_bound numeric vector with the minimum admissible values of the
-#'   parameters.
-#' @param upper_bound numeric vector with the maximum admissible values of the
-#'   parameters.
-#' @param w an optional vector of weights to be used in the fitting
-#'   process.
-#'
-#' @return A list with the following components:
-#'   \describe{
-#'     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
-#'       `FALSE` otherwise.}
-#'     \item{iterations}{total number of iterations performed by the
-#'       optimization algorithm}
-#'     \item{constrained}{boolean. `TRUE` if optimization was constrained,
-#'       `FALSE` otherwise.}
-#'     \item{estimated}{boolean vector indicating which parameters were
-#'       estimated from the data.}
-#'     \item{coefficients}{maximum likelihood estimates of the model
-#'       parameters.}
-#'     \item{rss}{minimum value (found) of the residual sum of squares.}
-#'     \item{df.residual}{residual degrees of freedom.}
-#'     \item{fitted.values}{fitted mean values.}
-#'     \item{residuals}{residuals, that is response minus fitted values.}
-#'     \item{weights}{vector of weights used for the fit.}
-#'   }
-#'
-#' @name drda_fit_logistic
-drda_fit_logistic6 <-  function(
-  x, y, start, max_iter, lower_bound, upper_bound, w
-) {
-  if (!is.null(start)) {
-    if (length(start) != 6) {
-      stop("'start' must be of length 6", call. = FALSE)
-    }
-
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' is smaller than 'alpha'", call. = FALSE)
-    }
-
-    if (start[3] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
-    }
-
-    if (start[5] <= 0) {
-      stop("parameter 'nu' cannot be negative nor zero", call. = FALSE)
-    }
-
-    if (start[6] <= 0) {
-      stop("parameter 'xi' cannot be negative nor zero", call. = FALSE)
-    }
-
-    start[2] <- log(start[2] - start[1])
-    start[5] <- log(start[5])
-    start[6] <- log(start[6])
-  }
-
-  if (!is.null(lower_bound)) {
-    if (length(lower_bound) != 6) {
-      stop("'lower_bound' and 'upper_bound' must be of length 6", call. = FALSE)
-    }
-
-    if (lower_bound[2] < lower_bound[1]) {
-      stop(
-        "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    lower_bound[2] <- if (
-      !is.infinite(lower_bound[1]) && !is.infinite(lower_bound[2])
-    ) {
-      log(lower_bound[2] - lower_bound[1])
-    } else {
-      -Inf
-    }
-
-    lower_bound[5] <- if (lower_bound[5] > 0) {
-      log(lower_bound[5])
-    } else {
-      -Inf
-    }
-
-    lower_bound[6] <- if (lower_bound[6] > 0) {
-      log(lower_bound[6])
-    } else {
-      -Inf
-    }
-  }
-
-  if (!is.null(upper_bound)) {
-    if (length(upper_bound) != 6) {
-      stop("'lower_bound' and 'upper_bound' must be of length 6", call. = FALSE)
-    }
-
-    if (upper_bound[2] < upper_bound[1]) {
-      stop(
-        "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    upper_bound[2] <- if (
-      !is.infinite(upper_bound[1]) && !is.infinite(upper_bound[2])
-    ) {
-      log(upper_bound[2] - upper_bound[1])
-    } else {
-      Inf
-    }
-
-    upper_bound[5] <- if (upper_bound[5] > 0) {
-      log(upper_bound[5])
-    } else {
-      -Inf
-    }
-
-    upper_bound[6] <- if (upper_bound[6] > 0) {
-      log(upper_bound[6])
-    } else {
-      -Inf
-    }
-  }
-
-  result <- if (is.null(w)) {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic6_fit(x, y, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 6)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 6)
-      }
-
-      logistic6_fit_constrained(
-        x, y, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  } else {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic6_fit_weighted(x, y, w, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 6)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 6)
-      }
-
-      logistic6_fit_weighted_constrained(
-        x, y, w, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  }
-
-  result$mean_function <- "logistic6"
-
-  result
-}
-
-#' @rdname drda_fit_logistic
-drda_fit_logistic5 <-  function(
-  x, y, start, max_iter, lower_bound, upper_bound, w
-) {
-  if (!is.null(start)) {
-    if (length(start) != 5) {
-      stop("'start' must be of length 5", call. = FALSE)
-    }
-
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' is smaller than 'alpha'", call. = FALSE)
-    }
-
-    if (start[3] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
-    }
-
-    if (start[5] <= 0) {
-      stop("parameter 'nu' cannot be negative nor zero", call. = FALSE)
-    }
-
-    start[2] <- log(start[2] - start[1])
-    start[5] <- log(start[5])
-  }
-
-  if (!is.null(lower_bound)) {
-    if (length(lower_bound) != 5) {
-      stop("'lower_bound' and 'upper_bound' must be of length 5", call. = FALSE)
-    }
-
-    if (lower_bound[2] < lower_bound[1]) {
-      stop(
-        "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    lower_bound[2] <- if (
-      !is.infinite(lower_bound[1]) && !is.infinite(lower_bound[2])
-    ) {
-      log(lower_bound[2] - lower_bound[1])
-    } else {
-      -Inf
-    }
-
-    lower_bound[5] <- if (lower_bound[5] > 0) {
-      log(lower_bound[5])
-    } else {
-      -Inf
-    }
-  }
-
-  if (!is.null(upper_bound)) {
-    if (length(upper_bound) != 5) {
-      stop("'lower_bound' and 'upper_bound' must be of length 5", call. = FALSE)
-    }
-
-    if (upper_bound[2] < upper_bound[1]) {
-      stop(
-        "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    upper_bound[2] <- if (
-      !is.infinite(upper_bound[1]) && !is.infinite(upper_bound[2])
-    ) {
-      log(upper_bound[2] - upper_bound[1])
-    } else {
-      Inf
-    }
-
-    upper_bound[5] <- if (upper_bound[5] > 0) {
-      log(upper_bound[5])
-    } else {
-      -Inf
-    }
-  }
-
-  result <- if (is.null(w)) {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic5_fit(x, y, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 5)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 5)
-      }
-
-      logistic5_fit_constrained(
-        x, y, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  } else {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic5_fit_weighted(x, y, w, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 5)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 5)
-      }
-
-      logistic5_fit_weighted_constrained(
-        x, y, w, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  }
-
-  result$mean_function <- "logistic5"
-
-  result
-}
-
-#' @rdname drda_fit_logistic
-drda_fit_logistic4 <-  function(
-  x, y, start, max_iter, lower_bound, upper_bound, w
-) {
-  if (!is.null(start)) {
-    if (length(start) != 4) {
-      stop("'start' must be of length 4", call. = FALSE)
-    }
-
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' is smaller than 'alpha'", call. = FALSE)
-    }
-
-    if (start[3] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
-    }
-
-    start[2] <- log(start[2] - start[1])
-  }
-
-  if (!is.null(lower_bound)) {
-    if (length(lower_bound) != 4) {
-      stop("'lower_bound' and 'upper_bound' must be of length 4", call. = FALSE)
-    }
-
-    if (lower_bound[2] < lower_bound[1]) {
-      stop(
-        "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    lower_bound[2] <- if (
-      !is.infinite(lower_bound[1]) && !is.infinite(lower_bound[2])
-    ) {
-      log(lower_bound[2] - lower_bound[1])
-    } else {
-      -Inf
-    }
-  }
-
-  if (!is.null(upper_bound)) {
-    if (length(upper_bound) != 4) {
-      stop("'lower_bound' and 'upper_bound' must be of length 4", call. = FALSE)
-    }
-
-    if (upper_bound[2] < upper_bound[1]) {
-      stop(
-        "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    upper_bound[2] <- if (
-      !is.infinite(upper_bound[1]) && !is.infinite(upper_bound[2])
-    ) {
-      log(upper_bound[2] - upper_bound[1])
-    } else {
-      Inf
-    }
-  }
-
-  result <- if (is.null(w)) {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic4_fit(x, y, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 4)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 4)
-      }
-
-      logistic4_fit_constrained(
-        x, y, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  } else {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic4_fit_weighted(x, y, w, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 4)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 4)
-      }
-
-      logistic4_fit_weighted_constrained(
-        x, y, w, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  }
-
-  result$mean_function <- "logistic4"
-
-  result
-}
-
-#' @rdname drda_fit_logistic
-drda_fit_logistic2 <-  function(
-  x, y, start, max_iter, lower_bound, upper_bound, w
-) {
-  if (!is.null(start)) {
-    if (length(start) != 2) {
-      stop("'start' must be of length 2", call. = FALSE)
-    }
-
-    if (start[1] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
-    }
-  }
-
-  if (!is.null(lower_bound)) {
-    if (length(lower_bound) != 2) {
-      stop("'lower_bound' and 'upper_bound' must be of length 2", call. = FALSE)
-    }
-  }
-
-  if (!is.null(upper_bound)) {
-    if (length(upper_bound) != 2) {
-      stop("'lower_bound' and 'upper_bound' must be of length 2", call. = FALSE)
-    }
-  }
-
-  result <- if (is.null(w)) {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic2_fit(x, y, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 2)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 2)
-      }
-
-      logistic2_fit_constrained(
-        x, y, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  } else {
-    if (is.null(lower_bound) && is.null(upper_bound)) {
-      logistic2_fit_weighted(x, y, w, start, max_iter)
-    } else {
-      if (is.null(lower_bound)) {
-        lower_bound <- rep(-Inf, 2)
-      }
-
-      if (is.null(upper_bound)) {
-        upper_bound <- rep(Inf, 2)
-      }
-
-      logistic2_fit_weighted_constrained(
-        x, y, w, start, max_iter, lower_bound, upper_bound
-      )
-    }
-  }
-
-  result$mean_function <- "logistic2"
+  class(result) <- c("drda", class(result))
 
   result
 }
@@ -1142,12 +663,9 @@ plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
     phi <- theta[4]
   }
 
-  f <- switch(x$mean_function,
-    logistic2 = function(z) logistic2_function(z, theta),
-    logistic4 = function(z) logistic4_function(z, theta),
-    logistic5 = function(z) logistic5_function(z, theta),
-    logistic6 = function(z) logistic6_function(z, theta)
-  )
+  f <- function(z) {
+    fn(x, z, theta)
+  }
 
   xv <- x$model[, 2]
   yv <- x$model[, 1]
@@ -1217,12 +735,7 @@ predict.drda <- function(object, x, ...) {
     stop("variable `x` is not a numeric vector")
   }
 
-  switch(object$mean_function,
-    logistic2 = logistic2_function(x, object$coefficients),
-    logistic4 = logistic4_function(x, object$coefficients),
-    logistic5 = logistic5_function(x, object$coefficients),
-    logistic6 = logistic6_function(x, object$coefficients)
-  )
+  fn(object, x, object$coefficients)
 }
 
 #' @export
@@ -1353,9 +866,9 @@ summary.drda <- function(object, ...) {
 
   object$param <- c(object$coefficients, sigma = object$sigma)
 
-  if (object$mean_function == "logistic2") {
+  if (inherits(object, "logistic2_fit")) {
     names(object$param) <- c("Growth rate", "Midpoint at", "sigma")
-  } else if (object$mean_function == "logistic4") {
+  } else if (inherits(object, "logistic4_fit")) {
     names(object$param) <- c(
       "Lower bound", "Upper bound", "Growth rate", "Midpoint at",
       "Residual std err."

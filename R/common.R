@@ -8,41 +8,15 @@
 #' @param w numeric vector of weights.
 #'
 #' @return Numeric matrix where the first column are the sorted unique values of
-#'   input vector `x`, second column are the corresponding number of
-#'   observations (or total weights), third column are the (weighted) sample
-#'   means, and fourth column are the uncorrected (weighted) sample variances.
-suff_stats <- function(x, y) {
+#'   input vector `x`, second column are the total weights (sample size if no
+#'   weights), third column are the (weighted) sample means, and fourth column
+#'   are the uncorrected (weighted) sample variances.
+suff_stats <- function(x, y, w) {
   unique_x <- sort(unique(x))
   k <- length(unique_x)
 
   stats <- matrix(NA_real_, nrow = k, ncol = 4)
   colnames(stats) <- c("x", "n", "m", "v")
-
-  for (i in seq_len(k)) {
-    idx <- x == unique_x[i]
-
-    z <- y[idx]
-
-    n <- sum(idx)
-    m <- mean(z)
-    v <- sum((z - m)^2) / n
-
-    stats[i, 1] <- unique_x[i]
-    stats[i, 2] <- n
-    stats[i, 3] <- m
-    stats[i, 4] <- v
-  }
-
-  stats
-}
-
-#' @rdname suff_stats
-suff_stats_weighted <- function(x, y, w) {
-  unique_x <- sort(unique(x))
-  k <- length(unique_x)
-
-  stats <- matrix(NA_real_, nrow = k, ncol = 4)
-  colnames(stats) <- c("x", "w", "m", "v")
 
   for (i in seq_len(k)) {
     idx <- x == unique_x[i]
@@ -112,4 +86,76 @@ approx_vcov <- function(fim) {
   colnames(vcov) <- lab
 
   vcov
+}
+
+#' Fit a function to observed data
+#'
+#' Use a Newton trust-region method to fit a function to observed data.
+#'
+#' @param object object of some model class.
+#' @param constraint boolean matrix with constraint specifications.
+#' @param known_param numeric vector of fixed known parameters.
+#'
+#' @return A list with the following components:
+#'   \describe{
+#'     \item{optimum}{maximum likelihood estimates of the model parameters.}
+#'     \item{minimum}{(local) minimum of the residual sum of squares around the
+#'      means.}
+#'     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
+#'       `FALSE` otherwise.}
+#'     \item{iterations}{total number of iterations performed by the
+#'       optimization algorithm}
+#'   }
+find_optimum <- function(object) {
+  init <- if (!is.null(object$start)) {
+    object$start
+  } else {
+    init(object)
+  }
+
+  rss_fn <- rss(object)
+  rss_gh <- rss_gradient_hessian(object)
+
+  update_fn <- function(theta) {
+    mle_asy(object, theta)
+  }
+
+  ntrm(rss_fn, rss_gh, init, object$max_iter, update_fn)
+}
+
+#' @rdname find_optimum
+find_optimum_constrained <- function(object, constraint, known_param) {
+  init <- if (!is.null(object$start)) {
+    # equality constraints have the priority over the provided starting values
+    ifelse(is.na(known_param), object$start, known_param)
+  } else {
+    ifelse(is.na(known_param), init(object), known_param)
+  }
+
+  if (any(constraint[, 2])) {
+    # there are equality constraints, so we must subset the gradient and Hessian
+    idx <- which(!constraint[, 2])
+
+    rss_fn <- rss_fixed(object, known_param)
+    rss_gh <- rss_gradient_hessian_fixed(object, known_param)
+
+    if (all(constraint[idx, 1])) {
+      # we only have equality constraints, so after fixing the parameters what
+      # remains is an unconstrained optimization
+      ntrm(rss_fn, rss_gh, init[idx], object$max_iter)
+    } else {
+      ntrm_constrained(
+        rss_fn, rss_gh, init[idx], object$max_iter, object$lower_bound[idx],
+        object$upper_bound[idx]
+      )
+    }
+  } else {
+    rss_fn <- rss(object)
+    rss_gh <- rss_gradient_hessian(object)
+
+    ntrm_constrained(
+      rss_fn, rss_gh, init, object$max_iter, object$lower_bound,
+      object$upper_bound
+    )
+  }
 }

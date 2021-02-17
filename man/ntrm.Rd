@@ -4,7 +4,7 @@
 \alias{ntrm}
 \title{Newton with Trust Region Method}
 \usage{
-ntrm(fn, gh, init, max_iter)
+ntrm(fn, gh, init, max_iter, update_fn = NULL)
 }
 \arguments{
 \item{fn}{function handle to evaluate the function to minimize.}
@@ -15,6 +15,9 @@ function to minimize.}
 \item{init}{numeric vector of starting values.}
 
 \item{max_iter}{integer value for the maximum number of iterations.}
+
+\item{update_fn}{function handle to update a subset of parameters with the
+actual optimum.}
 }
 \value{
 A list containing the value \code{optimum} for which \code{f(optimum)} is

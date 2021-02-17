@@ -188,6 +188,8 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 #'   function to minimize.
 #' @param init numeric vector of starting values.
 #' @param max_iter integer value for the maximum number of iterations.
+#' @param update_fn function handle to update a subset of parameters with the
+#'   actual optimum.
 #'
 #' @return A list containing the value `optimum` for which `f(optimum)` is
 #'   minimum, the value `minimum` containing `f(optimum)`, and a boolean
@@ -205,7 +207,7 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 #' Optim: A mathematical optimization package for Julia.
 #' **Journal of Open Source Software**, 3(24):615, 2018.
 #' doi: 10.21105/joss.00615.
-ntrm <- function(fn, gh, init, max_iter) {
+ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
   eps <- 1.0e-10
   converged <- FALSE
 
@@ -218,6 +220,11 @@ ntrm <- function(fn, gh, init, max_iter) {
   x_converged <- FALSE
   g_converged <- FALSE
   for (i in seq_len(max_iter)) {
+    if ((i %% 10 == 0) && !is.null(update_fn)) {
+      cur_optimum <- update_fn(cur_optimum)
+      cur_minimum <- fn(cur_optimum)
+    }
+
     gradient_hessian <- gh(cur_optimum)
 
     g_converged <- ntrm_max_abs(gradient_hessian$G) <= eps
@@ -280,7 +287,7 @@ ntrm <- function(fn, gh, init, max_iter) {
 
   # did it converge at the very last iteration?
   if (i == max_iter) {
-    g_converged <- ntrm_max_abs(gradient_hessian(cur_optimum)$G) <= eps
+    g_converged <- ntrm_max_abs(gh(cur_optimum)$G) <= eps
     if (x_converged || g_converged || (f_converged > 10)) {
       converged <- TRUE
     }

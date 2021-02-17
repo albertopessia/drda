@@ -1,14 +1,187 @@
 context("2-parameter logistic - core functions")
 
+test_that("Constructor", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  )
+
+  n <- length(y)
+
+  w <- rep(1, n)
+
+  stats <- matrix(
+    c(
+      -6.908, -4.605, -2.303, 0, 2.303, 4.605, 6.908, 3, 2, 2, 5, 3, 4, 1,
+      0.932, 0.902, 0.89, 0.5542, 0.2556666667, 0.16425, 0.092, 0.0014186667,
+      0.002116, 0.000049, 0.00160656, 0.0000862222, 0.0014676875, 0
+    ),
+    nrow = 7,
+    ncol = 4
+  )
+  colnames(stats) <- c("x", "n", "m", "v")
+
+  start <- c(-1, 0)
+
+  max_iter <- 10000
+
+  lower_bound <- c(-Inf, -10)
+  upper_bound <- c(0, Inf)
+
+  object <- logistic2_new(x, y, w, NULL, max_iter, NULL, NULL)
+
+  expect_true(inherits(object, "logistic2"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_false(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_null(object$start)
+  expect_null(object$lower_bound)
+  expect_null(object$upper_bound)
+
+  object <- logistic2_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+
+  expect_true(inherits(object, "logistic2"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_true(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_equal(object$start, start)
+  expect_equal(object$lower_bound, lower_bound)
+  expect_equal(object$upper_bound, upper_bound)
+
+  w <- c(
+    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
+    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
+  )
+
+  stats <- matrix(
+    c(
+      -6.908, -4.605, -2.303, 0.0, 2.303, 4.605, 6.908, 4.549, 0.96, 1.126,
+      3.756, 1.797, 2.61, 0.157, 0.9353000659, 0.948, 0.8836838366, 0.55221459,
+      0.2606149137, 0.1807233716, 0.092, 0.0014467345, 0, 0.0000091061,
+      0.0007707846, 0.0000597738, 0.0014230308, 0
+    ),
+    nrow = 7,
+    ncol = 4
+  )
+  colnames(stats) <- c("x", "n", "m", "v")
+
+  object <- logistic2_new(x, y, w, NULL, max_iter, NULL, NULL)
+
+  expect_true(inherits(object, "logistic2"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_false(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_null(object$start)
+  expect_null(object$lower_bound)
+  expect_null(object$upper_bound)
+
+  object <- logistic2_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+
+  expect_true(inherits(object, "logistic2"))
+  expect_equal(object$x, x)
+  expect_equal(object$y, y)
+  expect_equal(object$w, w)
+  expect_equal(object$n, n)
+  expect_equal(object$m, 7)
+  expect_equal(object$stats, stats)
+  expect_true(object$constrained)
+  expect_equal(object$max_iter, max_iter)
+  expect_equal(object$start, start)
+  expect_equal(object$lower_bound, lower_bound)
+  expect_equal(object$upper_bound, upper_bound)
+})
+
+test_that("Constructor: errors", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  )
+
+  w <- c(
+    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
+    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
+  )
+
+  max_iter <- 10000
+
+  expect_error(
+    logistic2_new(x, y, w, c(-1, 0, 1), max_iter, NULL, NULL),
+    "'start' must be of length 2"
+  )
+
+  expect_error(
+    logistic2_new(x, y, w, c(0, 0), max_iter, NULL, NULL),
+    "parameter 'eta' cannot be initialized to zero"
+  )
+
+  expect_error(
+    logistic2_new(x, y, w, NULL, max_iter, rep(-Inf, 3), rep(Inf, 3)),
+    "'lower_bound' must be of length 2"
+  )
+
+  expect_error(
+    logistic2_new(x, y, w, NULL, max_iter, rep(-Inf, 3), rep(Inf, 2)),
+    "'lower_bound' must be of length 2"
+  )
+
+  expect_error(
+    logistic2_new(x, y, w, NULL, max_iter, rep(-Inf, 2), rep(Inf, 3)),
+    "'upper_bound' must be of length 2"
+  )
+})
+
 test_that("Function value", {
   x <- -log(c(1000, 100, 10, 1, 0.1, 0.01))
   theta <- c(-2, -3 / 2)
 
-  value <- logistic2_function(x, theta)
   true_value <- c(
     0.99997991486649750, 0.99799547250877509, 0.83273975003305088,
     0.047425873177566781, 0.00049762293180936533, 4.9786820493880368e-06
   )
+
+  value <- logistic2_fn(x, theta)
+
+  expect_type(value, "double")
+  expect_length(value, 6)
+  expect_equal(value, true_value)
+
+  object <- structure(
+    list(stats = matrix(x, nrow = 6, ncol = 1)),
+    class = "logistic2"
+  )
+
+  value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
   expect_length(value, 6)
@@ -50,7 +223,12 @@ test_that("Gradient and Hessian", {
     dim = c(6, 2, 2)
   )
 
-  gradient_hessian <- logistic2_gradient_hessian(x, theta)
+  object <- structure(
+    list(stats = matrix(x, nrow = 6, ncol = 1)),
+    class = "logistic2"
+  )
+
+  gradient_hessian <- gradient_hessian(object, theta)
 
   expect_type(gradient_hessian, "list")
   expect_type(gradient_hessian$G, "double")
@@ -67,37 +245,38 @@ context("2-parameter logistic - RSS functions")
 
 test_that("Value of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
-  theta <- c(-2, -3 / 2)
-
   n <- c(3, 3, 2, 4, 3)
-
   m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-
   v <- c(
     643663 / 450000000, 31087 / 112500000, 961 / 160000,
     177363 / 25000000, 560629 / 112500000
   )
 
-  stats <- cbind(x, n, m, v)
+  theta <- c(-2, -3 / 2)
 
   true_value <- 0.16210551379791279
 
-  rss <- logistic2_rss(stats)
+  object <- structure(
+    list(stats = cbind(x, n, m, v), m = 5),
+    class = "logistic2"
+  )
 
-  expect_type(rss, "closure")
+  rss_fn <- rss(object)
 
-  value <- rss(theta)
+  expect_type(rss_fn, "closure")
+
+  value <- rss_fn(theta)
 
   expect_type(value, "double")
   expect_length(value, 1)
   expect_equal(value, true_value)
 
   known_param <- c(NA, -3 / 2)
-  rss <- logistic2_rss_fixed(stats, known_param)
+  rss_fn <- rss_fixed(object, known_param)
 
-  expect_type(rss, "closure")
+  expect_type(rss_fn, "closure")
 
-  value <- rss(-2)
+  value <- rss_fn(-2)
 
   expect_type(value, "double")
   expect_length(value, 1)
@@ -106,18 +285,14 @@ test_that("Value of the RSS", {
 
 test_that("Gradient and Hessian of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
-  theta <- c(-2, -3 / 2)
-
   n <- c(3, 3, 2, 4, 3)
-
   m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-
   v <- c(
     643663 / 450000000, 31087 / 112500000, 961 / 160000,
     177363 / 25000000, 560629 / 112500000
   )
 
-  stats <- cbind(x, n, m, v)
+  theta <- c(-2, -3 / 2)
 
   true_gradient <- c(-0.015329328113800766, -0.070203605072346703)
 
@@ -132,11 +307,16 @@ test_that("Gradient and Hessian of the RSS", {
     ncol = 2
   )
 
-  gh <- logistic2_rss_gradient_hessian(stats)
+  object <- structure(
+    list(stats = cbind(x, n, m, v), m = 5),
+    class = "logistic2"
+  )
 
-  expect_type(gh, "closure")
+  rss_gh <- rss_gradient_hessian(object)
 
-  gradient_hessian <- gh(theta)
+  expect_type(rss_gh, "closure")
+
+  gradient_hessian <- rss_gh(theta)
 
   expect_type(gradient_hessian$G, "double")
   expect_type(gradient_hessian$H, "double")
@@ -148,11 +328,11 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$H, true_hessian)
 
   known_param <- c(NA, -3 / 2)
-  gh <- logistic2_rss_gradient_hessian_fixed(stats, known_param)
+  rss_gh <- rss_gradient_hessian_fixed(object, known_param)
 
-  expect_type(gh, "closure")
+  expect_type(rss_gh, "closure")
 
-  gradient_hessian <- gh(-2)
+  gradient_hessian <- rss_gh(-2)
 
   expect_type(gradient_hessian$G, "double")
   expect_type(gradient_hessian$H, "double")
@@ -166,31 +346,32 @@ test_that("Gradient and Hessian of the RSS", {
 
 context("2-parameter logistic - general functions")
 
-test_that("logistic2_init", {
+test_that("init", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
-  theta <- c(-2, -3 / 2)
-
   n <- c(3, 3, 2, 4, 3)
-
   m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-
   v <- c(
     643663 / 450000000, 31087 / 112500000, 961 / 160000, 177363 / 25000000,
     560629 / 112500000
   )
 
+  theta <- c(-2, -3 / 2)
+
   true_value <- c(-2.0000000000000000,-0.65788145514115560)
 
-  stats <- cbind(x, n, m, v)
+  object <- structure(
+    list(stats = cbind(x, n, m, v), m = 5),
+    class = "logistic2"
+  )
 
-  start <- logistic2_init(stats)
+  start <- init(object)
 
   expect_type(start, "double")
   expect_length(start, 2)
   expect_equal(start, true_value)
 })
 
-test_that("logistic2_fisher_info_normal", {
+test_that("fisher_info", {
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
@@ -200,21 +381,15 @@ test_that("logistic2_fisher_info_normal", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
-
-  stats <- suff_stats(x, y)
 
   n <- length(y)
 
-  theta <- c(eta = -2, phi = -3 / 2)
+  w <- rep(1, n)
 
+  theta <- c(eta = -2, phi = -3 / 2)
   sigma <- 0.05
 
   true_value <- matrix(c(
@@ -233,7 +408,12 @@ test_that("logistic2_fisher_info_normal", {
     "eta", "phi", "sigma"
   )
 
-  fim <- logistic2_fisher_info_normal(stats, n, theta, sigma)
+  object <- structure(
+    list(stats = suff_stats(x, y, w), n = n, m = 7),
+    class = "logistic2"
+  )
+
+  fim <- fisher_info(object, theta, sigma)
 
   expect_type(fim, "double")
   expect_length(fim, 3 * 3)
@@ -242,7 +422,7 @@ test_that("logistic2_fisher_info_normal", {
 
 context("2-parameter logistic - fit")
 
-test_that("logistic2_fit: fit", {
+test_that("fit", {
   max_iter <- 10000
 
   x <- round(
@@ -254,20 +434,19 @@ test_that("logistic2_fit: fit", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(eta = TRUE, phi = TRUE)
 
   theta <- c(eta = -0.48361565993858155, phi = 0.55079105348629500)
 
-  rss <- 0.061009639061112450
+  rss_value <- 0.061009639061112450
 
   fitted_values <- c(
     rep(0.973588472981552140, 3), rep(0.92367933936267508, 2),
@@ -286,30 +465,38 @@ test_that("logistic2_fit: fit", {
     0.09560641001335463, 0.04782626569077060
   )
 
-  result <- logistic2_fit(x, y, NULL, max_iter)
+  object <- logistic2_new(x, y, w, NULL, max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
-  result <- logistic2_fit(x, y, c(-1, 0), max_iter)
+  object <- logistic2_new(x, y, w, c(-1, 0), max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic2_fit_constrained: inequalities", {
+test_that("fit_constrained: inequalities", {
   max_iter <- 10000
 
   x <- round(
@@ -321,20 +508,19 @@ test_that("logistic2_fit_constrained: inequalities", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(eta = TRUE, phi = TRUE)
 
   theta <- c(eta = -0.48361565993858155, phi = 0.55079105348629500)
 
-  rss <- 0.061009639061112450
+  rss_value <- 0.061009639061112450
 
   fitted_values <- c(
     rep(0.973588472981552140, 3), rep(0.92367933936267508, 2),
@@ -353,55 +539,55 @@ test_that("logistic2_fit_constrained: inequalities", {
     0.09560641001335463, 0.04782626569077060
   )
 
-  result <- logistic2_fit_constrained(
-    x, y, NULL, max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 1)
-  )
+  object <- logistic2_new(x, y, w, NULL, max_iter, c(-1, 0), c(0, 1))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic2_fit_constrained(
-    x, y, c(-0.5, 0.5), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 1)
-  )
+  object <- logistic2_new(x, y, w, c(-0.5, 0.5), max_iter, c(-1, 0), c(0, 1))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic2_fit_constrained(
-    x, y, c(-3, -1), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 1)
-  )
+  object <- logistic2_new(x, y, w, c(-3, -1), max_iter, c(-1, 0), c(0, 1))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic2_fit_constrained: equalities", {
+test_that("fit_constrained: equalities", {
   max_iter <- 10000
 
   x <- round(
@@ -413,20 +599,19 @@ test_that("logistic2_fit_constrained: equalities", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(eta = TRUE, phi = FALSE)
 
   theta <- c(eta = -0.46193439818028055, phi = 0)
 
-  rss <- 0.099093708890039360
+  rss_value <- 0.099093708890039360
 
   fitted_values <- c(
     rep(0.96049580791205290, 3), rep(0.89351965363258953, 2),
@@ -444,55 +629,52 @@ test_that("logistic2_fit_constrained: equalities", {
     0.11251965363258953, 0.05249580791205290
   )
 
-  result <- logistic2_fit_constrained(
-    x, y, NULL, max_iter,
-    lower_bound = c(-Inf, 0),
-    upper_bound = c( Inf, 0)
-  )
+  object <- logistic2_new(x, y, w, NULL, max_iter, c(-Inf, 0), c(Inf, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
 
   # initial values with same equalities
-  result <- logistic2_fit_constrained(
-    x, y, c(-1, 0), max_iter,
-    lower_bound = c(-Inf, 0),
-    upper_bound = c( Inf, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-1, 0), max_iter, c(-Inf, 0), c(Inf, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
 
   # initial values with different equalities
-  result <- logistic2_fit_constrained(
-    x, y, c(-1, 1), max_iter,
-    lower_bound = c(-Inf, 0),
-    upper_bound = c( Inf, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-1, 1), max_iter, c(-Inf, 0), c(Inf, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
 })
 
-test_that("logistic2_fit_constrained: equalities and inequalities", {
+test_that("fit_constrained: equalities and inequalities", {
   max_iter <- 10000
 
   x <- round(
@@ -504,20 +686,19 @@ test_that("logistic2_fit_constrained: equalities and inequalities", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
+
+  n <- length(y)
+
+  w <- rep(1, n)
 
   estimated <- c(eta = TRUE, phi = FALSE)
 
   theta <- c(eta = -0.46193439818028055, phi = 0)
 
-  rss <- 0.099093708890039360
+  rss_value <- 0.099093708890039360
 
   fitted_values <- c(
     rep(0.96049580791205290, 3), rep(0.89351965363258953, 2),
@@ -535,92 +716,79 @@ test_that("logistic2_fit_constrained: equalities and inequalities", {
     0.11251965363258953, 0.05249580791205290
   )
 
-  result <- logistic2_fit_constrained(
-    x, y, NULL, max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 0)
-  )
+  object <- logistic2_new(x, y, w, NULL, max_iter, c(-1, 0), c(0, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
 
   # initial values within the boundaries
-  result <- logistic2_fit_constrained(
-    x, y, c(-0.5, 0), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-0.5, 0), max_iter, c(-1, 0), c(0, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
 
   # initial values outside the boundaries
-  result <- logistic2_fit_constrained(
-    x, y, c(-5, -1), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-5, -1), max_iter, c(-1, 0), c(0, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, length(y) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, object$n - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
 })
 
 context("2-parameter logistic - weighted fit")
 
-test_that("logistic2_fit_weighted: fit", {
+test_that("fit (weighted)", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(eta = TRUE, phi = TRUE)
 
   theta <- c(eta = -0.45801428680160555, phi = 0.56172839498959744)
 
-  rss <- 0.040269628142735194
+  rss_value <- 0.040269628142735194
 
   fitted_values <- c(
     rep(0.96836185505275445, 3), rep(0.91423176703152782, 1),
@@ -638,67 +806,63 @@ test_that("logistic2_fit_weighted: fit", {
     0.08334723527233203, 0.04017581752055277
   )
 
-  result <- logistic2_fit_weighted(x, y, w, NULL, max_iter)
+  object <- logistic2_new(x, y, w, NULL, max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
-  result <- logistic2_fit_weighted(x, y, w, c(-1, 0), max_iter)
+  object <- logistic2_new(x, y, w, c(-1, 0), max_iter, NULL, NULL)
 
+  result <- fit(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic2_fit_weighted_constrained: inequalities", {
+test_that("fit_constrained (weighted): inequalities", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(eta = TRUE, phi = TRUE)
 
   theta <- c(eta = -0.45801428680160555, phi = 0.56172839498959744)
 
-  rss <- 0.040269628142735194
+  rss_value <- 0.040269628142735194
 
   fitted_values <- c(
     rep(0.96836185505275445, 3), rep(0.91423176703152782, 1),
@@ -716,93 +880,77 @@ test_that("logistic2_fit_weighted_constrained: inequalities", {
     0.08334723527233203, 0.04017581752055277
   )
 
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, NULL, max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 1)
-  )
+  object <- logistic2_new(x, y, w, NULL, max_iter, c(-1, 0), c(0, 1))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, c(-0.5, 0.5), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 1)
-  )
+  object <- logistic2_new(x, y, w, c(-0.5, 0.5), max_iter, c(-1, 0), c(0, 1))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, c(-3, -1), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 1)
-  )
+  object <- logistic2_new(x, y, w, c(-3, -1), max_iter, c(-1, 0), c(0, 1))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 2)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic2_fit_weighted_constrained: equalities", {
+test_that("fit_constrained (weighted): equalities", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(eta = TRUE, phi = FALSE)
 
   theta <- c(eta = -0.44146360310995570, phi = 0)
 
-  rss <- 0.065691040002891072
+  rss_value <- 0.065691040002891072
 
   fitted_values <- c(
     rep(0.95476657450173949, 3), rep(0.88421240668361712, 1),
@@ -819,93 +967,79 @@ test_that("logistic2_fit_weighted_constrained: equalities", {
     0.10321240668361712, 0.04676657450173949
   )
 
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, NULL, max_iter,
-    lower_bound = c(-Inf, 0),
-    upper_bound = c( Inf, 0)
-  )
+  object <- logistic2_new(x, y, w, NULL, max_iter, c(-Inf, 0), c(Inf, 0))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
   # initial values with same equalities
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, c(-1, 0), max_iter,
-    lower_bound = c(-Inf, 0),
-    upper_bound = c( Inf, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-1, 0), max_iter, c(-Inf, 0), c(Inf, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 
   # initial values with different equalities
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, c(-1, 1), max_iter,
-    lower_bound = c(-Inf, 0),
-    upper_bound = c( Inf, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-1, 1), max_iter, c(-Inf, 0), c(Inf, 0))
 
+  result <- fit_constrained(object)
+
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
-  expect_equal(result$weights, w[w > 0])
+  expect_equal(result$weights, w)
 })
 
-test_that("logistic2_fit_weighted_constrained: equalities and inequalities", {
+test_that("fit_constrained (weighted): equalities and inequalities", {
   max_iter <- 10000
 
   x <- round(
     rep(
       -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
+      times = c(3, 1, 2, 4, 3, 3, 1)
     ),
     digits = 3
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
   )
 
   w <- c(
-    1.46, 1.385, 1.704,
-    0.96, 0,
-    0.055, 1.071,
-    0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269,
-    0, 1.294, 0.038, 1.278,
-    0.157
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
   )
 
   estimated <- c(eta = TRUE, phi = FALSE)
 
   theta <- c(eta = -0.44146360310995570, phi = 0)
 
-  rss <- 0.065691040002891072
+  rss_value <- 0.065691040002891072
 
   fitted_values <- c(
     rep(0.95476657450173949, 3), rep(0.88421240668361712, 1),
@@ -922,52 +1056,49 @@ test_that("logistic2_fit_weighted_constrained: equalities and inequalities", {
     0.10321240668361712, 0.04676657450173949
   )
 
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, NULL, max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 0)
-  )
+  object <- logistic2_new(x, y, w, NULL, max_iter, c(-1, 0), c(0, 0))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, c(-0.8, 0), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-0.8, 0), max_iter, c(-1, 0), c(0, 0))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  result <- logistic2_fit_weighted_constrained(
-    x, y, w, c(-5, -1), max_iter,
-    lower_bound = c(-1, 0),
-    upper_bound = c( 0, 0)
-  )
+  object <- logistic2_new(x, y, w, c(-5, -1), max_iter, c(-1, 0), c(0, 0))
+  result <- fit_constrained(object)
 
+  expect_true(inherits(result, "logistic2_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
-  expect_equal(result$rss, rss)
-  expect_equal(result$df.residual, sum(w > 0) - 1)
+  expect_equal(result$rss, rss_value)
+  expect_equal(result$df.residual, length(y) - 1)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
+  expect_equal(result$weights, w)
 })
 
 context("2-parameter logistic - drda fit")
@@ -982,13 +1113,8 @@ test_that("drda: 'lower_bound' argument errors", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
   expect_error(
@@ -1041,7 +1167,7 @@ test_that("drda: 'lower_bound' argument errors", {
       lower_bound = rep(-Inf, 3),
       upper_bound = rep( Inf, 3)
     ),
-    "'lower_bound' and 'upper_bound' must be of length 2"
+    "'lower_bound' must be of length 2"
   )
 })
 
@@ -1055,13 +1181,8 @@ test_that("drda: 'upper_bound' argument errors", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
   expect_error(
@@ -1096,7 +1217,7 @@ test_that("drda: 'upper_bound' argument errors", {
       lower_bound = rep(-Inf, 3),
       upper_bound = rep(Inf, 3)
     ),
-    "'lower_bound' and 'upper_bound' must be of length 2"
+    "'lower_bound' must be of length 2"
   )
 })
 
@@ -1110,13 +1231,8 @@ test_that("drda: 'start' argument errors", {
   )
 
   y <- c(
-    0.928, 0.888, 0.98,
-    0.948, 0.856,
-    0.897, 0.883,
-    0.488, 0.532, 0.586, 0.566, 0.599,
-    0.259, 0.265, 0.243,
-    0.117, 0.143, 0.178, 0.219,
-    0.092
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
   )
 
   expect_error(
