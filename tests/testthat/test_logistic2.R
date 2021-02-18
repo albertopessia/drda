@@ -346,31 +346,6 @@ test_that("Gradient and Hessian of the RSS", {
 
 context("2-parameter logistic - general functions")
 
-test_that("init", {
-  x <- -log(c(1000, 100, 10, 1, 0.1))
-  n <- c(3, 3, 2, 4, 3)
-  m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-  v <- c(
-    643663 / 450000000, 31087 / 112500000, 961 / 160000, 177363 / 25000000,
-    560629 / 112500000
-  )
-
-  theta <- c(-2, -3 / 2)
-
-  true_value <- c(-2.0000000000000000,-0.65788145514115560)
-
-  object <- structure(
-    list(stats = cbind(x, n, m, v), m = 5),
-    class = "logistic2"
-  )
-
-  start <- init(object)
-
-  expect_type(start, "double")
-  expect_length(start, 2)
-  expect_equal(start, true_value)
-})
-
 test_that("fisher_info", {
   x <- round(
     rep(

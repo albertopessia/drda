@@ -408,33 +408,6 @@ test_that("Gradient and Hessian of the RSS", {
 
 context("4-parameter logistic - general functions")
 
-test_that("init", {
-  x <- -log(c(1000, 100, 10, 1, 0.1))
-  n <- c(3, 3, 2, 4, 3)
-  m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-  v <- c(
-    643663 / 450000000, 31087 / 112500000, 961 / 160000, 177363 / 25000000,
-    560629 / 112500000
-  )
-
-  theta <- c(4 / 100, log(43 / 50), -2, -3 / 2)
-
-  true_value <- c(
-    0.10241913285726964, -0.17645537182325855, -2, -1.4802332740676008
-  )
-
-  object <- structure(
-    list(stats = cbind(x, n, m, v), m = 5),
-    class = "logistic4"
-  )
-
-  start <- init(object)
-
-  expect_type(start, "double")
-  expect_length(start, 4)
-  expect_equal(start, true_value)
-})
-
 test_that("fisher_info", {
   x <- round(
     rep(
@@ -637,7 +610,7 @@ test_that("fit_constrained: inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
@@ -656,7 +629,7 @@ test_that("fit_constrained: inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
@@ -674,7 +647,7 @@ test_that("fit_constrained: inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)

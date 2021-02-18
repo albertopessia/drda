@@ -296,7 +296,7 @@ mle_asy.logistic2 <- function(object, theta) {
 #'
 #' @return Numeric vector of length 2 with a (hopefully) good starting point.
 #'
-#' @importFrom stats lm median
+#' @importFrom stats coefficients lm median nls nls.control
 init.logistic2 <- function(object) {
   m <- object$m
   stats <- object$stats
@@ -336,6 +336,42 @@ init.logistic2 <- function(object) {
         theta <- current_par
         best_rss <- current_rss
       }
+    }
+  }
+
+  D <- data.frame(y = object$y, x = object$x)
+  frm <- y ~ 1 / (1 + exp(-eta * (x - phi)))
+  start <- c("eta" = theta[1], "phi" = theta[2])
+  ctrl <- nls.control(
+    tol = sqrt(.Machine$double.eps), minFactor = 1.0e-5, warnOnly = TRUE
+  )
+
+  fit_nls <- tryCatch(
+    {
+      suppressWarnings(
+        if (!object$constrained) {
+          nls(
+            formula = frm, data = D, start = start, control = ctrl,
+            weights = object$w
+          )
+        } else {
+          nls(
+            formula = frm, data = D, start = start, control = ctrl,
+            algorithm = "port", weights = object$w, lower = object$lower_bound,
+            upper = object$upper_bound
+          )
+        }
+      )
+    },
+    error = function(e) NULL
+  )
+
+  if (!is.null(fit_nls)) {
+    current_par <- coefficients(fit_nls)
+    current_rss <- rss_fn(current_par)
+
+    if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      theta <- current_par
     }
   }
 
