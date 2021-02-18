@@ -30,14 +30,6 @@ init <- function(object) {
   UseMethod("init", object)
 }
 
-find_optimum <- function(object) {
-  UseMethod("find_optimum", object)
-}
-
-find_optimum_constrained <- function(object, constraint, known_param) {
-  UseMethod("find_optimum_constrained", object)
-}
-
 fit <- function(object) {
   UseMethod("fit", object)
 }

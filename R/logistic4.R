@@ -228,6 +228,16 @@ gradient_hessian.logistic4 <- function(object, theta) {
   hessian[, 3, 4] <- hessian[, 4, 3]
   hessian[, 4, 4] <- (2 * u + eta) * gradient[, 4]
 
+  # When `b` is infinite, gradient and Hessian show NaNs
+  # In the limit b -> Inf, both gradient and Hessian converge to zero
+  if (any(is.nan(gradient))) {
+    gradient[is.nan(gradient)] <- 0
+  }
+
+  if (any(is.nan(hessian))) {
+    hessian[is.nan(hessian)] <- 0
+  }
+
   list(G = gradient, H = hessian)
 }
 
@@ -449,7 +459,7 @@ init.logistic4 <- function(object) {
         # eta
         if (linear_coef[2, 1] <= 0) -tiny else tiny,
         # phi
-        median(object$stats[, 1])
+        object$stats[m, 1] + 1000
       )
     )
   }

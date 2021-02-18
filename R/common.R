@@ -107,7 +107,7 @@ approx_vcov <- function(fim) {
 #'       optimization algorithm}
 #'   }
 find_optimum <- function(object) {
-  init <- if (!is.null(object$start)) {
+  start <- if (!is.null(object$start)) {
     object$start
   } else {
     init(object)
@@ -120,12 +120,12 @@ find_optimum <- function(object) {
     mle_asy(object, theta)
   }
 
-  ntrm(rss_fn, rss_gh, init, object$max_iter, update_fn)
+  ntrm(rss_fn, rss_gh, start, object$max_iter, update_fn)
 }
 
 #' @rdname find_optimum
 find_optimum_constrained <- function(object, constraint, known_param) {
-  init <- if (!is.null(object$start)) {
+  start <- if (!is.null(object$start)) {
     # equality constraints have the priority over the provided starting values
     ifelse(is.na(known_param), object$start, known_param)
   } else {
@@ -142,10 +142,10 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     if (all(constraint[idx, 1])) {
       # we only have equality constraints, so after fixing the parameters what
       # remains is an unconstrained optimization
-      ntrm(rss_fn, rss_gh, init[idx], object$max_iter)
+      ntrm(rss_fn, rss_gh, start[idx], object$max_iter)
     } else {
       ntrm_constrained(
-        rss_fn, rss_gh, init[idx], object$max_iter, object$lower_bound[idx],
+        rss_fn, rss_gh, start[idx], object$max_iter, object$lower_bound[idx],
         object$upper_bound[idx]
       )
     }
@@ -154,7 +154,7 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     rss_gh <- rss_gradient_hessian(object)
 
     ntrm_constrained(
-      rss_fn, rss_gh, init, object$max_iter, object$lower_bound,
+      rss_fn, rss_gh, start, object$max_iter, object$lower_bound,
       object$upper_bound
     )
   }

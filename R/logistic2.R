@@ -160,6 +160,16 @@ gradient_hessian.logistic2 <- function(object, theta) {
   hessian[, 1, 2] <- hessian[, 2, 1]
   hessian[, 2, 2] <- (2 * u + eta) * gradient[, 2]
 
+  # When `b` is infinite, gradient and Hessian show NaNs
+  # In the limit b -> Inf, both gradient and Hessian converge to zero
+  if (any(is.nan(gradient))) {
+    gradient[is.nan(gradient)] <- 0
+  }
+
+  if (any(is.nan(hessian))) {
+    hessian[is.nan(hessian)] <- 0
+  }
+
   list(G = gradient, H = hessian)
 }
 
