@@ -317,6 +317,8 @@ drda <- function(
   result$fisher.info <- fisher_info(object, result$coefficients, result$sigma)
   result$vcov <- approx_vcov(result$fisher.info)
 
+  result$mean_function <- mean_function
+
   result$call <- match.call()
   result$terms <- model_terms
   result$model <- model_frame
@@ -364,14 +366,9 @@ anova.drda <- function(object, ...) {
 
   y <- object$model[, 1]
   x <- object$model[, 2]
-  w <- NULL
+  w <- object$weights
 
-  idx <- if (is.null(object$weights)) {
-    !is.na(y) & !is.na(x)
-  } else {
-    w <- object$model[, 3]
-    !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
-  }
+  idx <- !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
 
   if (sum(idx) != length(y)) {
     y <- y[idx]
@@ -381,6 +378,7 @@ anova.drda <- function(object, ...) {
 
   n <- length(y)
   log_n <- log(n)
+  log_w <- sum(log(w))
   k <- sum(object$estimated)
 
   l <- if (k >= 5) {
@@ -395,44 +393,23 @@ anova.drda <- function(object, ...) {
   deviance_value <- rep(-1, l)
   loglik <- rep(-1, l)
 
-  if (is.null(w)) {
-    # constant model: horizontal line
-    deviance_df[1] <- n - 1
-    deviance_value[1] <- (n - 1) * var(y)
+  # constant model: horizontal line
+  weighted_mean <- sum(w * y) / sum(w)
+  deviance_df[1] <- n - 1
+  deviance_value[1] <- sum(w * (y - weighted_mean)^2)
 
-    # fitted model
-    deviance_df[2] <- object$df.residual
-    deviance_value[2] <- object$rss
+  # fitted model
+  deviance_df[2] <- object$df.residual
+  deviance_value[2] <- object$rss
 
-    if (k < 5) {
-      # at least a parameter was fixed, so we now fit the full model
-      fit <- drda(y ~ x, mean_function = "logistic5")
-      deviance_df[3] <- fit$df.residual
-      deviance_value[3] <- fit$rss
-    }
-
-    loglik <- loglik_normal(deviance_value, n)
-  } else {
-    log_w <- sum(log(w))
-
-    # constant model: horizontal line
-    weighted_mean <- sum(w * y) / sum(w)
-    deviance_df[1] <- n - 1
-    deviance_value[1] <- sum(w * (y - weighted_mean)^2)
-
-    # fitted model
-    deviance_df[2] <- object$df.residual
-    deviance_value[2] <- object$rss
-
-    if (k < 5) {
-      # at least a parameter was considered fixed, so we now fit the full model
-      fit <- drda(y ~ x, weights = w, mean_function = "logistic5")
-      deviance_df[3] <- fit$df.residual
-      deviance_value[3] <- fit$rss
-    }
-
-    loglik <- loglik_normal(deviance_value, n, log_w)
+  if (k < 5) {
+    # at least a parameter was considered fixed, so we now fit the full model
+    fit <- drda(y ~ x, weights = w, mean_function = "logistic5")
+    deviance_df[3] <- fit$df.residual
+    deviance_value[3] <- fit$rss
   }
+
+  loglik <- loglik_normal(deviance_value, n, log_w)
 
   df <- n - deviance_df
 
@@ -497,22 +474,13 @@ anova.drdalist <- function(object, ...) {
   }
 
   W <- unlist(sapply(object, function(x) x$weights))
-  w <- NULL
+  w <- W[, 1]
 
-  if (!is.null(W)) {
-    w <- W[, 1]
-
-    if (!all(W[, 2:n_models] == w)) {
-      stop("models were not all fitted with the same weights", call. = FALSE)
-    }
+  if (!all(W[, 2:n_models] == w)) {
+    stop("models were not all fitted with the same weights", call. = FALSE)
   }
 
-  idx <- if (is.null(w)) {
-    !is.na(y) & !is.na(x)
-  } else {
-    w <- object[[1L]]$model[, 3]
-    !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
-  }
+  idx <- !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
 
   if (sum(idx) != length(y)) {
     y <- y[idx]
@@ -522,10 +490,7 @@ anova.drdalist <- function(object, ...) {
 
   n_obs <- length(y)
   log_n <- log(n_obs)
-
-  if (!is.null(w) && (length(W) != n_models * n_obs)) {
-    stop("models were not all fitted with weights")
-  }
+  log_w <- sum(log(w))
 
   n_params <- vapply(object, function(x) sum(x$estimated), 0)
 
@@ -563,34 +528,18 @@ anova.drdalist <- function(object, ...) {
 
   loglik <- rep(-1, l)
 
-  if (is.null(w)) {
-    # constant model: horizontal line
-    deviance_df[1] <- n_obs - 1
-    deviance_value[1] <- (n_obs - 1) * var(y)
+  # constant model: horizontal line
+  weighted_mean <- sum(w * y) / sum(w)
+  deviance_df[1] <- n_obs - 1
+  deviance_value[1] <- sum(w * (y - weighted_mean)^2)
 
-    if (k < 5) {
-      fit <- drda(y ~ x, mean_function = "logistic5")
-      deviance_df[l] <- fit$df.residual
-      deviance_value[l] <- fit$rss
-    }
-
-    loglik <- loglik_normal(deviance_value, n_obs)
-  } else {
-    log_w <- sum(log(w))
-
-    # constant model: horizontal line
-    weighted_mean <- sum(w * y) / sum(w)
-    deviance_df[1] <- n_obs - 1
-    deviance_value[1] <- sum(w * (y - weighted_mean)^2)
-
-    if (k < 5) {
-      fit <- drda(y ~ x, weights = w, mean_function = "logistic5")
-      deviance_df[l] <- fit$df.residual
-      deviance_value[l] <- fit$rss
-    }
-
-    loglik <- loglik_normal(deviance_value, n_obs, log_w)
+  if (k < 5) {
+    fit <- drda(y ~ x, weights = w, mean_function = "logistic5")
+    deviance_df[l] <- fit$df.residual
+    deviance_value[l] <- fit$rss
   }
+
+  loglik <- loglik_normal(deviance_value, n_obs, log_w)
 
   aic <- 2 * (df - loglik)
   bic <- log_n * df - 2 * loglik
@@ -655,14 +604,6 @@ logLik.drda <- function(object, ...) {
 plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
   theta <- coef(x)
 
-  eta <- theta[1]
-  phi <- theta[2]
-
-  if (x$mean_function != "logistic2") {
-    eta <- theta[3]
-    phi <- theta[4]
-  }
-
   f <- function(z) {
     fn(x, z, theta)
   }
@@ -671,12 +612,7 @@ plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
   yv <- x$model[, 1]
   wv <- x$weights
 
-  idx <- if (is.null(wv)) {
-    !is.na(yv) & !is.na(xv)
-  } else {
-    wv <- x$model[, 3]
-    !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
-  }
+  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
 
   if (sum(idx) != length(yv)) {
     yv <- yv[idx]
@@ -693,6 +629,18 @@ plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
     xv, yv, type = "p", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
     axes = FALSE, ...
   )
+
+  eta <- if (x$mean_function != "logistic2") {
+    theta[3]
+  } else {
+    theta[1]
+  }
+
+  phi <- if (x$mean_function != "logistic2") {
+    theta[4]
+  } else {
+    theta[2]
+  }
 
   lines(
     x = rep(phi, 2), y = c(ylim[1] - 1, f(phi)), lty = 2, col = "gray"
