@@ -23,8 +23,8 @@ logistic6_new <-  function(
       stop("'start' must be of length 6", call. = FALSE)
     }
 
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' is smaller than 'alpha'", call. = FALSE)
+    if (start[2] <= 0) {
+      stop("parameter 'omega' cannot be negative nor zero.", call. = FALSE)
     }
 
     if (start[3] == 0) {
@@ -39,7 +39,7 @@ logistic6_new <-  function(
       stop("parameter 'xi' cannot be negative nor zero", call. = FALSE)
     }
 
-    start[2] <- log(start[2] - start[1])
+    start[2] <- log(start[2])
     start[5] <- log(start[5])
     start[6] <- log(start[6])
   }
@@ -49,37 +49,10 @@ logistic6_new <-  function(
       stop("'lower_bound' must be of length 6", call. = FALSE)
     }
 
-    if (lower_bound[2] < lower_bound[1]) {
-      stop(
-        "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
-        call. = FALSE
-      )
-    }
-  }
-
-  if (!is.null(upper_bound)) {
-    if (length(upper_bound) != 6) {
-      stop("'upper_bound' must be of length 6", call. = FALSE)
-    }
-
-    if (upper_bound[2] < upper_bound[1]) {
-      stop(
-        "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
-        call. = FALSE
-      )
-    }
-  }
-
-  if (!is.null(lower_bound) && !is.null(upper_bound)) {
-    if (lower_bound[2] < upper_bound[1]) {
-      stop(
-        "'lower_bound[2]' cannot be smaller than 'upper_bound[1]'",
-        call. = FALSE
-      )
-    }
-
-    if (!is.infinite(lower_bound[2])) {
-      lower_bound[2] <- log(lower_bound[2] - upper_bound[1])
+    lower_bound[2] <- if (lower_bound[2] > 0) {
+      log(lower_bound[2])
+    } else {
+      -Inf
     }
 
     lower_bound[5] <- if (lower_bound[5] > 0) {
@@ -93,22 +66,28 @@ logistic6_new <-  function(
     } else {
       -Inf
     }
+  }
 
-    if (!is.infinite(upper_bound[2])) {
-      upper_bound[2] <- log(upper_bound[2] - lower_bound[1])
+  if (!is.null(upper_bound)) {
+    if (length(upper_bound) != 6) {
+      stop("'upper_bound' must be of length 6", call. = FALSE)
     }
 
-    upper_bound[5] <- if (upper_bound[5] > 0) {
-      log(upper_bound[5])
-    } else {
-      -Inf
+    if (upper_bound[2] <= 0) {
+      stop("'upper_bound[2]' cannot be negative nor zero.", call. = FALSE)
     }
 
-    upper_bound[6] <- if (upper_bound[6] > 0) {
-      log(upper_bound[6])
-    } else {
-      -Inf
+    if (upper_bound[5] <= 0) {
+      stop("'upper_bound[5]' cannot be negative nor zero.", call. = FALSE)
     }
+
+    if (upper_bound[6] <= 0) {
+      stop("'upper_bound[6]' cannot be negative nor zero.", call. = FALSE)
+    }
+
+    upper_bound[2] <- log(upper_bound[2])
+    upper_bound[5] <- log(upper_bound[5])
+    upper_bound[6] <- log(upper_bound[6])
   }
 
   object <- structure(
@@ -153,13 +132,13 @@ logistic6_new <-  function(
 #' @details
 #' The 6-parameter logistic function `f(x; theta)` is defined in this package as
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`.
+#' where `theta = c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' @param x numeric vector at which the logistic function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
-#'   `c(alpha, beta, eta, phi, nu, xi)`.
+#'   `c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
@@ -167,13 +146,13 @@ logistic6_new <-  function(
 #' @export
 logistic6_fn <- function(x, theta) {
   alpha <- theta[1]
-  beta <- theta[2]
+  omega <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
   xi <- theta[6]
 
-  alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)
+  alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)
 }
 
 #' 6-parameter logistic function
@@ -183,14 +162,14 @@ logistic6_fn <- function(x, theta) {
 #' @details
 #' The 6-parameter logistic function `f(x; theta)` is defined in this package as
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`.
+#' where `theta = c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' @param object object of class `logistic6`.
 #' @param x numeric vector at which the logistic function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
-#'   `c(alpha, beta, eta, phi, nu, xi)`.
+#'   `c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' @return Numeric vector with the values of the logistic function.
 fn.logistic6 <- function(object, x, theta) {
@@ -210,36 +189,25 @@ fn.logistic6_fit <- function(object, x, theta) {
 #' @details
 #' The 6-parameter logistic function `f(x; theta)` is defined in this package as
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`.
+#' where `theta = c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' In our optimization algorithm, however, we consider instead the equivalent
 #' function `f(x; theta')`
 #'
-#' `alpha + exp(omega) / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
-#'
-#' Note that it is simply `beta = alpha + exp(omega)`, `nu = exp(nu')`,
-#' `xi = exp(xi')`.
-#'
-#' NOTE: This function expects the input vector
-#' `theta = c(alpha, beta, eta, phi, nu, xi)` but computes the gradient and
-#' Hessian of the alternative parametrization
-#' `theta' = (alpha, omega, eta, phi, nu', xi')`.
-#' This duality is unfortunately a trade-off between what users expect (first
-#' version is easier to interpret) and the optimization stability of the second
-#' version.
+#' `alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
 #'
 #' @param object object of class `logistic6`.
 #' @param theta numeric vector with the six parameters in the form
-#'   `c(alpha, beta, eta, phi, nu, xi)`.
+#'   `c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic6 <- function(object, theta) {
   x <- object$stats[, 1]
 
   alpha <- theta[1]
-  beta <- theta[2]
+  omega <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
@@ -249,7 +217,7 @@ gradient_hessian.logistic6 <- function(object, theta) {
 
   f <- xi + nu * b
   g <- f^(-1 / nu)
-  h <- (beta - alpha) * g
+  h <- omega * g
 
   q <- (x - phi) * b
   r <- -eta * b
@@ -319,17 +287,14 @@ gradient_hessian.logistic6 <- function(object, theta) {
 #' @details
 #' The 6-parameter logistic function `f(x; theta)` is defined in this package as
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`.
+#' where `theta = c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' In our optimization algorithm, however, we consider instead the equivalent
 #' function `f(x; theta')`
 #'
-#' `alpha + exp(omega) / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
-#'
-#' Note that it is simply `beta = alpha + exp(omega)`, `nu = exp(nu')`,
-#' `xi = exp(xi')`.
+#' `alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
 #'
 #' @param object object of class `logistic6`.
 #' @param known_param numeric vector with the known fixed values of the model
@@ -339,7 +304,7 @@ gradient_hessian.logistic6 <- function(object, theta) {
 #'   particular parameter choice `theta`.
 rss.logistic6 <- function(object) {
   function(theta) {
-    theta[2] <- theta[1] + exp(theta[2])
+    theta[2] <- exp(theta[2])
     theta[5] <- exp(theta[5])
     theta[6] <- exp(theta[6])
 
@@ -357,7 +322,7 @@ rss_fixed.logistic6 <- function(object, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
-    theta[2] <- theta[1] + exp(theta[2])
+    theta[2] <- exp(theta[2])
     theta[5] <- exp(theta[5])
     theta[6] <- exp(theta[6])
 
@@ -374,17 +339,14 @@ rss_fixed.logistic6 <- function(object, known_param) {
 #' @details
 #' The 6-parameter logistic function `f(x; theta)` is defined in this package as
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`.
+#' where `theta = c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' In our optimization algorithm, however, we consider instead the equivalent
 #' function `f(x; theta')`
 #'
-#' `alpha + exp(omega) / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
-#'
-#' Note that it is simply `beta = alpha + exp(omega)`, `nu = exp(nu')`,
-#' `xi = exp(xi')`.
+#' `alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
 #'
 #' @param object object of class `logistic6`.
 #' @param known_param numeric vector with the known fixed values of the model
@@ -394,7 +356,7 @@ rss_fixed.logistic6 <- function(object, known_param) {
 #'   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.logistic6 <- function(object) {
   function(theta) {
-    theta[2] <- theta[1] + exp(theta[2])
+    theta[2] <- exp(theta[2])
     theta[5] <- exp(theta[5])
     theta[6] <- exp(theta[6])
 
@@ -429,7 +391,7 @@ rss_gradient_hessian_fixed.logistic6 <- function(object, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
-    theta[2] <- theta[1] + exp(theta[2])
+    theta[2] <- exp(theta[2])
     theta[5] <- exp(theta[5])
     theta[6] <- exp(theta[6])
 
@@ -515,7 +477,7 @@ mle_asy.logistic6 <- function(object, theta) {
 #'
 #' @return Numeric vector of length 6 with a (hopefully) good starting point.
 #'
-#' @importFrom stats coefficients lm median nls nls.control
+#' @importFrom stats coefficients lm median nls nls.control optim
 init.logistic6 <- function(object) {
   m <- object$m
   stats <- object$stats
@@ -594,8 +556,8 @@ init.logistic6 <- function(object) {
     exp(lambda) + exp(psi - eta * (x - phi))
   )^exp(-psi)
   start <- c(
-    "alpha" = theta[1], "omega" = theta[2], "eta" = theta[3], "phi" = theta[4],
-    "psi" = theta[5], "lambda" = theta[6]
+    alpha = theta[1], omega = theta[2], eta = theta[3], phi = theta[4],
+    psi = theta[5], lambda = theta[6]
   )
   ctrl <- nls.control(
     tol = sqrt(.Machine$double.eps), minFactor = 1.0e-5, warnOnly = TRUE
@@ -622,7 +584,41 @@ init.logistic6 <- function(object) {
   )
 
   if (!is.null(fit_nls)) {
-    current_par <- coefficients(fit_nls)
+    current_par <- mle_asy(object, coefficients(fit_nls))
+    current_rss <- rss_fn(current_par)
+
+    if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      theta <- current_par
+    }
+  }
+
+  fit_optim <- tryCatch(
+    {
+      suppressWarnings(
+        if (!object$constrained) {
+          optim(
+            theta, rss_fn,
+            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+          )
+        } else {
+          rss_gh <- rss_gradient_hessian(object)
+          gr <- function(par) {
+            rss_gh(par)$G
+          }
+
+          optim(
+            theta, rss_fn, gr, method = "L-BFGS-B",
+            lower = object$lower_bound, upper = object$upper_bound,
+            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+          )
+        }
+      )
+    },
+    error = function(e) NULL
+  )
+
+  if (!is.null(fit_optim)) {
+    current_par <- mle_asy(object, fit_optim$par)
     current_rss <- rss_fn(current_par)
 
     if (!is.nan(current_rss) && (current_rss < best_rss)) {
@@ -643,17 +639,14 @@ init.logistic6 <- function(object) {
 #' @details
 #' The 6-parameter logistic function `f(x; theta)` is defined in this package as
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`.
+#' where `theta = c(alpha, omega, eta, phi, nu, xi)`.
 #'
 #' In our optimization algorithm, however, we consider instead the equivalent
 #' function `f(x; theta')`
 #'
-#' `alpha + exp(omega) / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
-#'
-#' Note that it is simply `beta = alpha + exp(omega)`, `nu = exp(nu')`,
-#' `xi = exp(xi')`.
+#' `alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))`
 #'
 #' @param object object of class `logistic6`.
 #'
@@ -680,7 +673,7 @@ fit.logistic6 <- function(object) {
 
   # bring the parameters back to their natural scale
   theta <- solution$optimum
-  theta[2] <- theta[1] + exp(theta[2])
+  theta[2] <- exp(theta[2])
   theta[5] <- exp(theta[5])
   theta[6] <- exp(theta[6])
 
@@ -698,7 +691,7 @@ fit.logistic6 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi", "nu", "xi")
+  param_names <- c("alpha", "omega", "eta", "phi", "nu", "xi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -736,7 +729,7 @@ fit_constrained.logistic6 <- function(object) {
   # bring the parameters back to their natural scale
   theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
-  theta[2] <- theta[1] + exp(theta[2])
+  theta[2] <- exp(theta[2])
   theta[5] <- exp(theta[5])
   theta[6] <- exp(theta[6])
 
@@ -756,7 +749,7 @@ fit_constrained.logistic6 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi", "nu", "xi")
+  param_names <- c("alpha", "omega", "eta", "phi", "nu", "xi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -777,7 +770,9 @@ fit_constrained.logistic6 <- function(object) {
 #' distribution `N(0, 1)`.
 #'
 #' The 6-by-6 (symmetric) Fisher information matrix is the expected value of
-#' the negative Hessian matrix of the log-likelihood function.
+#' the negative Hessian matrix of the log-likelihood function. We instead
+#' compute the observed Fisher information matrix because it has better finite
+#' sample properties.
 #'
 #' @param object object of class `logistic6`.
 #' @param theta numeric vector with the model parameters.
@@ -785,48 +780,99 @@ fit_constrained.logistic6 <- function(object) {
 #'
 #' @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic6 <- function(object, theta, sigma) {
-  alpha <- theta[1]
-  beta <- theta[2]
+  x <- object$stats[, 1]
+  y <- object$stats[, 3]
+  w <- object$stats[, 2]
+
+  omega <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
   xi <- theta[6]
 
-  b <- exp(-eta * (object$stats[, 1] - phi))
+  b <- exp(-eta * (x - phi))
 
   f <- xi + nu * b
-  g <- f^(-1 / nu)
-  h <- (beta - alpha) * g
+  g <- f^(1 / nu)
 
-  q <- (object$stats[, 1] - phi) * b
+  q <- (x - phi) * b
   r <- -eta * b
 
-  t <- q / f
+  t <- q / (g * f)
 
-  u <- r / f
-  v <- u / eta + log(f) / nu
+  u <- r / (g * f)
+  v <- u / eta + log(f) / (nu * g)
 
-  gradient <- matrix(1, nrow = nrow(object$stats), ncol = 6)
+  d <- fn(object, x, theta) - y
 
-  gradient[, 1] <- 1 - g
-  gradient[, 2] <- g
-  gradient[, 3] <- t * h
-  gradient[, 4] <- u * h
-  gradient[, 5] <- v * h / nu
-  gradient[, 6] <- -h / (nu * f)
+  gradient <- matrix(1, nrow = object$m, ncol = 6)
 
-  tmp <- array(0, dim = c(nrow(object$stats), 6, 6))
-  tmp[, , 1] <- object$stats[, 2] * gradient[, 1] * gradient
-  tmp[, , 2] <- object$stats[, 2] * gradient[, 2] * gradient
-  tmp[, , 3] <- object$stats[, 2] * gradient[, 3] * gradient
-  tmp[, , 4] <- object$stats[, 2] * gradient[, 4] * gradient
-  tmp[, , 5] <- object$stats[, 2] * gradient[, 5] * gradient
-  tmp[, , 6] <- object$stats[, 2] * gradient[, 6] * gradient
+  gradient[, 1] <- 1
+  gradient[, 2] <- 1 / g
+  gradient[, 3] <- omega * t
+  gradient[, 4] <- omega * u
+  gradient[, 5] <- omega * v / nu
+  gradient[, 6] <- -omega / (nu * g * f)
 
-  fim <- matrix(0, nrow = 7, ncol = 7)
-  fim[1:6, 1:6] <- apply(tmp, 2:3, sum)
-  fim[7, 7] <- object$n - 3
-  fim <- fim / sigma^2
+  # in case of theta being the maximum likelihood estimator, this gradient G
+  # should be zero. We compute it anyway because we likely have rounding errors
+  # in our estimate.
+  G <- matrix(1, nrow = object$m, ncol = 6)
+  G[, 1] <- w * d * gradient[, 1]
+  G[, 2] <- w * d * gradient[, 2]
+  G[, 3] <- w * d * gradient[, 3]
+  G[, 4] <- w * d * gradient[, 4]
+  G[, 5] <- w * d * gradient[, 5]
+  G[, 6] <- w * d * gradient[, 6]
+
+  G <- apply(G, 2, sum)
+
+  hessian <- array(0, dim = c(object$m, 6, 6))
+
+  hessian[, 3, 2] <- t
+  hessian[, 4, 2] <- u
+  hessian[, 5, 2] <- v / nu
+  hessian[, 6, 2] <- -1 / (nu * g * f)
+
+  hessian[, 2, 3] <- hessian[, 3, 2]
+  hessian[, 3, 3] <- omega * (eta + (nu + 1) * g * u) * q * t / r
+  hessian[, 4, 3] <- omega * (eta * t + u / eta + (nu + 1) * g * t * u)
+  hessian[, 5, 3] <- omega * t * g * (nu * u / eta + v) / nu
+  hessian[, 6, 3] <- -omega * (nu + 1) * t / (nu * f)
+
+  hessian[, 2, 4] <- hessian[, 4, 2]
+  hessian[, 3, 4] <- hessian[, 4, 3]
+  hessian[, 4, 4] <- omega * (eta + (nu + 1) * g * u) * u
+  hessian[, 5, 4] <- omega * (nu * u / eta + v) * g * u / nu
+  hessian[, 6, 4] <- -omega * (nu + 1) * u / (nu * f)
+
+  hessian[, 2, 5] <- hessian[, 5, 2]
+  hessian[, 3, 5] <- hessian[, 5, 3]
+  hessian[, 4, 5] <- hessian[, 5, 4]
+  hessian[, 5, 5] <- omega * (((u / eta)^2 + v^2 / nu) * g - 2 * v / nu) / nu
+  hessian[, 6, 5] <- omega * (1 - (nu * u / eta + v) * g) / (nu^2 * f * g)
+
+  hessian[, 2, 6] <- hessian[, 6, 2]
+  hessian[, 3, 6] <- hessian[, 6, 3]
+  hessian[, 4, 6] <- hessian[, 6, 4]
+  hessian[, 5, 6] <- hessian[, 6, 5]
+  hessian[, 6, 6] <- omega * (nu + 1) / (nu^2 * g * f^2)
+
+  H <- array(0, dim = c(object$m, 6, 6))
+
+  H[, , 1] <- w * (d * hessian[, , 1] + gradient[, 1] * gradient)
+  H[, , 2] <- w * (d * hessian[, , 2] + gradient[, 2] * gradient)
+  H[, , 3] <- w * (d * hessian[, , 3] + gradient[, 3] * gradient)
+  H[, , 4] <- w * (d * hessian[, , 4] + gradient[, 4] * gradient)
+  H[, , 5] <- w * (d * hessian[, , 5] + gradient[, 5] * gradient)
+  H[, , 6] <- w * (d * hessian[, , 6] + gradient[, 6] * gradient)
+
+  H <- apply(H, 2:3, sum)
+
+  mu <- fn(object, object$x, theta)
+  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+
+  fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
 
   lab <- c(names(theta), "sigma")
   rownames(fim) <- lab

@@ -10,7 +10,7 @@
 \item{object}{object of class \code{logistic5}.}
 
 \item{theta}{numeric vector with the five parameters in the form
-\code{c(alpha, beta, eta, phi, nu)}.}
+\code{c(alpha, omega, eta, phi, nu)}.}
 }
 \value{
 List of two elements: \code{G} the gradient and \code{H} the Hessian.
@@ -22,22 +22,12 @@ Evaluate at a particular set of parameters the gradient and Hessian of the
 \details{
 The 5-parameter logistic function \verb{f(x; theta)} is defined in this package as
 
-\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu)}.
+where \code{theta = c(alpha, omega, eta, phi, nu)}.
 
 In our optimization algorithm, however, we consider instead the equivalent
 function \verb{f(x; theta')}
 
-\verb{alpha + exp(omega) / (1 + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
-
-Note that it is simply \code{beta = alpha + exp(omega)} and \verb{nu = exp(nu')}.
-
-NOTE: This function expects the input vector
-\code{theta = c(alpha, beta, eta, phi, nu)} but computes the gradient and
-Hessian of the alternative parametrization
-\verb{theta' = (alpha, omega, eta, phi, nu')}.
-This duality is unfortunately a trade-off between what users expect (first
-version is easier to interpret) and the optimization stability of the second
-version.
+\verb{alpha + exp(omega') / (1 + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
 }

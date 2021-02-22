@@ -15,7 +15,7 @@
 \item{x}{numeric vector at which the logistic function is to be evaluated.}
 
 \item{theta}{numeric vector with the six parameters in the form
-\code{c(alpha, beta, eta, phi, nu, xi)}.}
+\code{c(alpha, omega, eta, phi, nu, xi)}.}
 }
 \value{
 Numeric vector with the values of the logistic function.
@@ -26,7 +26,7 @@ Evaluate at a particular set of parameters the 6-parameter logistic function.
 \details{
 The 6-parameter logistic function \verb{f(x; theta)} is defined in this package as
 
-\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu, xi)}.
+where \code{theta = c(alpha, omega, eta, phi, nu, xi)}.
 }

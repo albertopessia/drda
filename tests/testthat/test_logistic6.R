@@ -33,8 +33,8 @@ test_that("Constructor", {
 
   max_iter <- 10000
 
-  lower_bound <- c(-Inf, 1, -Inf, -10, 1, 0)
-  upper_bound <- c(1, Inf, 0, Inf, Inf, 2)
+  lower_bound <- c(-Inf, 1, -Inf, -10, 0, 0.5)
+  upper_bound <- c(1, 2, 0, 5, 2, 1)
 
   object <- logistic6_new(x, y, w, NULL, max_iter, NULL, NULL)
 
@@ -63,8 +63,8 @@ test_that("Constructor", {
   expect_true(object$constrained)
   expect_equal(object$max_iter, max_iter)
   expect_equal(object$start, c(0, 0, -1, 0, 0, 0))
-  expect_equal(object$lower_bound, c(-Inf, -Inf, -Inf, -10, 0, -Inf))
-  expect_equal(object$upper_bound, c(1, Inf, 0, Inf, Inf, log(2)))
+  expect_equal(object$lower_bound, c(-Inf, 0, -Inf, -10, -Inf, log(0.5)))
+  expect_equal(object$upper_bound, c(1, log(2), 0, 5, log(2), 0))
 
   w <- c(
     1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
@@ -110,8 +110,8 @@ test_that("Constructor", {
   expect_true(object$constrained)
   expect_equal(object$max_iter, max_iter)
   expect_equal(object$start, c(0, 0, -1, 0, 0, 0))
-  expect_equal(object$lower_bound, c(-Inf, -Inf, -Inf, -10, 0, -Inf))
-  expect_equal(object$upper_bound, c(1, Inf, 0, Inf, Inf, log(2)))
+  expect_equal(object$lower_bound, c(-Inf, 0, -Inf, -10, -Inf, log(0.5)))
+  expect_equal(object$upper_bound, c(1, log(2), 0, 5, log(2), 0))
 })
 
 test_that("Constructor: errors", {
@@ -141,8 +141,13 @@ test_that("Constructor: errors", {
   )
 
   expect_error(
-    logistic6_new(x, y, w, c(1, 0, -1, 0, 1, 1), max_iter, NULL, NULL),
-    "parameter 'beta' is smaller than 'alpha'"
+    logistic6_new(x, y, w, c(0, 0, -1, 0, 1, 1), max_iter, NULL, NULL),
+    "parameter 'omega' cannot be negative nor zero"
+  )
+
+  expect_error(
+    logistic6_new(x, y, w, c(0, -1, -1, 0, 1, 1), max_iter, NULL, NULL),
+    "parameter 'omega' cannot be negative nor zero"
   )
 
   expect_error(
@@ -181,34 +186,54 @@ test_that("Constructor: errors", {
   )
 
   expect_error(
-    logistic6_new(x, y, w, NULL, max_iter, c(0, -1, rep(-Inf, 4)), rep(Inf, 6)),
-    "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
-    fixed = TRUE
-  )
-
-  expect_error(
     logistic6_new(x, y, w, NULL, max_iter, rep(-Inf, 6), rep(Inf, 5)),
     "'upper_bound' must be of length 6"
   )
 
   expect_error(
     logistic6_new(x, y, w, NULL, max_iter, rep(-Inf, 6), c(1, 0, rep(Inf, 4))),
-    "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
+    "'upper_bound[2]' cannot be negative nor zero",
+    fixed = TRUE
+  )
+
+  expect_error(
+    logistic6_new(x, y, w, NULL, max_iter, rep(-Inf, 6), c(1, -1, rep(Inf, 4))),
+    "'upper_bound[2]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
     logistic6_new(
-      x, y, w, NULL, max_iter, c(-0.5, 0, -1, 0, 0, 0), c(0.5, 1, 0, 1, 1, 1)
+      x, y, w, NULL, max_iter, rep(-Inf, 6), c(1, Inf, Inf, Inf, 0, Inf)
     ),
-    "'lower_bound[2]' cannot be smaller than 'upper_bound[1]'",
+    "'upper_bound[5]' cannot be negative nor zero",
+    fixed = TRUE
+  )
+
+  expect_error(
+    logistic6_new(
+      x, y, w, NULL, max_iter, rep(-Inf, 6), c(1, Inf, Inf, Inf, -1, Inf)
+    ),
+    "'upper_bound[5]' cannot be negative nor zero",
+    fixed = TRUE
+  )
+
+  expect_error(
+    logistic6_new(x, y, w, NULL, max_iter, rep(-Inf, 6), c(1, rep(Inf, 4), 0)),
+    "'upper_bound[6]' cannot be negative nor zero",
+    fixed = TRUE
+  )
+
+  expect_error(
+    logistic6_new(x, y, w, NULL, max_iter, rep(-Inf, 6), c(1, rep(Inf, 4), -1)),
+    "'upper_bound[6]' cannot be negative nor zero",
     fixed = TRUE
   )
 })
 
 test_that("Function value", {
   x <- -log(c(1000, 100, 10, 1, 0.1, 0.01))
-  theta <- c(4 / 100, 9 / 10, -2, -3 / 2, 1 / 2, 3 / 2)
+  theta <- c(4 / 100, 43 / 50, -2, -3 / 2, 1 / 2, 3 / 2)
 
   true_value <- c(
     0.42221710418125004, 0.42171092652477733, 0.37575797785755273,
@@ -235,7 +260,7 @@ test_that("Function value", {
 
 test_that("Gradient and Hessian", {
   x <- -log(c(1000, 100, 10, 1, 0.1, 0.01))
-  theta <- c(4 / 100, 9 / 10, -2, -3 / 2, 1 / 2, 3 / 2)
+  theta <- c(4 / 100, 43 / 50, -2, -3 / 2, 1 / 2, 3 / 2)
 
   true_gradient <- matrix(
     c(
@@ -492,79 +517,6 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$H, true_hessian[c(2, 3, 6), c(2, 3, 6)])
 })
 
-context("6-parameter logistic - general functions")
-
-test_that("fisher_info", {
-  x <- round(
-    rep(
-      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
-    ),
-    digits = 3
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
-
-  n <- length(y)
-
-  w <- rep(1, n)
-
-  theta <- c(
-    alpha = 4 / 100,
-    beta = 9 / 10,
-    eta = -2,
-    phi = -3 / 2,
-    nu = 1 / 2,
-    xi = 3 / 2
-  )
-
-  sigma <- 0.05
-
-  true_value <- matrix(c(
-      # alpha
-      6085.1433179765774, 699.07299953734511, 16.237238579181247,
-      86.124012799896435, 1036.4244469696333, -772.89570186952358, 0,
-      # beta
-      699.07299953734511, 516.71068294873238, -10.887523968805600,
-      27.012697248651210, 722.02276982000374, -583.49068403166273, 0,
-      # eta
-      16.237238579181247, -10.887523968805600, 1.4844212990353402,
-      -1.5225998656546614, -14.242119593664837, 11.976827529012201, 0,
-      # phi
-      86.124012799896435, 27.012697248651210, -1.5225998656546614,
-      6.6843744037638038, 39.220817474330747, -28.746434710532119, 0,
-      # nu
-      1036.4244469696333, 722.02276982000374, -14.242119593664837,
-      39.220817474330747, 1010.7439620495048, -814.84583690216071, 0,
-      # xi
-      -772.89570186952358, -583.49068403166273, 11.976827529012201,
-      -28.746434710532119, -814.84583690216071, 659.48717278612922, 0,
-      # sigma
-      rep(0, 6), 6800
-    ),
-    nrow = 7,
-    ncol = 7
-  )
-
-  rownames(true_value) <- colnames(true_value) <- c(
-    "alpha", "beta", "eta", "phi", "nu", "xi", "sigma"
-  )
-
-  object <- structure(
-    list(stats = suff_stats(x, y, w), n = n, m = 7),
-    class = "logistic6"
-  )
-
-  fim <- fisher_info(object, theta, sigma)
-
-  expect_type(fim, "double")
-  expect_length(fim, 7 * 7)
-  expect_equal(fim, true_value)
-})
-
 context("6-parameter logistic - fit")
 
 test_that("fit", {
@@ -591,7 +543,7 @@ test_that("fit", {
   # with the same residual sum of squares
   # there is no point in testing the values of `result$coefficients`
   estimated <- c(
-    alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = TRUE, omega = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   rss_value <- 0.024883087882351184
@@ -663,12 +615,12 @@ test_that("fit_constrained: inequalities", {
   w <- rep(1, n)
 
   estimated <- c(
-    alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = TRUE, omega = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   theta <- c(
     alpha = 0.093212121358463018,
-    beta = 0.093212121358463018 + exp(-0.31867973658708865),
+    omega = exp(-0.31867973658708865),
     eta = -1.7617462932354748,
     phi = -0.18871021239940719,
     nu = exp(1.3765334489389942),
@@ -695,7 +647,7 @@ test_that("fit_constrained: inequalities", {
   )
 
   object <- logistic6_new(
-    x, y, w, NULL, max_iter, c(-0.5, 0.5, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
+    x, y, w, NULL, max_iter, c(-0.5, 0.01, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
   )
 
   result <- fit_constrained(object)
@@ -713,7 +665,7 @@ test_that("fit_constrained: inequalities", {
   # initial values within the boundaries
   object <- logistic6_new(
     x, y, w, c(-0.1, 0.6, -1.3, -0.3, 0.7, 0.3), max_iter,
-    c(-0.5, 0.5, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
+    c(-0.5, 0.01, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
   )
 
   result <- fit_constrained(object)
@@ -730,7 +682,7 @@ test_that("fit_constrained: inequalities", {
 
   # initial values outside the boundaries
   object <- logistic6_new(
-    x, y, w, c(-1, 2, 1, 1, 7, 2), max_iter, c(-0.5, 0.5, -2, -1, 0, 0),
+    x, y, w, c(-1, 2, 1, 1, 7, 2), max_iter, c(-0.5, 0.01, -2, -1, 0, 0),
     c(0.5, 1, -1, 0, 5, 1)
   )
 
@@ -768,12 +720,12 @@ test_that("fit_constrained: equalities", {
   w <- rep(1, n)
 
   estimated <- c(
-    alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = FALSE, omega = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   theta <- c(
     alpha = 0,
-    beta = 1,
+    omega = 1,
     eta = -2.3448538310034034,
     phi = -1.1869812279392416,
     nu = exp(2.1013467432775474),
@@ -873,12 +825,12 @@ test_that("fit_constrained: equalities and inequalities", {
   w <- rep(1, n)
 
   estimated <- c(
-    alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = FALSE, omega = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   theta <- c(
     alpha = 0,
-    beta = 1,
+    omega = 1,
     eta = -2.3448538310034034,
     phi = -1.1869812279392416,
     nu = exp(2.1013467432775474),
@@ -984,7 +936,7 @@ test_that("fit (weighted)", {
   # with the same residual sum of squares
   # there is no point in testing the values of `result$coefficients`
   estimated <- c(
-    alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = TRUE, omega = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   rss_value <- 0.014141550871844299
@@ -1056,7 +1008,7 @@ test_that("fit_constrained (weighted): inequalities", {
   )
 
   estimated <- c(
-    alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = TRUE, omega = TRUE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   rss_value <- 0.0141415508718443
@@ -1078,7 +1030,7 @@ test_that("fit_constrained (weighted): inequalities", {
   )
 
   object <- logistic6_new(
-    x, y, w, NULL, max_iter, c(0.1, 0.75, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
+    x, y, w, NULL, max_iter, c(0.1, 0.01, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
   )
 
   result <- fit_constrained(object)
@@ -1095,8 +1047,8 @@ test_that("fit_constrained (weighted): inequalities", {
 
   # initial values within the boundaries
   object <- logistic6_new(
-    x, y, w, c(0.1, 0.6, -1.3, -0.3, 0.7, 0.3), max_iter,
-    c(0.1, 0.75, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
+    x, y, w, c(0.25, 0.6, -1.3, -0.3, 0.7, 0.3), max_iter,
+    c(0.1, 0.01, -2, -1, 0, 0), c(0.5, 1, -1, 0, 5, 1)
   )
 
   result <- fit_constrained(object)
@@ -1113,7 +1065,7 @@ test_that("fit_constrained (weighted): inequalities", {
 
   # initial values outside the boundaries
   object <- logistic6_new(
-    x, y, w, c(-1, 2, 1, 1, 7, 2), max_iter, c(0.1, 0.75, -2, -1, 0, 0),
+    x, y, w, c(-1, 2, 1, 1, 7, 2), max_iter, c(0.1, 0.01, -2, -1, 0, 0),
     c(0.5, 1, -1, 0, 5, 1)
   )
 
@@ -1152,12 +1104,12 @@ test_that("fit_constrained (weighted): equalities", {
   )
 
   estimated <- c(
-    alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = FALSE, omega = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   theta <- c(
     alpha = 0,
-    beta = 1,
+    omega = 1,
     eta = -2.0281792165635454,
     phi = -1.2409276005266773,
     nu = exp(2.0224177185354462),
@@ -1257,12 +1209,12 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   )
 
   estimated <- c(
-    alpha = FALSE, beta = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
+    alpha = FALSE, omega = FALSE, eta = TRUE, phi = TRUE, nu = TRUE, xi = TRUE
   )
 
   theta <- c(
     alpha = 0,
-    beta = 1,
+    omega = 1,
     eta = -2.0281792165635454,
     phi = -1.2409276005266773,
     nu = exp(2.0224177185354462),
@@ -1340,6 +1292,85 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$weights, w)
 })
 
+context("6-parameter logistic - general functions")
+
+test_that("fisher_info", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 1, 2, 4, 3, 3, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
+  )
+
+  w <- c(
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
+  )
+
+  theta <- c(
+    alpha = 4 / 100,
+    omega = 43 / 50,
+    eta = -2,
+    phi = -3 / 2,
+    nu = 1 / 2,
+    xi = 3 / 2
+  )
+
+  sigma <- 0.05
+
+  true_value <- matrix(c(
+      # alpha
+      5982.0000000000000, 1166.2773473955160, 9.4273765466132527,
+      72.095312830778587, 1673.3844839776239, -1313.2995874032654,
+      97322.667249594251,
+      # omega
+      1166.2773473955160, 503.81760756754085, -11.539313577135948,
+      -27.254756533043237, -296.44108643671633, 212.74025231384907,
+      23986.080835069310,
+      # eta
+      9.4273765466132527, -11.539313577135948, -23.808517105009236,
+      -36.920624017648987, -53.963629240443870, -5.1670031045368685,
+      188.85343485737145,
+      # phi
+      72.095312830778587, -27.254756533043237, -36.920624017648987,
+      -19.302185112689962, -84.861959254447253, 24.818059120326258,
+      1462.0499201047423,
+      # nu
+      1673.3844839776239, -296.44108643671633, -53.963629240443870,
+      -84.861959254447253, 2851.0352393691240, -1063.5701751813548,
+      34399.705218858010,
+      # xi
+      -1313.2995874032654, 212.74025231384907, -5.1670031045368685,
+      24.818059120326258, -1063.5701751813548, -685.94762601606976,
+      -27016.689384177895,
+      # sigma
+      97322.667249594251, 23986.080835069310, 188.85343485737145,
+      1462.0499201047423, 34399.705218858010, -27016.689384177895,
+      1.3696180637620797e+06
+    ),
+    nrow = 7,
+    ncol = 7
+  )
+
+  rownames(true_value) <- colnames(true_value) <- c(
+    "alpha", "omega", "eta", "phi", "nu", "xi", "sigma"
+  )
+
+  object <- logistic6_new(x, y, w, NULL, 10000, NULL, NULL)
+
+  fim <- fisher_info(object, theta, sigma)
+
+  expect_type(fim, "double")
+  expect_length(fim, 7 * 7)
+  expect_equal(fim, true_value)
+})
+
 context("6-parameter logistic - drda fit")
 
 test_that("drda: 'lower_bound' argument errors", {
@@ -1408,16 +1439,6 @@ test_that("drda: 'lower_bound' argument errors", {
     ),
     "'lower_bound' must be of length 6"
   )
-
-  expect_error(
-    drda(
-      y ~ x, mean_function = "logistic6",
-      lower_bound = c(0, -1, -Inf, -Inf, 0, 0),
-      upper_bound = rep(Inf, 6)
-    ),
-    "'lower_bound[2]' cannot be smaller than 'lower_bound[1]'",
-    fixed = TRUE
-  )
 })
 
 test_that("drda: 'upper_bound' argument errors", {
@@ -1467,16 +1488,6 @@ test_that("drda: 'upper_bound' argument errors", {
       upper_bound = rep(Inf, 7)
     ),
     "'lower_bound' must be of length 6"
-  )
-
-  expect_error(
-    drda(
-      y ~ x, mean_function = "logistic6",
-      lower_bound = rep(-Inf, 6),
-      upper_bound = c(1, 0, Inf, Inf, 0, 0)
-    ),
-    "'upper_bound[2]' cannot be smaller than 'upper_bound[1]'",
-    fixed = TRUE
   )
 })
 
@@ -1529,9 +1540,17 @@ test_that("drda: 'start' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "logistic6",
+      start = c(0, -11, -1, 0, 1, 1)
+    ),
+    "parameter 'omega' cannot be negative nor zero"
+  )
+
+  expect_error(
+    drda(
+      y ~ x, mean_function = "logistic6",
       start = c(0, -1, -1, 0, 1, 1)
     ),
-    "parameter 'beta' is smaller than 'alpha'"
+    "parameter 'omega' cannot be negative nor zero"
   )
 
   expect_error(

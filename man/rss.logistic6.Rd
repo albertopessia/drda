@@ -26,15 +26,12 @@ Evaluate the residual sum of squares (RSS) against the mean of a
 \details{
 The 6-parameter logistic function \verb{f(x; theta)} is defined in this package as
 
-\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu, xi)}.
+where \code{theta = c(alpha, omega, eta, phi, nu, xi)}.
 
 In our optimization algorithm, however, we consider instead the equivalent
 function \verb{f(x; theta')}
 
-\verb{alpha + exp(omega) / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
-
-Note that it is simply \code{beta = alpha + exp(omega)}, \verb{nu = exp(nu')},
-\verb{xi = exp(xi')}.
+\verb{alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
 }

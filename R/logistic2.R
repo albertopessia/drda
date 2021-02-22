@@ -306,7 +306,7 @@ mle_asy.logistic2 <- function(object, theta) {
 #'
 #' @return Numeric vector of length 2 with a (hopefully) good starting point.
 #'
-#' @importFrom stats coefficients lm median nls nls.control
+#' @importFrom stats coefficients lm median nls nls.control optim
 init.logistic2 <- function(object) {
   m <- object$m
   stats <- object$stats
@@ -351,10 +351,8 @@ init.logistic2 <- function(object) {
 
   D <- data.frame(y = object$y, x = object$x)
   frm <- y ~ 1 / (1 + exp(-eta * (x - phi)))
-  start <- c("eta" = theta[1], "phi" = theta[2])
-  ctrl <- nls.control(
-    tol = sqrt(.Machine$double.eps), minFactor = 1.0e-5, warnOnly = TRUE
-  )
+  start <- c(eta = theta[1], phi = theta[2])
+  ctrl <- nls.control(tol = 1.0e-10, minFactor = 1.0e-5, warnOnly = TRUE)
 
   fit_nls <- tryCatch(
     {
@@ -377,7 +375,41 @@ init.logistic2 <- function(object) {
   )
 
   if (!is.null(fit_nls)) {
-    current_par <- coefficients(fit_nls)
+    current_par <- mle_asy(object, coefficients(fit_nls))
+    current_rss <- rss_fn(current_par)
+
+    if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      theta <- current_par
+    }
+  }
+
+  fit_optim <- tryCatch(
+    {
+      suppressWarnings(
+        if (!object$constrained) {
+          optim(
+            theta, rss_fn,
+            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+          )
+        } else {
+          rss_gh <- rss_gradient_hessian(object)
+          gr <- function(par) {
+            rss_gh(par)$G
+          }
+
+          optim(
+            theta, rss_fn, gr, method = "L-BFGS-B",
+            lower = object$lower_bound, upper = object$upper_bound,
+            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+          )
+        }
+      )
+    },
+    error = function(e) NULL
+  )
+
+  if (!is.null(fit_optim)) {
+    current_par <- mle_asy(object, fit_optim$par)
     current_rss <- rss_fn(current_par)
 
     if (!is.nan(current_rss) && (current_rss < best_rss)) {
@@ -524,29 +556,58 @@ fit_constrained.logistic2 <- function(object) {
 #'
 #' @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic2 <- function(object, theta, sigma) {
+  x <- object$stats[, 1]
+  y <- object$stats[, 3]
+  w <- object$stats[, 2]
+
   eta <- theta[1]
   phi <- theta[2]
 
-  b <- exp(-eta * (object$stats[, 1] - phi))
+  b <- exp(-eta * (x - phi))
 
   f <- 1 + b
 
-  q <- (object$stats[, 1] - phi) * b
+  q <- (x - phi) * b
   r <- -eta * b
+
+  t <- q / f^2
+  u <- r / f^2
+
+  d <- fn(object, x, theta) - y
 
   gradient <- matrix(1, nrow = object$m, ncol = 2)
 
-  gradient[, 1] <- q / f^2
-  gradient[, 2] <- r / f^2
+  gradient[, 1] <- t
+  gradient[, 2] <- u
 
-  tmp <- array(0, dim = c(object$m, 2, 2))
-  tmp[, , 1] <- object$stats[, 2] * gradient[, 1] * gradient
-  tmp[, , 2] <- object$stats[, 2] * gradient[, 2] * gradient
+  # in case of theta being the maximum likelihood estimator, this gradient G
+  # should be zero. We compute it anyway because we likely have rounding errors
+  # in our estimate.
+  G <- matrix(1, nrow = object$m, ncol = 2)
+  G[, 1] <- w * d * gradient[, 1]
+  G[, 2] <- w * d * gradient[, 2]
 
-  fim <- matrix(0, nrow = 3, ncol = 3)
-  fim[1:2, 1:2] <- apply(tmp, 2:3, sum)
-  fim[3, 3] <- object$n - 3
-  fim <- fim / sigma^2
+  G <- apply(G, 2, sum)
+
+  hessian <- array(0, dim = c(object$m, 2, 2))
+
+  hessian[, 1, 1] <- (eta + 2 * f * u) * q * t / r
+  hessian[, 2, 1] <- (eta * t + u / eta + 2 * f * t * u)
+
+  hessian[, 1, 2] <- hessian[, 2, 1]
+  hessian[, 2, 2] <- (eta + 2 * f * u) * u
+
+  H <- array(0, dim = c(object$m, 2, 2))
+
+  H[, , 1] <- w * (d * hessian[, , 1] + gradient[, 1] * gradient)
+  H[, , 2] <- w * (d * hessian[, , 2] + gradient[, 2] * gradient)
+
+  H <- apply(H, 2:3, sum)
+
+  mu <- fn(object, object$x, theta)
+  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+
+  fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
 
   lab <- c(names(theta), "sigma")
   rownames(fim) <- lab

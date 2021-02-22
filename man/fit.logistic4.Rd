@@ -39,10 +39,10 @@ Likelihood approach.
 \details{
 The 4-parameter logistic function \verb{f(x; theta)} is defined in this package as
 
-\code{alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))}
+\code{alpha + omega / (1 + exp(-eta * (x - phi)))}
 
-where \code{theta = c(alpha, beta, eta, phi)}, \code{alpha} is the lower horizontal
-asymptote, \code{beta} is the upper horizontal asymptote, \code{eta} is the steepness
+where \code{theta = c(alpha, omega, eta, phi)}, \code{alpha} is the lower horizontal
+asymptote, \code{omega} is the width of the curve, \code{eta} is the steepness
 of the curve or growth rate (also known as the Hill coefficient), and \code{phi}
 is the value of \code{x} at which the curve is equal to its mid-point.
 }

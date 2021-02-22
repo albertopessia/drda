@@ -28,18 +28,18 @@ Evaluate the normalized area under the curve (AUC) and area above the curve
 \details{
 The 5-parameter logistic function \verb{f(x; theta)} is defined in this package as
 
-\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu)}.
+where \code{theta = c(alpha, omega, eta, phi, nu)}.
 
 The area under the curve (AUC) is simply the integral of \verb{f(x; theta)}
 between \code{lower_bound} and \code{upper_bound} with respect to \code{x}.
 
 When the interval of integration is fixed, since the the curve ranges between
-\code{alpha} and \code{beta}, the curve \verb{f(x; theta)} is contained into the rectangle
-of height \code{beta - alpha} and width \code{upper_bound - lower_bound}. The maximum
-area the curve can have is obviously
-\code{(upper_bound - lower_bound) * (beta - alpha)}.
+\code{alpha} and \code{alpha + omega}, the curve \verb{f(x; theta)} is contained into the
+rectangle of height \code{omega} and width \code{upper_bound - lower_bound}. The
+maximum area the curve can have is obviously
+\code{(upper_bound - lower_bound) * omega}.
 
 We first shift the curve by \code{alpha} to set the minimum to 0. We then
 integrate the curve and define the normalized AUC (NAUC) by dividing its
@@ -52,6 +52,6 @@ so that \code{NAUC} and \code{NAAC} are equal to \code{0.5} in the standard logi
 
 \emph{Note}: Integral of a 5-parameter logistic function involves Gaussian
 hypergeometric functions, which are prone to numerical errors and not part
-of base R. For this reason, we opt here for a brute force approach and simply
-use the \code{integrate} function.
+of base R. For this reason, we opt here to simply use the \code{integrate}
+function from base R.
 }

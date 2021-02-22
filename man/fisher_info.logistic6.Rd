@@ -26,5 +26,7 @@ observations \code{y} are independent and such that
 distribution \code{N(0, 1)}.
 
 The 6-by-6 (symmetric) Fisher information matrix is the expected value of
-the negative Hessian matrix of the log-likelihood function.
+the negative Hessian matrix of the log-likelihood function. We instead
+compute the observed Fisher information matrix because it has better finite
+sample properties.
 }

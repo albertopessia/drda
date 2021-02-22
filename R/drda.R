@@ -1,6 +1,7 @@
-#' Fit a parametric model to dose-response data
+#' Fit non-linear growth curves
 #'
-#' Use a Newton trust-region method to fit a curve to dose-response data.
+#' Use the Newton's with a trust-region method to fit non-linear growth curves
+#' to observed data.
 #'
 #' @param formula an object of class \code{link[stats]{formula}} (or one that
 #'   can be coerced to that class): a symbolic description of the model to be
@@ -25,99 +26,110 @@
 #' @param mean_function the model to be fitted. See `details` for available
 #'   models.
 #' @param lower_bound numeric vector with the minimum admissible values of the
-#'   parameters.
+#'   parameters. Use `-Inf` to specify an unbounded parameter.
 #' @param upper_bound numeric vector with the maximum admissible values of the
-#'   parameters.
+#'   parameters. Use `Inf` to specify an unbounded parameter.
 #' @param start starting values for the parameters.
 #' @param max_iter maximum number of iterations in the optimization algorithm.
 #'
 #' @details
-#' ## Generalized logistic function
+#'
+#' ## Available models
+#'
+#' ### Generalized logistic function
 #'
 #' The most general model in this package is the generalized logistic function
 #' selected by setting `mean_function = "logistic6"`. It is defined in this
 #' package as the 6-parameter function
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `beta > alpha`, `eta != 0`, `nu > 0`, and `xi > 0`. If `eta` is
-#' positive, the curve is monotonically increasing. If `eta` is negative, the
-#' curve is monotonically decreasing.
+#' where `eta != 0`, `nu > 0`, and `xi > 0`. Although `omega` can be any real
+#' value, we use the convention `omega > 0` to avoid identifiability problems:
+#' when `omega < 0` it is always possible to adjust the other parameter to
+#' obtain the same exact curve. When `omega > 0` and `eta > 0` the curve is
+#' monotonically increasing. If `omega > 0` and `eta < 0` the curve is
+#' monotonically decreasing.
 #'
+#' Parameter `omega > 0` is related to the width of the curve.
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` is related to the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
 #' Parameter `xi` affects the value of the upper asymptote.
 #'
-#' **Note**: the 6-parameter logistic function is usually non-identifiable from
-#' data and should not be used in real applications. It is available only for
-#' theoretical research convenience.
+#' **Note**: the 6-parameter logistic function is non-identifiable from data and
+#' should not be used in real applications. It is available only for theoretical
+#' research convenience.
 #'
-#' ## 5-parameter logistic function
+#' ### 5-parameter logistic function
 #'
 #' The 5-parameter logistic function can be selected by setting
-#' `mean_function = "logistic5"`. The function is defined in this package as
+#' `mean_function = "logistic5"`. The function is obtained by setting `xi = 1`
+#' in the generalized logistic function, that is
 #'
-#' `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `beta > alpha`, `eta != 0`, and `nu > 0`. If `eta` is positive, the
-#' curve is monotonically increasing. If `eta` is negative, the curve is
-#' monotonically decreasing.
+#' `alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` represents the upper horizontal asymptote of the curve.
+#' Parameter `omega > 0` represents the width of the curve. The upper horizontal
+#' asymptote is simply equal to `alpha + omega`.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
 #'
-#' ## 4-parameter logistic function
+#' ### 4-parameter logistic function
 #'
 #' The 4-parameter logistic function is the default model of `drda`. It can be
 #' explicitly selected by setting `mean_function = "logistic4"`. The function is
-#' defined in this package as
+#' obtained by setting `xi = 1` and `nu = 1` in the generalized logistic
+#' function, that is
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `beta > alpha` and `eta != 0`. If `eta` is positive, the curve is
-#' monotonically increasing. If `eta` is negative, the curve is monotonically
-#' decreasing.
+#' `alpha + omega / (1 + exp(-eta * (x - phi)))`
 #'
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` represents the upper horizontal asymptote of the curve.
+#' Parameter `omega > 0` represents the width of the curve. The upper horizontal
+#' asymptote is simply equal to `alpha + omega`.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
-#' mid-point, i.e. `f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2`.
+#' mid-point, i.e. `f(phi; alpha, omega, eta, phi) = alpha + omega / 2`.
 #'
-#' ## 2-parameter logistic function
+#' ### 2-parameter logistic function
 #'
 #' The 2-parameter logistic function can be selected by setting
-#' `mean_function = "logistic2"`. The function is defined in this package as
+#' `mean_function = "logistic2"`. The function is obtained by setting `xi = 1`,
+#' `nu = 1`, `omega = 1`, and `alpha = 0` in the generalized logistic function,
+#' that is
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `eta != 0`. If `eta` is positive, the curve is monotonically
-#' increasing. If `eta` is negative, the curve is monotonically decreasing.
 #'
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
 #' mid-point, i.e. `f(phi; eta, phi) = 1 / 2`.
 #'
-#' ## Gompertz function
+#' ### Gompertz function
 #'
-#' The Gompertz function is the limit for `nu -> 0` of the logistic function
-#' `logistic5(0, beta, eta, phi, nu)`. It can be selected by setting
-#' `mean_function = "gompertz"`. The function is defined in this package as
+#' The Gompertz function is the limit for `nu -> 0` of the 5-parameter logistic
+#' function. It can be selected by setting `mean_function = "gompertz"`. The
+#' function is defined in this package as
 #'
-#' `beta * exp(-phi * exp(-eta * x))`
+#' `alpha + omega * exp(-exp(-eta * (x - phi)))`
 #'
-#' where `eta != 0`. If `beta` is positive, the curve is monotonically
-#' incrasing. If `beta` is negative, the curve is monotonically decreasing.
+#' where `eta != 0`.
 #'
-#' Parameter `beta` represents the horizontal asymptote of the curve.
+#' Parameter `alpha` represents the lower horizontal asymptote of the curve.
+#' Parameter `omega > 0` represents the width of the curve. The upper horizontal
+#' asymptote is simply equal to `alpha + omega`.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
+#'
+#' ### Notes on the chosen parametrization
+#'
+#' In the literature it is often found an alternative parametrization in which
+#' our curve width `omega` is replaced by the difference between the upper
+#' horizontal asymptote `beta` and the lower horizontal asymptote `alpha`, that
+#' is `omega = beta - alpha` or `beta = alpha + omega`.
+#'
+#' The two versions are equivalent and lead to the same inference results.
 #'
 #' @return An object of class `drda` and `model_fit`, where `model` is the
 #' chosen mean function. It is a list containing the following components:
@@ -142,8 +154,11 @@
 #'     \item{sigma}{corrected maximum likelihood estimate of the standard
 #'       deviation.}
 #'     \item{loglik}{maximum value (found) of the log-likelihood function.}
-#'     \item{fisher.info}{Fisher information matrix evaluated at the maximum
-#'       likelihood estimator.}
+#'     \item{fisher.info}{observed Fisher information matrix evaluated at the
+#'       maximum likelihood estimator.}
+#'     \item{vcov}{approximate variance-covariance matrix of the model
+#'       parameters.}
+#'     \item{mean_function}{string with the chosen model used for fitting.}
 #'     \item{call}{the matched call.}
 #'     \item{terms}{the \code{\link[stats]{terms}} object used.}
 #'     \item{model}{the model frame used.}
@@ -315,7 +330,15 @@ drda <- function(
   result$loglik <- loglik_normal(result$rss, object$n, log_w)
 
   result$fisher.info <- fisher_info(object, result$coefficients, result$sigma)
-  result$vcov <- approx_vcov(result$fisher.info)
+  result$vcov <- if (!object$constrained) {
+    approx_vcov(result$fisher.info)
+  } else {
+    k <- nrow(result$fisher.info)
+    idx <- which(!result$estimated)
+    vcov <- matrix(NA, nrow = k, ncol = k)
+    vcov[-idx, -idx] <- approx_vcov(result$fisher.info[-idx, -idx])
+    vcov
+  }
 
   result$mean_function <- mean_function
 

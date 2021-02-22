@@ -74,7 +74,7 @@ loglik_normal <- function(deviance, n, log_w = 0) {
 #' @return Approximate variance-covariance matrix.
 approx_vcov <- function(fim) {
   vcov <- tryCatch({
-      chol2inv(chol(fim))
+      solve(fim)
     },
     error = function(e) {
       matrix(NA, nrow = nrow(fim), ncol = nrow(fim))

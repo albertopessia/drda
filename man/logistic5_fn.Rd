@@ -10,7 +10,7 @@ logistic5_fn(x, theta)
 \item{x}{numeric vector at which the logistic function is to be evaluated.}
 
 \item{theta}{numeric vector with the five parameters in the form
-\code{c(alpha, beta, eta, phi, nu)}.}
+\code{c(alpha, omega, eta, phi, nu)}.}
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
@@ -22,7 +22,7 @@ Evaluate at a particular set of parameters the 5-parameter logistic function.
 \details{
 The 5-parameter logistic function \verb{f(x; theta)} is defined in this package as
 
-\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu)}.
+where \code{theta = c(alpha, omega, eta, phi, nu)}.
 }

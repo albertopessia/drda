@@ -344,57 +344,6 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$H, true_hessian[1, 1, drop = FALSE])
 })
 
-context("2-parameter logistic - general functions")
-
-test_that("fisher_info", {
-  x <- round(
-    rep(
-      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
-      times = c(3, 2, 2, 5, 3, 4, 1)
-    ),
-    digits = 3
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
-
-  n <- length(y)
-
-  w <- rep(1, n)
-
-  theta <- c(eta = -2, phi = -3 / 2)
-  sigma <- 0.05
-
-  true_value <- matrix(c(
-      # eta
-      19.215818617010831, -12.669799008017525, 0,
-      # phi
-      -12.669799008017525, 78.353244022203929, 0,
-      # sigma
-      rep(0, 2), 6800
-    ),
-    nrow = 3,
-    ncol = 3
-  )
-
-  rownames(true_value) <- colnames(true_value) <- c(
-    "eta", "phi", "sigma"
-  )
-
-  object <- structure(
-    list(stats = suff_stats(x, y, w), n = n, m = 7),
-    class = "logistic2"
-  )
-
-  fim <- fisher_info(object, theta, sigma)
-
-  expect_type(fim, "double")
-  expect_length(fim, 3 * 3)
-  expect_equal(fim, true_value)
-})
-
 context("2-parameter logistic - fit")
 
 test_that("fit", {
@@ -1074,6 +1023,55 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
+})
+
+context("2-parameter logistic - general functions")
+
+test_that("fisher_info", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 1, 2, 4, 3, 3, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.897, 0.883, 0.488, 0.532, 0.566, 0.599, 0.259,
+    0.265, 0.243, 0.143, 0.178, 0.219, 0.092
+  )
+
+  w <- c(
+    1.46, 1.385, 1.704, 0.96, 0.055, 1.071, 0.134, 1.825, 1.169, 0.628, 0.327,
+    1.201, 0.269, 1.294, 0.038, 1.278, 0.157
+  )
+
+  theta <- c(eta = -2, phi = -3 / 2)
+  sigma <- 0.05
+
+  true_value <- matrix(c(
+      # eta
+      -57.679888255261216, -64.222434378395683, 1972.9878566880451,
+      # phi
+      -64.222434378395683, -68.914476021821838, 3000.1366707555258,
+      # sigma
+      1972.9878566880451, 3000.1366707555258, 570580.59195114280
+    ),
+    nrow = 3,
+    ncol = 3
+  )
+
+  rownames(true_value) <- colnames(true_value) <- c(
+    "eta", "phi", "sigma"
+  )
+
+  object <- logistic2_new(x, y, w, NULL, 10000, NULL, NULL)
+
+  fim <- fisher_info(object, theta, sigma)
+
+  expect_type(fim, "double")
+  expect_length(fim, 3 * 3)
+  expect_equal(fim, true_value)
 })
 
 context("2-parameter logistic - drda fit")
