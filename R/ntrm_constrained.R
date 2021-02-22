@@ -98,8 +98,8 @@ ntrm_create_constraints <- function(lower_bound, upper_bound) {
 ntrm_error <- function(obj, mu) {
   # See equation (19.10) at page 567 of Nocedal and Wright (2006)
   max(
-    ntrm_norm(obj$G - crossprod(obj$A, obj$z)),
-    ntrm_norm(obj$s * obj$z - mu),
+    ntrm_max_abs(obj$G - crossprod(obj$A, obj$z)),
+    ntrm_max_abs(obj$s * obj$z - mu),
     obj$m0
   )
 }
@@ -412,7 +412,7 @@ ntrm_reductions <- function(obj, candidate, mu, nu) {
 #'
 #' Set `w(x) = C(x) - s`, `p = c(p_x, p_s)`,
 #' `Q = rbind(cbind(H, 0), cbind(0, V))`, `B = cbind(A, -S)`, `u = c(G, -mu e)`,
-#' y = `k - w(x)`. The problem becomes:
+#' `y(x) = k - w(x)`. The problem becomes:
 #'
 #' min_{p} 0.5 p' Q p + p' u
 #' subject to B p = y(x)
@@ -809,13 +809,20 @@ ntrm_update_nu <- function(nu, h, m0, mp) {
   #
   # We choose rho = 0.3 as in NITRO (Byrd et al. 1998)
   # 1 / (1 - rho) = 1 / (1 - 0.3) = 1 / 0.7
-  nu_lb <- h / (0.7 * (m0 - mp))
+  denominator <- (0.7 * (m0 - mp))
 
-  if ((nu >= nu_lb) || is.nan(nu_lb) || is.infinite(nu_lb)) {
-    # old value satisfies the inequality or the new lower bound is invalid
+  if (abs(denominator) <= .Machine$double.eps) {
+    # basically m0 and mp are equal
     nu
   } else {
-    nu_lb + 0.5
+    nu_lb <- h / denominator
+
+    if (is.nan(nu_lb) || is.infinite(nu_lb) || (nu >= nu_lb)) {
+      # old value satisfies the inequality or the new lower bound is invalid
+      nu
+    } else {
+      nu_lb + 0.5
+    }
   }
 }
 
@@ -948,7 +955,7 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   # - Update parameter mu if necessary.
   # - Repeat.
   # -------
-  eps <- 9.0e-10
+  eps <- sqrt(.Machine$double.eps)
 
   delta <- 1
   mu <- 0.1
@@ -990,6 +997,9 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     }
   }
 
+  # slack variables
+  s <- pmax(1.0e-10, C(cur_optimum) - 1.0e-10)
+
   obj <- list(
     # Jabobian of constraints
     A = tmp$A,
@@ -1008,9 +1018,9 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     # function value
     f = fn(cur_optimum),
     # slack variables
-    s = rep(1, nrow(tmp$A)),
+    s = s,
     # slack residuals (distances from boundary)
-    r = C(cur_optimum) - 1
+    r = C(cur_optimum) - s
   )
 
   # Equation (19.41+) at page 580
@@ -1070,8 +1080,6 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
       acceptance <- ntrm_reductions(obj, candidate, mu, nu)
       nu <- acceptance$nu
 
-      # TODO: check for the Maratos effect and perform a second-order correction
-
       if (acceptance$rho >= eta) {
         obj <- ntrm_update_solution(obj, candidate, gh, mu)
 
@@ -1088,10 +1096,11 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
       i <- i + 1
     }
 
-    delta <- min(100, max(5 * delta, 1))
+    delta <- 1
+    nu <- 1
     mu <- 0.2 * mu
 
-    # since we updated the penaly parameter, recompute the associated variables
+    # since we updated the penalty parameter, recompute the associated variables
     obj$u <- c(obj$G, -rep(mu, obj$m))
     obj$z <- ntrm_lagrange_multiplier(obj, mu)
   }
