@@ -955,7 +955,9 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   # - Update parameter mu if necessary.
   # - Repeat.
   # -------
-  eps <- sqrt(.Machine$double.eps)
+  eps_1 <- 1.0e-10
+  eps_2 <- 1.0e-8
+  eps_counter <- 0
 
   delta <- 1
   mu <- 0.1
@@ -997,9 +999,6 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     }
   }
 
-  # slack variables
-  s <- pmax(1.0e-10, C(cur_optimum) - 1.0e-10)
-
   obj <- list(
     # Jabobian of constraints
     A = tmp$A,
@@ -1018,9 +1017,11 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     # function value
     f = fn(cur_optimum),
     # slack variables
-    s = s,
+    # TODO: algorithm is very sensitive to slack initialization, find some good
+    #       way to initialize these variables
+    s = rep(10, nrow(tmp$A)),
     # slack residuals (distances from boundary)
-    r = C(cur_optimum) - s
+    r = C(cur_optimum) - 10
   )
 
   # Equation (19.41+) at page 580
@@ -1049,9 +1050,18 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   repeat {
     error <- ntrm_error(obj, 0)
 
-    if (error < eps) {
+    if (error < eps_1) {
       converged <- TRUE
       break
+    } else if (error < eps_2) {
+      # the algorithm might be stuck, but the error is small enough for
+      # declaring it converged
+      if (eps_counter >= 100) {
+        converged <- TRUE
+        break
+      } else {
+        eps_counter <- eps_counter + 1
+      }
     }
 
     if (i == max_iter) {
@@ -1063,7 +1073,7 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     repeat {
       error <- ntrm_error(obj, mu)
 
-      if ((error < mu) || (i == max_iter)) {
+      if (error < mu || (delta < eps_1 && error < eps_2) || i == max_iter) {
         break
       }
 
@@ -1097,7 +1107,7 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     }
 
     delta <- 1
-    nu <- 1
+    nu <- 0.5
     mu <- 0.2 * mu
 
     # since we updated the penalty parameter, recompute the associated variables

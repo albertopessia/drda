@@ -658,8 +658,8 @@ test_that("fit_constrained: inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 6)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
@@ -676,8 +676,8 @@ test_that("fit_constrained: inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 6)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
@@ -694,8 +694,8 @@ test_that("fit_constrained: inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 6)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 
@@ -868,8 +868,8 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-7)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
@@ -886,8 +886,8 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-7)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
@@ -904,8 +904,8 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-7)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 })
 
@@ -1251,8 +1251,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
@@ -1269,8 +1269,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
@@ -1287,8 +1287,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$estimated, estimated)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 

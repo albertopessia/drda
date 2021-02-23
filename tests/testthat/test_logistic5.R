@@ -561,30 +561,30 @@ test_that("fit_constrained: inequalities", {
   estimated <- c(alpha = TRUE, omega = TRUE, eta = TRUE, phi = TRUE, nu = TRUE)
 
   theta <- c(
-    alpha = 0.093212121358461020,
-    omega = exp(-0.18985173265400473),
-    eta = -1.7617462932355648,
-    phi = -0.47836972294567659,
-    nu = exp(1.3765334489390619)
+    alpha = 0.093212121358464059,
+    omega = exp(-0.18985173265400698),
+    eta = -1.7617462932354333,
+    phi = -0.47836972294562924,
+    nu = exp(1.3765334489389607)
   )
 
   rss_value <- 0.024883087882351184
 
   fitted_values <- c(
-    rep(0.92028391866853359, 3), rep(0.91971916938223627, 2),
-    rep(0.89002742082078076, 2), rep(0.55337929341255556, 5),
-    rep(0.26271803120343537, 3), rep(0.15412982230606358, 4),
-    0.11508521369102661
+    rep(0.92028391866853475, 3), rep(0.91971916938223719, 2),
+    rep(0.89002742082077747, 2), rep(0.55337929341255619, 5),
+    rep(0.26271803120343434, 3), rep(0.15412982230606352, 4),
+    0.11508521369102794
   )
 
   residuals <- c(
-    0.00771608133146641, -0.03228391866853359, 0.05971608133146641,
-    0.02828083061776373, -0.06371916938223627, 0.00697257917921924,
-    -0.00702742082078076, -0.06537929341255556, -0.02137929341255556,
-    0.03262070658744444, 0.01262070658744444, 0.04562070658744444,
-    -0.00371803120343537, 0.00228196879656463, -0.01971803120343537,
-    -0.03712982230606358, -0.01112982230606358, 0.02387017769393642,
-    0.06487017769393642, -0.02308521369102661
+    0.00771608133146525, -0.03228391866853475, 0.05971608133146525,
+    0.02828083061776281, -0.06371916938223719, 0.00697257917922253,
+    -0.00702742082077747, -0.06537929341255619, -0.02137929341255619,
+    0.03262070658744381, 0.01262070658744381, 0.04562070658744381,
+    -0.00371803120343434, 0.00228196879656566, -0.01971803120343434,
+    -0.03712982230606352, -0.01112982230606352, 0.02387017769393648,
+    0.06487017769393648, -0.02308521369102794
   )
 
   object <- logistic5_new(
@@ -600,8 +600,8 @@ test_that("fit_constrained: inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 5)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
@@ -619,8 +619,8 @@ test_that("fit_constrained: inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 5)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
@@ -638,8 +638,8 @@ test_that("fit_constrained: inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 5)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 
@@ -811,7 +811,7 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 3)
   expect_equal(result$fitted.values, fitted_values)
@@ -830,7 +830,7 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 3)
   expect_equal(result$fitted.values, fitted_values)
@@ -849,7 +849,7 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-7)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 3)
   expect_equal(result$fitted.values, fitted_values)
@@ -1001,8 +1001,8 @@ test_that("fit_constrained (weighted): inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 5)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
@@ -1020,8 +1020,8 @@ test_that("fit_constrained (weighted): inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 5)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
@@ -1039,8 +1039,8 @@ test_that("fit_constrained (weighted): inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 5)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 
@@ -1215,8 +1215,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 3)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
@@ -1234,8 +1234,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 3)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
@@ -1253,8 +1253,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 3)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 

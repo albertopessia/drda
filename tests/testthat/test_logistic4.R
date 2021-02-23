@@ -544,7 +544,7 @@ test_that("fit_constrained: inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
@@ -563,7 +563,7 @@ test_that("fit_constrained: inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
@@ -581,7 +581,7 @@ test_that("fit_constrained: inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, object$n - 4)
   expect_equal(result$fitted.values, fitted_values)
@@ -898,32 +898,32 @@ test_that("fit_constrained (weighted): inequalities", {
   estimated <- c(alpha = TRUE, omega = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.17216952053201601,
-    omega = exp(-0.26177206344682202),
-    eta = -0.96298267666336590,
-    phi = 0
+    alpha = 0.17286261579329598,
+    omega = exp(-0.26243436674316800),
+    eta = -0.96536781199483235,
+    phi = -0.0061161452508501756
   )
 
-  rss_value <- 0.015429695947432222
+  rss_value <- 0.015426894657174924
 
   fitted_values <- c(
-    rep(0.94086352653159934, 3), rep(0.93283404368653074, 1),
-    rep(0.86629746358312263, 2), rep(0.55701274222675176, 4),
-    rep(0.24772802087038089, 3), rep(0.18119144076697278, 3),
-    0.17316195792190418
+    rep(0.94105809852012522, 3), rep(0.93306866024846048, 1),
+    rep(0.86650297102635026, 2), rep(0.55631567380252891, 4),
+    rep(0.24759852669347843, 3), rep(0.18172932146179907, 3),
+    0.17383247345211994
   )
 
   residuals <- c(
-    -0.01286352653159934, -0.05286352653159934, 0.03913647346840066,
-    0.01516595631346926, 0.03070253641687737, 0.01670253641687737,
-    -0.06901274222675176, -0.02501274222675176, 0.00898725777324824,
-    0.04198725777324824, 0.01127197912961911, 0.01727197912961911,
-    -0.00472802087038089, -0.03819144076697278, -0.00319144076697278,
-    0.03780855923302722, -0.08116195792190418
+    -0.01305809852012522, -0.05305809852012522, 0.03894190147987478,
+    0.01493133975153952, 0.03049702897364974, 0.01649702897364974,
+    -0.06831567380252891, -0.02431567380252891, 0.00968432619747109,
+    0.04268432619747109, 0.01140147330652157, 0.01740147330652157,
+    -0.00459852669347843, -0.03872932146179907, -0.00372932146179907,
+    0.03727067853820093, -0.08183247345211994
   )
 
   object <- logistic4_new(
-    x, y, w, NULL, max_iter, c(-0.5, 0.5, -1, 0), c(0.5, 1, 0, 1)
+    x, y, w, NULL, max_iter, c(-1, 0.1, -2, -1), c(1, 1, 0, 1)
   )
 
   result <- fit_constrained(object)
@@ -932,17 +932,16 @@ test_that("fit_constrained (weighted): inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
   object <- logistic4_new(
-    x, y, w, c(0, 0.75, -0.5, 0.5), max_iter, c(-0.5, 0.5, -1, 0),
-    c(0.5, 1, 0, 1)
+    x, y, w, c(0, 0.75, -0.5, 0.5), max_iter, c(-1, 0.1, -2, -1), c(1, 1, 0, 1)
   )
 
   result <- fit_constrained(object)
@@ -951,16 +950,16 @@ test_that("fit_constrained (weighted): inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
   object <- logistic4_new(
-    x, y, w, c(-1, 2, -3, -1), max_iter, c(-0.5, 0.5, -1, 0), c(0.5, 1, 0, 1)
+    x, y, w, c(-2, 2, -3, 2), max_iter, c(-1, 0.1, -2, -1), c(1, 1, 0, 1)
   )
 
   result <- fit_constrained(object)
@@ -969,11 +968,11 @@ test_that("fit_constrained (weighted): inequalities", {
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
+  expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 4)
-  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
-  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
+  expect_equal(result$fitted.values, fitted_values)
+  expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 
