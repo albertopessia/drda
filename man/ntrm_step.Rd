@@ -47,7 +47,7 @@ where \verb{V = Z S}.
 
 Set \code{w(x) = C(x) - s}, \code{p = c(p_x, p_s)},
 \code{Q = rbind(cbind(H, 0), cbind(0, V))}, \code{B = cbind(A, -S)}, \verb{u = c(G, -mu e)},
-y = \code{k - w(x)}. The problem becomes:
+\code{y(x) = k - w(x)}. The problem becomes:
 
 min_{p} 0.5 p' Q p + p' u
 subject to B p = y(x)

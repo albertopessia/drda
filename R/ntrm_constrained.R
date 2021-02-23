@@ -22,13 +22,7 @@
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_ared <- function(
-  nu,
-  f_current,
-  f_candidate,
-  s_current,
-  s_candidate,
-  m0_current,
-  m0_candidate,
+  nu, f_current, f_candidate, s_current, s_candidate, m0_current, m0_candidate,
   mu
 ) {
   # Equation (19.40) at page 582 of Nocedal and Wright (2006)
@@ -46,10 +40,7 @@ ntrm_ared <- function(
 #'
 #' @return A list containing the Jacobian matrix `A` and the indices of the
 #'   finite lower bounds `idx_lb` and finite upper bounds `idx_ub` constraints.
-ntrm_create_constraints <- function(
-  lower_bound,
-  upper_bound
-) {
+ntrm_create_constraints <- function(lower_bound, upper_bound) {
   idx_lb <- which(!is.infinite(lower_bound))
   idx_ub <- which(!is.infinite(upper_bound))
 
@@ -104,14 +95,11 @@ ntrm_create_constraints <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_error <- function(
-  obj,
-  mu
-) {
+ntrm_error <- function(obj, mu) {
   # See equation (19.10) at page 567 of Nocedal and Wright (2006)
   max(
-    ntrm_norm(obj$G - crossprod(obj$A, obj$z)),
-    ntrm_norm(obj$s * obj$z - mu),
+    ntrm_max_abs(obj$G - crossprod(obj$A, obj$z)),
+    ntrm_max_abs(obj$s * obj$z - mu),
     obj$m0
   )
 }
@@ -133,11 +121,7 @@ ntrm_error <- function(
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_inertia_correction <- function(
-  H,
-  A,
-  slack_variable,
-  lagrange_multiplier,
-  kappa
+  H, A, slack_variable, lagrange_multiplier, kappa
 ) {
   eps <- sqrt(.Machine$double.eps)
 
@@ -244,10 +228,7 @@ ntrm_inertia_correction <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_lagrange_multiplier <- function(
-  obj,
-  mu
-) {
+ntrm_lagrange_multiplier <- function(obj, mu) {
   # Compute Lagrange multipliers with equations (19.36)-(19.38) at page 581
   # of Nocedal and Wright (2006)
   #
@@ -287,13 +268,7 @@ ntrm_lagrange_multiplier <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_merit <- function(
-  nu,
-  f,
-  s,
-  m0,
-  mu
-) {
+ntrm_merit <- function(nu, f, s, m0, mu) {
   # Equation (19.26) at page 575
   f - mu * sum(log(s)) + nu * m0
 }
@@ -316,11 +291,7 @@ ntrm_merit <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_objective_function <- function(
-  p,
-  Q,
-  u
-) {
+ntrm_objective_function <- function(p, Q, u) {
   0.5 * sum(p * (Q %*% p)) + sum(p * u)
 }
 
@@ -352,12 +323,7 @@ ntrm_objective_function <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_pred <- function(
-  nu,
-  m0,
-  mp,
-  h
-) {
+ntrm_pred <- function(nu, m0, mp, h) {
   nu * (m0 - mp) - h
 }
 
@@ -385,12 +351,7 @@ ntrm_pred <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_reductions <- function(
-  obj,
-  candidate,
-  mu,
-  nu
-) {
+ntrm_reductions <- function(obj, candidate, mu, nu) {
   nu <- ntrm_update_nu(nu, candidate$h, obj$m0, candidate$mp)
 
   ared <- ntrm_ared(
@@ -451,7 +412,7 @@ ntrm_reductions <- function(
 #'
 #' Set `w(x) = C(x) - s`, `p = c(p_x, p_s)`,
 #' `Q = rbind(cbind(H, 0), cbind(0, V))`, `B = cbind(A, -S)`, `u = c(G, -mu e)`,
-#' y = `k - w(x)`. The problem becomes:
+#' `y(x) = k - w(x)`. The problem becomes:
 #'
 #' min_{p} 0.5 p' Q p + p' u
 #' subject to B p = y(x)
@@ -468,11 +429,7 @@ ntrm_reductions <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_step <- function(
-  obj,
-  delta,
-  tau
-) {
+ntrm_step <- function(obj, delta, tau) {
   # Section 19.5, 'Step computation' at page 580
   v <- ntrm_step_normal(obj$Y, obj$B, obj$r, delta, tau, obj$idx_s)
 
@@ -537,14 +494,7 @@ ntrm_step <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_step_normal <- function(
-  Y,
-  B,
-  slack_residual,
-  delta,
-  tau,
-  idx_s
-) {
+ntrm_step_normal <- function(Y, B, slack_residual, delta, tau, idx_s) {
   # See Section 4.1 (pages 73-76), Section 18.5 (pages 547-548), and
   # Section 19.5 (page 580) of Nocedal and Wright (2006)
   rho <- 0.8 * delta
@@ -626,13 +576,7 @@ ntrm_step_normal <- function(
 #'
 #' @return New step obtained by starting at `p` and moving along direction `d`
 #'   such that `min(p_new[idx_s]) >= -tau`.
-ntrm_step_shrink <- function(
-  p,
-  a,
-  d,
-  tau,
-  idx_s
-) {
+ntrm_step_shrink <- function(p, a, d, tau, idx_s) {
   p_new <- p + a * d
 
   i <- which.min(p_new[idx_s])
@@ -686,15 +630,7 @@ ntrm_step_shrink <- function(
 #' @references
 #' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 #' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-ntrm_step_tilde <- function(
-  Q,
-  u,
-  B,
-  initial_value,
-  delta,
-  tau,
-  idx_s
-) {
+ntrm_step_tilde <- function(Q, u, B, initial_value, delta, tau, idx_s) {
   eps <- sqrt(.Machine$double.eps)
 
   m <- nrow(B)
@@ -867,24 +803,26 @@ ntrm_step_tilde <- function(
 #' algorithm for large scale nonlinear programming.
 #' **SIAM Journal on Optimization**, 9(4):877–900, 1999.
 #' doi: 10.1137/S1052623497325107.
-ntrm_update_nu <- function(
-  nu,
-  h,
-  m0,
-  mp
-) {
+ntrm_update_nu <- function(nu, h, m0, mp) {
   # We use Equation (19.41+) at page 582 to get an inequality similar to
   # Equation (18.36) at page 542 of Nocedal and Wright (2006)
   #
   # We choose rho = 0.3 as in NITRO (Byrd et al. 1998)
   # 1 / (1 - rho) = 1 / (1 - 0.3) = 1 / 0.7
-  nu_lb <- h / (0.7 * (m0 - mp))
+  denominator <- (0.7 * (m0 - mp))
 
-  if ((nu >= nu_lb) || is.nan(nu_lb) || is.infinite(nu_lb)) {
-    # old value satisfies the inequality or the new lower bound is invalid
+  if (abs(denominator) <= .Machine$double.eps) {
+    # basically m0 and mp are equal
     nu
   } else {
-    nu_lb + 0.5
+    nu_lb <- h / denominator
+
+    if (is.nan(nu_lb) || is.infinite(nu_lb) || (nu >= nu_lb)) {
+      # old value satisfies the inequality or the new lower bound is invalid
+      nu
+    } else {
+      nu_lb + 0.5
+    }
   }
 }
 
@@ -896,26 +834,19 @@ ntrm_update_nu <- function(
 #'   solution.
 #' @param candidate list containing all relevant variables of the proposed new
 #'   solution.
-#' @param gradient function handle to evaluate the gradient of the function to
-#'   minimize.
-#' @param hessian function handle to evaluate the Hessian of the function to
-#'   minimize.
+#' @param gh function handle to evaluate both the gradient and Hessian of the
+#'   function to minimize.
 #' @param mu barrier penalty parameter.
-ntrm_update_solution <- function(
-  obj,
-  candidate,
-  gradient,
-  hessian,
-  mu
-) {
+ntrm_update_solution <- function(obj, candidate, gh, mu) {
   obj$x <- candidate$x
   obj$f <- candidate$f
   obj$s <- candidate$s
   obj$r <- candidate$r
   obj$m0 <- candidate$m0
 
-  obj$G <- gradient(obj$x)
-  obj$H <- hessian(obj$x)
+  gradient_hessian <- gh(obj$x)
+  obj$G <- gradient_hessian$G
+  obj$H <- gradient_hessian$H
 
   obj$B <- cbind(obj$A, -diag(obj$s, nrow = obj$m))
   obj$Y <- rbind(
@@ -935,10 +866,8 @@ ntrm_update_solution <- function(
 #' Trust-Region Interior-Point method.
 #'
 #' @param fn function handle to evaluate the function to minimize.
-#' @param gradient function handle to evaluate the gradient of the function to
-#'   minimize.
-#' @param hessian function handle to evaluate the Hessian of the function to
-#'   minimize.
+#' @param gh function handle to evaluate both the gradient and Hessian of the
+#'   function to minimize.
 #' @param init numeric vector of starting values.
 #' @param max_iter integer value for the maximum number of iterations.
 #' @param lower_bound numeric vector of lower bounds for each variable.
@@ -959,15 +888,7 @@ ntrm_update_solution <- function(
 #' Todd Dennis Plantenga.
 #' **Large-scale nonlinear constrained optimization using trust regions**.
 #' Doctoral dissertation, Northwestern University, 1994.
-ntrm_constrained <- function(
-  fn,
-  gradient,
-  hessian,
-  init,
-  max_iter,
-  lower_bound,
-  upper_bound
-) {
+ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   # ---------
   # For details see Chapter 19 of Nocedal and Wright (2006).
   #
@@ -1034,8 +955,9 @@ ntrm_constrained <- function(
   # - Update parameter mu if necessary.
   # - Repeat.
   # -------
-
-  eps <- 9.0e-10
+  eps_1 <- 1.0e-10
+  eps_2 <- 1.0e-8
+  eps_counter <- 0
 
   delta <- 1
   mu <- 0.1
@@ -1095,9 +1017,11 @@ ntrm_constrained <- function(
     # function value
     f = fn(cur_optimum),
     # slack variables
-    s = rep(1, nrow(tmp$A)),
+    # TODO: algorithm is very sensitive to slack initialization, find some good
+    #       way to initialize these variables
+    s = rep(10, nrow(tmp$A)),
     # slack residuals (distances from boundary)
-    r = C(cur_optimum) - 1
+    r = C(cur_optimum) - 10
   )
 
   # Equation (19.41+) at page 580
@@ -1107,8 +1031,9 @@ ntrm_constrained <- function(
   # Hessian of the function to optimize. This is because our constraints
   # are linear (either `x - lb - s` or `ub - x - s`) and the second
   # derivatives are all equal to zero
-  obj$G <- gradient(obj$x)
-  obj$H <- hessian(obj$x)
+  gradient_hessian <- gh(obj$x)
+  obj$G <- gradient_hessian$G
+  obj$H <- gradient_hessian$H
 
   obj$B <- cbind(obj$A, -diag(obj$s, nrow = obj$m))
   obj$Y <- rbind(
@@ -1125,9 +1050,18 @@ ntrm_constrained <- function(
   repeat {
     error <- ntrm_error(obj, 0)
 
-    if (error < eps) {
+    if (error < eps_1) {
       converged <- TRUE
       break
+    } else if (error < eps_2) {
+      # the algorithm might be stuck, but the error is small enough for
+      # declaring it converged
+      if (eps_counter >= 100) {
+        converged <- TRUE
+        break
+      } else {
+        eps_counter <- eps_counter + 1
+      }
     }
 
     if (i == max_iter) {
@@ -1139,7 +1073,7 @@ ntrm_constrained <- function(
     repeat {
       error <- ntrm_error(obj, mu)
 
-      if ((error < mu) || (i == max_iter)) {
+      if (error < mu || (delta < eps_1 && error < eps_2) || i == max_iter) {
         break
       }
 
@@ -1156,10 +1090,8 @@ ntrm_constrained <- function(
       acceptance <- ntrm_reductions(obj, candidate, mu, nu)
       nu <- acceptance$nu
 
-      # TODO: check for the Maratos effect and perform a second-order correction
-
       if (acceptance$rho >= eta) {
-        obj <- ntrm_update_solution(obj, candidate, gradient, hessian, mu)
+        obj <- ntrm_update_solution(obj, candidate, gh, mu)
 
         # Equation (3.55) of Byrd et al. (1999)
         if (acceptance$rho >= 0.9) {
@@ -1174,10 +1106,11 @@ ntrm_constrained <- function(
       i <- i + 1
     }
 
-    delta <- min(100, max(5 * delta, 1))
+    delta <- 1
+    nu <- 0.5
     mu <- 0.2 * mu
 
-    # since we updated the penaly parameter, recompute the associated variables
+    # since we updated the penalty parameter, recompute the associated variables
     obj$u <- c(obj$G, -rep(mu, obj$m))
     obj$z <- ntrm_lagrange_multiplier(obj, mu)
   }

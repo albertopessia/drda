@@ -2,7 +2,7 @@
 % Please edit documentation in R/drda.R
 \name{drda}
 \alias{drda}
-\title{Fit a parametric model to dose-response data}
+\title{Fit non-linear growth curves}
 \usage{
 drda(
   formula,
@@ -43,22 +43,22 @@ unset. The ‘factory-fresh’ default is \code{\link[stats]{na.omit}}. Another
 possible value is \code{NULL}, no action. Value \code{\link[stats]{na.exclude}}
 can be useful.}
 
-\item{mean_function}{the model to be fitted. Currently only "logistic4" is
-supported.}
+\item{mean_function}{the model to be fitted. See \code{details} for available
+models.}
 
-\item{lower_bound}{numeric vector of length 4 with the minimum admissible
-values of the parameters.}
+\item{lower_bound}{numeric vector with the minimum admissible values of the
+parameters. Use \code{-Inf} to specify an unbounded parameter.}
 
-\item{upper_bound}{numeric vector of length 4 with the maximum admissible
-values of the parameters.}
+\item{upper_bound}{numeric vector with the maximum admissible values of the
+parameters. Use \code{Inf} to specify an unbounded parameter.}
 
 \item{start}{starting values for the parameters.}
 
 \item{max_iter}{maximum number of iterations in the optimization algorithm.}
 }
 \value{
-An object of class "drda", that is a list containing the following
-components:
+An object of class \code{drda} and \code{model_fit}, where \code{model} is the
+chosen mean function. It is a list containing the following components:
 \describe{
 \item{converged}{boolean value assessing if the optimization algorithm
 converged or not.}
@@ -66,19 +66,25 @@ converged or not.}
 optimization algorithm}
 \item{constrained}{boolean value set to \code{TRUE} if optimization was
 constrained.}
-\item{coefficients}{maximum likelihood estimates of the model
-parameters.}
-\item{sigma}{corrected maximum likelihood estimate of the standard
-deviation.}
-\item{loglik}{maximum value of the log-likelihood function.}
-\item{df.residuals}{residual degrees of freedom.}
 \item{estimated}{boolean vector indicating which parameters were
 estimated from the data.}
+\item{coefficients}{maximum likelihood estimates of the model
+parameters.}
+\item{rss}{minimum value (found) of the residual sum of squares.}
+\item{df.residuals}{residual degrees of freedom.}
 \item{fitted.values}{fitted mean values.}
 \item{residuals}{residuals, that is response minus fitted values.}
 \item{weights}{(only for weighted fits) the specified weights.}
-\item{fisher.info}{Fisher information matrix evaluated at the maximum
-likelihood estimator.}
+\item{mean_function}{model that was used for fitting.}
+\item{n}{effective sample size.}
+\item{sigma}{corrected maximum likelihood estimate of the standard
+deviation.}
+\item{loglik}{maximum value (found) of the log-likelihood function.}
+\item{fisher.info}{observed Fisher information matrix evaluated at the
+maximum likelihood estimator.}
+\item{vcov}{approximate variance-covariance matrix of the model
+parameters.}
+\item{mean_function}{string with the chosen model used for fitting.}
 \item{call}{the matched call.}
 \item{terms}{the \code{\link[stats]{terms}} object used.}
 \item{model}{the model frame used.}
@@ -87,5 +93,111 @@ likelihood estimator.}
 }
 }
 \description{
-Use a Newton trust-region method to fit a curve to dose-response data.
+Use the Newton's with a trust-region method to fit non-linear growth curves
+to observed data.
+}
+\details{
+\subsection{Available models}{
+\subsection{Generalized logistic function}{
+
+The most general model in this package is the generalized logistic function
+selected by setting \code{mean_function = "logistic6"}. It is defined in this
+package as the 6-parameter function
+
+\code{alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+
+where \code{eta != 0}, \code{nu > 0}, and \code{xi > 0}. Although \code{omega} can be any real
+value, we use the convention \code{omega > 0} to avoid identifiability problems:
+when \code{omega < 0} it is always possible to adjust the other parameter to
+obtain the same exact curve. When \code{omega > 0} and \code{eta > 0} the curve is
+monotonically increasing. If \code{omega > 0} and \code{eta < 0} the curve is
+monotonically decreasing.
+
+Parameter \code{omega > 0} is related to the width of the curve.
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+Parameter \code{xi} affects the value of the upper asymptote.
+
+\strong{Note}: the 6-parameter logistic function is non-identifiable from data and
+should not be used in real applications. It is available only for theoretical
+research convenience.
+}
+
+\subsection{5-parameter logistic function}{
+
+The 5-parameter logistic function can be selected by setting
+\code{mean_function = "logistic5"}. The function is obtained by setting \code{xi = 1}
+in the generalized logistic function, that is
+
+\code{alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{omega > 0} represents the width of the curve. The upper horizontal
+asymptote is simply equal to \code{alpha + omega}.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+}
+
+\subsection{4-parameter logistic function}{
+
+The 4-parameter logistic function is the default model of \code{drda}. It can be
+explicitly selected by setting \code{mean_function = "logistic4"}. The function is
+obtained by setting \code{xi = 1} and \code{nu = 1} in the generalized logistic
+function, that is
+
+\code{alpha + omega / (1 + exp(-eta * (x - phi)))}
+
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{omega > 0} represents the width of the curve. The upper horizontal
+asymptote is simply equal to \code{alpha + omega}.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
+mid-point, i.e. \verb{f(phi; alpha, omega, eta, phi) = alpha + omega / 2}.
+}
+
+\subsection{2-parameter logistic function}{
+
+The 2-parameter logistic function can be selected by setting
+\code{mean_function = "logistic2"}. The function is obtained by setting \code{xi = 1},
+\code{nu = 1}, \code{omega = 1}, and \code{alpha = 0} in the generalized logistic function,
+that is
+
+\code{1 / (1 + exp(-eta * (x - phi)))}
+
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
+mid-point, i.e. \verb{f(phi; eta, phi) = 1 / 2}.
+}
+
+\subsection{Gompertz function}{
+
+The Gompertz function is the limit for \code{nu -> 0} of the 5-parameter logistic
+function. It can be selected by setting \code{mean_function = "gompertz"}. The
+function is defined in this package as
+
+\code{alpha + omega * exp(-exp(-eta * (x - phi)))}
+
+where \code{eta != 0}.
+
+Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{omega > 0} represents the width of the curve. The upper horizontal
+asymptote is simply equal to \code{alpha + omega}.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+}
+
+\subsection{Notes on the chosen parametrization}{
+
+In the literature it is often found an alternative parametrization in which
+our curve width \code{omega} is replaced by the difference between the upper
+horizontal asymptote \code{beta} and the lower horizontal asymptote \code{alpha}, that
+is \code{omega = beta - alpha} or \code{beta = alpha + omega}.
+
+The two versions are equivalent and lead to the same inference results.
+}
+
+}
 }

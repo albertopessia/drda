@@ -4,24 +4,13 @@
 \alias{ntrm_constrained}
 \title{Newton Trust-Region Interior-Point Method}
 \usage{
-ntrm_constrained(
-  fn,
-  gradient,
-  hessian,
-  init,
-  max_iter,
-  lower_bound,
-  upper_bound
-)
+ntrm_constrained(fn, gh, init, max_iter, lower_bound, upper_bound)
 }
 \arguments{
 \item{fn}{function handle to evaluate the function to minimize.}
 
-\item{gradient}{function handle to evaluate the gradient of the function to
-minimize.}
-
-\item{hessian}{function handle to evaluate the Hessian of the function to
-minimize.}
+\item{gh}{function handle to evaluate both the gradient and Hessian of the
+function to minimize.}
 
 \item{init}{numeric vector of starting values.}
 

@@ -17,7 +17,7 @@ Authors@R: c(
       comment = c(ORCID = "0000-0001-8220-5859")
     )
   )
-Description: Fit the 4-parameter logistic function to drug response data.
+Description: Fit logistic functions to observed data.
 License: MIT + file LICENSE
 URL: https://github.com/albertopessia/drda
 BugReports: https://github.com/albertopessia/drda/issues
