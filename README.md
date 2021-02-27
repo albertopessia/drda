@@ -151,8 +151,7 @@ fit <- drda(
 
 summary(fit)
 
-# our starting point suggestion was actually worse than the automatically chosen
-one.
+# our starting point was actually worse than the automatic one.
 ```
 
 ### Basic plot functionality
@@ -161,12 +160,11 @@ one.
 fit <- drda(y ~ x, data = test_data, mean_function = "logistic5")
 
 # plot the data used for fitting, the maximum likelihood curve, and
-*approximate* confidence intervals for the curve
+# *approximate* confidence intervals for the curve
 plot(fit)
 
 # when the model is a 4-parameter logistic function, or a 2-parameter logistic
-# function, parameters have a clear interpretation and are also shown in the
-# plot
+# function, the `phi` parameter is also shown
 fit <- drda(y ~ x, data = test_data, mean_function = "logistic4")
 plot(fit)
 
