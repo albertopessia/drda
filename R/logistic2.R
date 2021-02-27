@@ -12,18 +12,6 @@ logistic2_new <-  function(
     }
   }
 
-  if (!is.null(lower_bound)) {
-    if (length(lower_bound) != 2) {
-      stop("'lower_bound' must be of length 2", call. = FALSE)
-    }
-  }
-
-  if (!is.null(upper_bound)) {
-    if (length(upper_bound) != 2) {
-      stop("''upper_bound' must be of length 2", call. = FALSE)
-    }
-  }
-
   object <- structure(
     list(
       x = x,
@@ -43,17 +31,24 @@ logistic2_new <-  function(
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
     object$constrained <- TRUE
 
-    object$lower_bound <- if (!is.null(lower_bound)) {
-      lower_bound
-    } else {
+    if (is.null(lower_bound)) {
       rep(-Inf, 2)
+    } else {
+      if (length(lower_bound) != 2) {
+        stop("'lower_bound' must be of length 2", call. = FALSE)
+      }
     }
 
-    object$upper_bound <- if (!is.null(upper_bound)) {
-      upper_bound
-    } else {
+    if (is.null(upper_bound)) {
       rep(Inf, 2)
+    } else {
+      if (length(upper_bound) != 2) {
+        stop("'upper_bound' must be of length 2", call. = FALSE)
+      }
     }
+
+    object$lower_bound <- lower_bound
+    object$upper_bound <- upper_bound
   }
 
   object
@@ -64,7 +59,7 @@ logistic2_new <-  function(
 #' Evaluate at a particular set of parameters the 2-parameter logistic function.
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -91,7 +86,7 @@ logistic2_fn <- function(x, theta) {
 #' Evaluate at a particular set of parameters the 2-parameter logistic function.
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -120,7 +115,7 @@ fn.logistic2_fit <- function(object, x, theta) {
 #' 2-parameter logistic function.
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -145,23 +140,24 @@ gradient_hessian.logistic2 <- function(object, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  t <- q / f
-  u <- r / f
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
 
-  gradient <- matrix(1, nrow = length(x), ncol = 2)
+  gradient <- matrix(0, nrow = length(x), ncol = 2)
   hessian <- array(0, dim = c(length(x), 2, 2))
 
-  gradient[, 1] <- q / f^2
-  gradient[, 2] <- r / f^2
+  gradient[, 1] <- t
+  gradient[, 2] <- u
 
-  hessian[, 1, 1] <- (2 * t - (x - phi)) * gradient[, 1]
-  hessian[, 2, 1] <- (2 * t - (x - phi) + 1 / eta) * gradient[, 2]
+  hessian[, 1, 1] <- q * t * (2 / f - 1 / b)
+  hessian[, 2, 1] <- (1 / eta + (2 - f / b) * t * f) * u
 
   hessian[, 1, 2] <- hessian[, 2, 1]
-  hessian[, 2, 2] <- (2 * u + eta) * gradient[, 2]
+  hessian[, 2, 2] <- (2 / f - 1 / b) * r * u
 
   # When `b` is infinite, gradient and Hessian show NaNs
-  # In the limit b -> Inf, both gradient and Hessian converge to zero
+  # these are the limits for b -> Inf
   if (any(is.nan(gradient))) {
     gradient[is.nan(gradient)] <- 0
   }
@@ -179,7 +175,7 @@ gradient_hessian.logistic2 <- function(object, theta) {
 #' 2-parameter logistic model.
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -220,7 +216,7 @@ rss_fixed.logistic2 <- function(object, known_param) {
 #' against the mean of a 2-parameter logistic model.
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -311,7 +307,7 @@ init.logistic2 <- function(object) {
   m <- object$m
   stats <- object$stats
 
-  linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 3]))
+  linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
 
   if (linear_coef[2, 4] > 0.2) {
@@ -428,7 +424,7 @@ init.logistic2 <- function(object) {
 #' Likelihood approach.
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -556,51 +552,24 @@ fit_constrained.logistic2 <- function(object) {
 #'
 #' @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic2 <- function(object, theta, sigma) {
-  x <- object$stats[, 1]
-  y <- object$stats[, 3]
   w <- object$stats[, 2]
+  d <- fn(object, object$stats[, 1], theta) - object$stats[, 3]
 
-  eta <- theta[1]
-  phi <- theta[2]
-
-  b <- exp(-eta * (x - phi))
-
-  f <- 1 + b
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  t <- q / f^2
-  u <- r / f^2
-
-  d <- fn(object, x, theta) - y
-
-  gradient <- matrix(1, nrow = object$m, ncol = 2)
-
-  gradient[, 1] <- t
-  gradient[, 2] <- u
+  gh <- gradient_hessian(object, theta)
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
-  G <- matrix(1, nrow = object$m, ncol = 2)
-  G[, 1] <- w * d * gradient[, 1]
-  G[, 2] <- w * d * gradient[, 2]
+  G <- matrix(0, nrow = object$m, ncol = 2)
+  G[, 1] <- w * d * gh$G[, 1]
+  G[, 2] <- w * d * gh$G[, 2]
 
   G <- apply(G, 2, sum)
 
-  hessian <- array(0, dim = c(object$m, 2, 2))
-
-  hessian[, 1, 1] <- (eta + 2 * f * u) * q * t / r
-  hessian[, 2, 1] <- (eta * t + u / eta + 2 * f * t * u)
-
-  hessian[, 1, 2] <- hessian[, 2, 1]
-  hessian[, 2, 2] <- (eta + 2 * f * u) * u
-
   H <- array(0, dim = c(object$m, 2, 2))
 
-  H[, , 1] <- w * (d * hessian[, , 1] + gradient[, 1] * gradient)
-  H[, , 2] <- w * (d * hessian[, , 2] + gradient[, 2] * gradient)
+  H[, , 1] <- w * (d * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (d * gh$H[, , 2] + gh$G[, 2] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
@@ -618,11 +587,57 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
 
 #' 2-parameter logistic fit
 #'
+#' Evaluate the variance of the maximum likelihood curve at different predictor
+#' values.
+#'
+#' @param object object of class `logistic2_fit`.
+#' @param x numeric vector at which to evaluate the variance.
+#'
+#' @return Numeric vector with the variances of the maximum likelihood curve.
+curve_variance.logistic2_fit <- function(object, x) {
+  m <- length(x)
+
+  V <- object$vcov[1:2, 1:2]
+
+  if (any(is.na(V))) {
+    return(rep(NA_real_, m))
+  }
+
+  eta <- object$coefficients[1]
+  phi <- object$coefficients[2]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(0, nrow = m, ncol = 2)
+
+  G[, 1] <- t
+  G[, 2] <- u
+
+  variance <- rep(NA_real_, m)
+
+  for (i in seq_len(m)) {
+    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
+  }
+
+  variance
+}
+
+#' 2-parameter logistic fit
+#'
 #' Evaluate the normalized area under the curve (AUC) and area above the curve
 #' (AAC).
 #'
 #' @details
-#' The 2-parameter logistic function `f(x; theta)` is defined in this package as
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'

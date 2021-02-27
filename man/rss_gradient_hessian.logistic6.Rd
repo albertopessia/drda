@@ -24,14 +24,15 @@ Evaluate the gradient and Hessian of the residual sum of squares (RSS)
 against the mean of a 6-parameter logistic model.
 }
 \details{
-The 6-parameter logistic function \verb{f(x; theta)} is defined in this package as
+The 6-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, omega, eta, phi, nu, xi)}.
+where \code{theta = c(alpha, beta, eta, phi, nu, xi)}, \code{beta > alpha}, \code{xi > 0},
+and \code{nu > 0}.
 
 In our optimization algorithm, however, we consider instead the equivalent
 function \verb{f(x; theta')}
 
-\verb{alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
+\code{alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))}
 }

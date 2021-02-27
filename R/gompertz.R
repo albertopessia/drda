@@ -1,5 +1,5 @@
 #' @rdname logistic6_new
-logistic4_new <-  function(
+gompertz_new <-  function(
   x, y, w, start, max_iter, lower_bound, upper_bound
 ) {
   if (!is.null(start)) {
@@ -27,7 +27,7 @@ logistic4_new <-  function(
       start = start,
       max_iter = max_iter
     ),
-    class = "logistic4"
+    class = "gompertz"
   )
 
   object$m <- nrow(object$stats)
@@ -42,7 +42,7 @@ logistic4_new <-  function(
         stop("'lower_bound' must be of length 4", call. = FALSE)
       }
 
-      if (!is.infinite(lower_bound[2]) && (lower_bound[2] < lower_bound[1])) {
+      if (lower_bound[2] < lower_bound[1]) {
         # lower bound on alpha is a stronger constraint because beta > alpha
         lower_bound[2] <- lower_bound[1]
       }
@@ -55,7 +55,7 @@ logistic4_new <-  function(
         stop("'upper_bound' must be of length 4", call. = FALSE)
       }
 
-      if (!is.infinite(upper_bound[1]) && (upper_bound[1] > upper_bound[2])) {
+      if (upper_bound[1] > upper_bound[2]) {
         # upper bound on beta is a stronger constraint because alpha < beta
         upper_bound[1] <- upper_bound[2]
       }
@@ -68,87 +68,88 @@ logistic4_new <-  function(
   object
 }
 
-#' 4-parameter logistic function
+#' Gompertz function
 #'
-#' Evaluate at a particular set of parameters the 4-parameter logistic function.
+#' Evaluate at a particular set of parameters the Gompertz function.
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
-#' @param x numeric vector at which the logistic function is to be evaluated.
+#' @param x numeric vector at which the Gompertz function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, beta, eta, phi)`.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
-#'   logistic function.
+#'   Gompertz function.
 #'
 #' @export
-logistic4_fn <- function(x, theta) {
+gompertz_fn <- function(x, theta) {
   alpha <- theta[1]
   beta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
 
-  alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))
+  alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))
 }
 
-#' 4-parameter logistic function
+#' Gompertz function
 #'
-#' Evaluate at a particular set of parameters the 4-parameter logistic function.
+#' Evaluate at a particular set of parameters the Gompertz function.
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
-#' @param object object of class `logistic4`.
-#' @param x numeric vector at which the logistic function is to be evaluated.
+#' @param object object of class `gompertz`.
+#' @param x numeric vector at which the Gompertz function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, beta, eta, phi)`.
 #'
-#' @return Numeric vector with the values of the logistic function.
-fn.logistic4 <- function(object, x, theta) {
-  logistic4_fn(x, theta)
+#' @return Numeric vector of the same length of `x` with the values of the
+#'   Gompertz function.
+fn.gompertz <- function(object, x, theta) {
+  gompertz_fn(x, theta)
 }
 
-#' @rdname fn.logistic4
-fn.logistic4_fit <- function(object, x, theta) {
-  logistic4_fn(x, theta)
+#' @rdname fn.gompertz
+fn.gompertz_fit <- function(object, x, theta) {
+  gompertz_fn(x, theta)
 }
 
-#' 4-parameter logistic function
+#' Gompertz function
 #'
 #' Evaluate at a particular set of parameters the gradient and Hessian of the
-#' 4-parameter logistic function.
+#' Gompertz function.
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, beta, eta, phi)`.
 #'
 #' @return List of two elements: `G` the gradient and `H` the Hessian.
-gradient_hessian.logistic4 <- function(object, theta) {
+gradient_hessian.gompertz <- function(object, theta) {
   x <- object$stats[, 1]
 
   alpha <- theta[1]
@@ -160,20 +161,21 @@ gradient_hessian.logistic4 <- function(object, theta) {
 
   b <- exp(-eta * (x - phi))
 
-  f <- 1 + b
+  g <- exp(-b)
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- q * g
+  u <- r * g
 
-  gradient <- matrix(0, nrow = length(x), ncol = 4)
-  hessian <- array(0, dim = c(length(x), 4, 4))
+  v <- expm1(-eta * (x - phi))
 
-  gradient[, 1] <- b / f
-  gradient[, 2] <- 1 / f
+  gradient <- matrix(0, nrow = object$m, ncol = 4)
+  hessian <- array(0, dim = c(object$m, 4, 4))
+
+  gradient[, 1] <- 1 - g
+  gradient[, 2] <- g
   gradient[, 3] <- omega * t
   gradient[, 4] <- omega * u
 
@@ -189,13 +191,13 @@ gradient_hessian.logistic4 <- function(object, theta) {
 
   hessian[, 1, 3] <- hessian[, 3, 1]
   hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- omega * q * t * (2 / f - 1 / b)
-  hessian[, 4, 3] <- omega * (1 / eta + (2 - f / b) * t * f) * u
+  hessian[, 3, 3] <- omega * (x - phi) * t * v
+  hessian[, 4, 3] <- omega * (u / eta - eta * t * v)
 
   hessian[, 1, 4] <- hessian[, 4, 1]
   hessian[, 2, 4] <- hessian[, 4, 2]
   hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- omega * (2 / f - 1 / b) * r * u
+  hessian[, 4, 4] <- -omega * eta * u * v
 
   # When `b` is infinite, gradient and Hessian show NaNs
   # these are the limits for b -> Inf
@@ -214,33 +216,33 @@ gradient_hessian.logistic4 <- function(object, theta) {
 #' Residual sum of squares
 #'
 #' Evaluate the residual sum of squares (RSS) against the mean of a
-#' 4-parameter logistic model.
+#' Gompertz model.
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #' @param known_param numeric vector with the known fixed values of the model
 #'   parameters, if any.
 #'
 #' @return Function handle `f(theta)` to evaluate the RSS associated to a
 #'   particular parameter choice `theta`.
-rss.logistic4 <- function(object) {
+rss.gompertz <- function(object) {
   function(theta) {
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
 
-#' @rdname rss.logistic4
-rss_fixed.logistic4 <- function(object, known_param) {
+#' @rdname rss.gompertz
+rss_fixed.gompertz <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
 
@@ -256,25 +258,25 @@ rss_fixed.logistic4 <- function(object, known_param) {
 #' Residual sum of squares
 #'
 #' Evaluate the gradient and Hessian of the residual sum of squares (RSS)
-#' against the mean of a 4-parameter logistic model.
+#' against the mean of a Gompertz model.
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #' @param known_param numeric vector with the known fixed values of the model
 #'   parameters, if any.
 #'
 #' @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #'   the RSS associated to a particular parameter choice `theta`.
-rss_gradient_hessian.logistic4 <- function(object) {
+rss_gradient_hessian.gompertz <- function(object) {
   function(theta) {
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
@@ -296,8 +298,8 @@ rss_gradient_hessian.logistic4 <- function(object) {
   }
 }
 
-#' @rdname rss_gradient_hessian.logistic4
-rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
+#' @rdname rss_gradient_hessian.gompertz
+rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
 
@@ -333,11 +335,11 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
 #' Given a set of parameters, compute the maximum likelihood estimates of the
 #' lower and upper horizontal asymptotes.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #' @param theta vector of parameters.
 #'
 #' @return Numeric vector of length 2 with the MLE of the two asymptotes.
-mle_asy.logistic4 <- function(object, theta) {
+mle_asy.gompertz <- function(object, theta) {
   m <- object$m
 
   x <- object$stats[, 1]
@@ -347,7 +349,7 @@ mle_asy.logistic4 <- function(object, theta) {
   eta <- theta[3]
   phi <- theta[4]
 
-  g <- 1 / (1 + exp(- eta * (x - phi)))
+  g <- exp(-exp(-eta * (x - phi)))
 
   t1 <- 0
   t2 <- 0
@@ -381,14 +383,14 @@ mle_asy.logistic4 <- function(object, theta) {
 #' Initialize vector of parameters
 #'
 #' Given the sufficient statistics, try to guess a good approximation to the
-#' Maximum Likelihood estimator of the four parameters of the logistic function.
+#' Maximum Likelihood estimator of the four parameters of the Gompertz function.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #'
 #' @return Numeric vector of length 4 with a (hopefully) good starting point.
 #'
 #' @importFrom stats coefficients lm median nls nls.control optim
-init.logistic4 <- function(object) {
+init.gompertz <- function(object) {
   m <- object$m
   stats <- object$stats
 
@@ -449,7 +451,7 @@ init.logistic4 <- function(object) {
   }
 
   D <- data.frame(y = object$y, x = object$x)
-  frm <- y ~ alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))
+  frm <- y ~ alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))
   start <- c(
     alpha = theta[1], beta = theta[2], eta = theta[3], phi = theta[4]
   )
@@ -525,22 +527,21 @@ init.logistic4 <- function(object) {
   theta
 }
 
-#' 4-parameter logistic fit
+#' Gompertz fit
 #'
-#' Fit a 4-parameter logistic function to observed data with a Maximum
-#' Likelihood approach.
+#' Fit a Gompertz function to observed data with a Maximum Likelihood approach.
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #'
 #' @return A list with the following components:
 #'   \describe{
@@ -560,18 +561,11 @@ init.logistic4 <- function(object) {
 #'     \item{residuals}{residuals, that is response minus fitted values.}
 #'     \item{weights}{vector of weights used for the fit.}
 #'   }
-fit.logistic4 <- function(object) {
+fit.gompertz <- function(object) {
   solution <- find_optimum(object)
 
+  # bring the parameters back to their natural scale
   theta <- solution$optimum
-
-  if (theta[1] > theta[2]) {
-    # we might have converged to the dual solution
-    tmp <- theta[1]
-    theta[1] <- theta[2]
-    theta[2] <- tmp
-    theta[3] <- -theta[3]
-  }
 
   result <- list(
     converged = solution$converged,
@@ -581,7 +575,7 @@ fit.logistic4 <- function(object) {
     coefficients = theta,
     rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
     df.residual = object$n - 4,
-    fitted.values = logistic4_fn(object$x, theta),
+    fitted.values = gompertz_fn(object$x, theta),
     weights = object$w
   )
 
@@ -592,13 +586,13 @@ fit.logistic4 <- function(object) {
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "logistic4_fit"
+  class(result) <- "gompertz_fit"
 
   result
 }
 
-#' @rdname fit.logistic4
-fit_constrained.logistic4 <- function(object) {
+#' @rdname fit.gompertz
+fit_constrained.gompertz <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
   # second column is for equality parameters
@@ -626,14 +620,6 @@ fit_constrained.logistic4 <- function(object) {
   theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
 
-  if (theta[1] > theta[2]) {
-    # we might have converged to the dual solution
-    tmp <- theta[1]
-    theta[1] <- theta[2]
-    theta[2] <- tmp
-    theta[3] <- -theta[3]
-  }
-
   estimated <- !constraint[, 2]
 
   result <- list(
@@ -644,7 +630,7 @@ fit_constrained.logistic4 <- function(object) {
     coefficients = theta,
     rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
     df.residual = object$n - sum(estimated),
-    fitted.values = logistic4_fn(object$x, theta),
+    fitted.values = gompertz_fn(object$x, theta),
     weights = object$w
   )
 
@@ -655,30 +641,29 @@ fit_constrained.logistic4 <- function(object) {
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "logistic4_fit"
+  class(result) <- "gompertz_fit"
 
   result
 }
 
-#' 4-parameter logistic fit
+#' Gompertz fit
 #'
 #' Evaluate the Fisher information matrix at the maximum likelihood estimate.
 #'
 #' @details
-#' Let `mu(x; theta)` be the 4-parameter logistic function. We assume that our
-#' observations `y` are independent and such that
-#' `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
-#' distribution `N(0, 1)`.
+#' Let `mu(x; theta)` be the Gompertz function. We assume that our observations
+#' `y` are independent and such that `y = mu(x; theta) + sigma * epsilon`,
+#' where `epsilon` has a standard Normal distribution `N(0, 1)`.
 #'
 #' The 4-by-4 (symmetric) Fisher information matrix is the expected value of
 #' the negative Hessian matrix of the log-likelihood function.
 #'
-#' @param object object of class `logistic4`.
+#' @param object object of class `gompertz`.
 #' @param theta numeric vector with the model parameters.
 #' @param sigma estimate of the standard deviation.
 #'
 #' @return Fisher information matrix evaluated at `theta`.
-fisher_info.logistic4 <- function(object, theta, sigma) {
+fisher_info.gompertz <- function(object, theta, sigma) {
   w <- object$stats[, 2]
   d <- fn(object, object$stats[, 1], theta) - object$stats[, 3]
 
@@ -716,16 +701,16 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
   fim
 }
 
-#' 4-parameter logistic fit
+#' Gompertz fit
 #'
 #' Evaluate the variance of the maximum likelihood curve at different predictor
 #' values.
 #'
-#' @param object object of class `logistic4_fit`.
+#' @param object object of class `gompertz_fit`.
 #' @param x numeric vector at which to evaluate the variance.
 #'
 #' @return Numeric vector with the variances of the maximum likelihood curve.
-curve_variance.logistic4_fit <- function(object, x) {
+curve_variance.gompertz_fit <- function(object, x) {
   m <- length(x)
 
   V <- object$vcov[1:4, 1:4]
@@ -768,20 +753,20 @@ curve_variance.logistic4_fit <- function(object, x) {
   variance
 }
 
-#' 4-parameter logistic fit
+#' Gompertz fit
 #'
 #' Evaluate the normalized area under the curve (AUC) and area above the curve
 #' (AAC).
 #'
 #' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' steepness of the curve or growth rate, and `phi` related to the function
+#' value at `x = 0`.
 #'
 #' The area under the curve (AUC) is simply the integral of `f(x; theta)`
 #' between `lower_bound` and `upper_bound` with respect to `x`.
@@ -801,7 +786,7 @@ curve_variance.logistic4_fit <- function(object, x) {
 #' dose ranges used in the literature. They are also symmetric around zero
 #' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
 #'
-#' @param object object of class `logistic4_fit`.
+#' @param object object of class `gompertz_fit`.
 #' @param lower_bound numeric value with the lower bound of the integration
 #'   interval.
 #' @param upper_bound numeric value with the upper bound of the integration
@@ -810,7 +795,7 @@ curve_variance.logistic4_fit <- function(object, x) {
 #' @return Numeric value with the requested area.
 #'
 #' @export
-nauc.logistic4_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+nauc.gompertz_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   eta <- object$coefficients[1]
   phi <- object$coefficients[2]
 
@@ -823,9 +808,9 @@ nauc.logistic4_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   nauc
 }
 
-#' @rdname nauc.logistic4_fit
+#' @rdname nauc.gompertz_fit
 #'
 #' @export
-naac.logistic4_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+naac.gompertz_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }

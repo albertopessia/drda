@@ -24,7 +24,7 @@ Evaluate the residual sum of squares (RSS) against the mean of a
 2-parameter logistic model.
 }
 \details{
-The 2-parameter logistic function \verb{f(x; theta)} is defined in this package as
+The 2-parameter logistic function \verb{f(x; theta)} is defined here as
 
 \code{1 / (1 + exp(-eta * (x - phi)))}
 

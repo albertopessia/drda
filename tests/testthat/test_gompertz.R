@@ -1,4 +1,4 @@
-context("4-parameter logistic - core functions")
+context("Gompertz - core functions")
 
 test_that("Constructor", {
   x <- round(
@@ -36,9 +36,9 @@ test_that("Constructor", {
   lower_bound <- c(0, -1, -Inf, -10)
   upper_bound <- c(3, 2, 0, 5)
 
-  object <- logistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
+  object <- gompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
-  expect_true(inherits(object, "logistic4"))
+  expect_true(inherits(object, "gompertz"))
   expect_equal(object$x, x)
   expect_equal(object$y, y)
   expect_equal(object$w, w)
@@ -51,9 +51,9 @@ test_that("Constructor", {
   expect_null(object$lower_bound)
   expect_null(object$upper_bound)
 
-  object <- logistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  object <- gompertz_new(x, y, w, start, max_iter, lower_bound, upper_bound)
 
-  expect_true(inherits(object, "logistic4"))
+  expect_true(inherits(object, "gompertz"))
   expect_equal(object$x, x)
   expect_equal(object$y, y)
   expect_equal(object$w, w)
@@ -83,9 +83,9 @@ test_that("Constructor", {
   )
   colnames(stats) <- c("x", "n", "m", "v")
 
-  object <- logistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
+  object <- gompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
-  expect_true(inherits(object, "logistic4"))
+  expect_true(inherits(object, "gompertz"))
   expect_equal(object$x, x)
   expect_equal(object$y, y)
   expect_equal(object$w, w)
@@ -98,9 +98,9 @@ test_that("Constructor", {
   expect_null(object$lower_bound)
   expect_null(object$upper_bound)
 
-  object <- logistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  object <- gompertz_new(x, y, w, start, max_iter, lower_bound, upper_bound)
 
-  expect_true(inherits(object, "logistic4"))
+  expect_true(inherits(object, "gompertz"))
   expect_equal(object$x, x)
   expect_equal(object$y, y)
   expect_equal(object$w, w)
@@ -136,37 +136,37 @@ test_that("Constructor: errors", {
   max_iter <- 10000
 
   expect_error(
-    logistic4_new(x, y, w, c(0, 1, -1, 0, 1), max_iter, NULL, NULL),
+    gompertz_new(x, y, w, c(0, 1, -1, 0, 1), max_iter, NULL, NULL),
     "'start' must be of length 4"
   )
 
   expect_error(
-    logistic4_new(x, y, w, c(0, -1, -1, 0), max_iter, NULL, NULL),
+    gompertz_new(x, y, w, c(0, -1, -1, 0), max_iter, NULL, NULL),
     "parameter 'beta' cannot be smaller than 'alpha'"
   )
 
   expect_error(
-    logistic4_new(x, y, w, c(0, 0, -1, 0), max_iter, NULL, NULL),
+    gompertz_new(x, y, w, c(0, 0, -1, 0), max_iter, NULL, NULL),
     "parameter 'beta' cannot be smaller than 'alpha'"
   )
 
   expect_error(
-    logistic4_new(x, y, w, c(0, 1, 0, 0), max_iter, NULL, NULL),
+    gompertz_new(x, y, w, c(0, 1, 0, 0), max_iter, NULL, NULL),
     "parameter 'eta' cannot be initialized to zero"
   )
 
   expect_error(
-    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 5), rep(Inf, 5)),
+    gompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 5), rep(Inf, 5)),
     "'lower_bound' must be of length 4"
   )
 
   expect_error(
-    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 5), rep(Inf, 4)),
+    gompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 5), rep(Inf, 4)),
     "'lower_bound' must be of length 4"
   )
 
   expect_error(
-    logistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), rep(Inf, 5)),
+    gompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 4), rep(Inf, 5)),
     "'upper_bound' must be of length 4"
   )
 })
@@ -176,11 +176,11 @@ test_that("Function value", {
   theta <- c(4 / 100, 9 / 10, -2, -3 / 2)
 
   true_value <- c(
-    0.89998272678518785, 0.89827610635754658, 0.75615618502842375,
-    0.080786250932707432, 0.040427955721356054, 0.040004281666562474
+    0.89998272661171928, 0.89827437740755882, 0.74350643245438481,
+    0.040000001627273678, 0.04, 0.04
   )
 
-  value <- logistic4_fn(x, theta)
+  value <- gompertz_fn(x, theta)
 
   expect_type(value, "double")
   expect_length(value, 6)
@@ -188,7 +188,7 @@ test_that("Function value", {
 
   object <- structure(
     list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "logistic4"
+    class = "gompertz"
   )
 
   value <- fn(object, object$stats[, 1], theta)
@@ -199,7 +199,7 @@ test_that("Function value", {
 
   object <- structure(
     list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "logistic4_fit"
+    class = "gompertz_fit"
   )
 
   value <- fn(object, object$stats[, 1], theta)
@@ -216,17 +216,17 @@ test_that("Gradient and Hessian", {
   true_gradient <- matrix(
     c(
       # alpha
-      0.000020085133502497096, 0.0020045274912249125, 0.16726024996694912,
-      0.95257412682243322, 0.99950237706819063, 0.99999502131795061,
+      0.000020085335210141429, 0.0020065378981874184, 0.18196926458792463,
+      0.99999999810782131, 1.0, 1.0,
       # beta
-      0.99997991486649750, 0.99799547250877509, 0.83273975003305088,
-      0.047425873177566781, 0.00049762293180936533, 4.9786820493880368e-06,
+      0.99997991466478986, 0.99799346210181258, 0.81803073541207537,
+      1.8921786948382926e-09, 0.0, 0.0,
       # eta
-      -0.000093407442446748936, -0.0053422529404918635, -0.096137223993448991,
-      0.058277891052876651, 0.0016265282457603059, 0.000026140172899299094,
+      -0.000093409318566541349, -0.0053529723590708084, -0.11340771690782248,
+      4.9026998302172214e-08, 0.0, 0.0,
       # phi
-      0.000034545735754643967, 0.0034408761005103580, 0.23956892504646165,
-      0.077703854737168868, 0.00085548552155061679, 8.5632904908345112e-06
+      0.000034546429617326587, 0.0034477803395290860, 0.28260608849525154,
+      6.5369331069562953e-08, 0.0,0.0
     ),
     nrow = 6,
     ncol = 4
@@ -239,52 +239,52 @@ test_that("Gradient and Hessian", {
       # (alpha, beta)
       rep(0, 6),
       # (alpha, eta)
-      0.00010861330517063830, 0.0062119220238277483, 0.11178746975982441,
-      -0.067764989596368199, -0.0018913119136747743, -0.000030395549882905923,
+      0.00010861548670528064, 0.0062243864640358238, 0.13186943826490986,
+      -5.7008137560665366e-08, 0.0, 0.0,
       # (alpha, phi)
-      -0.000040169460179818566, -0.0040010187215236721, -0.27856851749588564,
-      -0.090353319461824265, -0.00099475060645420557, -9.9573145242261759e-06,
+      -0.000040170266996891380, -0.0040090469064291698, -0.32861173080843203,
+      -7.6010850080887154e-08, 0.0, 0.0,
       # (beta, alpha)
       rep(0, 6),
       # (beta, beta)
       rep(0, 6),
       # (beta, eta)
-      -0.00010861330517063830, -0.0062119220238277483, -0.11178746975982441,
-      0.067764989596368199, 0.0018913119136747743, 0.000030395549882905923,
+      -0.00010861548670528064, -0.0062243864640358238, -0.13186943826490986,
+      5.7008137560665366e-08, 0.0, 0.0,
       # (beta, phi)
-      0.000040169460179818566, 0.0040010187215236721, 0.27856851749588564,
-      0.090353319461824265, 0.00099475060645420557, 9.9573145242261759e-06,
+      0.000040170266996891380, 0.0040090469064291698, 0.32861173080843203,
+      7.6010850080887154e-08, 0.0, 0.0,
       # (eta, alpha)
-      0.00010861330517063830, 0.0062119220238277483, 0.11178746975982441,
-      -0.067764989596368199, -0.0018913119136747743, -0.000030395549882905923,
+      0.00010861548670528064, 0.0062243864640358238, 0.13186943826490986,
+      -5.7008137560665366e-08, 0.0, 0.0,
       # (eta, beta)
-      -0.00010861330517063830, -0.0062119220238277483, -0.11178746975982441,
-      0.067764989596368199, 0.0018913119136747743, 0.000030395549882905923,
+      -0.00010861548670528064, -0.0062243864640358238, -0.13186943826490986,
+      5.7008137560665366e-08, 0.0, 0.0,
       # (eta, eta)
-      -0.00050510429899797611, -0.016522099929072128, -0.051347268812537329,
-      0.079125196968925631, 0.0061788564529920891, 0.00015958861514360448,
+      -0.00050512458968195536, -0.016588504216919084, -0.072737619271040149,
+      1.4035598794937503e-06, 0.0, 0.0,
       # (eta, phi)
-      0.00016953451261236921, 0.0089212330591913757, 0.0081702409985757300,
-      0.066648335256649741, 0.0028220761397279995, 0.000047998179978742605,
+      0.00016954166997178533, 0.0089605510835836899, 0.039955291861489536,
+      1.8387285071235523e-06, 0.0, 0.0,
       # (phi, alpha)
-      -0.000040169460179818566, -0.0040010187215236721, -0.27856851749588564,
-      -0.090353319461824265, -0.00099475060645420557, -9.9573145242261759e-06,
+      -0.000040170266996891380, -0.0040090469064291698, -0.32861173080843203,
+      -7.6010850080887154e-08, 0.0, 0.0,
       # (phi, beta)
-      0.000040169460179818566, 0.0040010187215236721, 0.27856851749588564,
-      0.090353319461824265, 0.00099475060645420557, 9.9573145242261759e-06,
+      0.000040170266996891380, 0.0040090469064291698, 0.32861173080843203,
+      7.6010850080887154e-08, 0.0, 0.0,
       # (phi, eta)
-      0.00016953451261236921, 0.0089212330591913757, 0.0081702409985757300,
-      0.066648335256649741, 0.0028220761397279995, 0.000047998179978742605,
+      0.00016954166997178533, 0.0089605510835836899, 0.039955291861489536,
+      1.8387285071235523e-06, 0.0, 0.0,
       # (phi, phi)
-      -0.000069088696086429638, -0.0068541628780712289, -0.31885641694258540,
-      0.14066701683364557, 0.0017092682062478156, 0.000017126410446066421
+      -0.000069091471467477887, -0.0068817105751956417, -0.45168627648672276,
+      2.4952175635444451e-06, 0.0, 0.0
     ),
     dim = c(6, 4, 4)
   )
 
   object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "logistic4"
+    list(stats = matrix(x, nrow = 6, ncol = 1), m = 6),
+    class = "gompertz"
   )
 
   gradient_hessian <- gradient_hessian(object, theta)
@@ -300,7 +300,7 @@ test_that("Gradient and Hessian", {
   expect_equal(gradient_hessian$H, true_hessian)
 })
 
-context("4-parameter logistic - RSS functions")
+context("Gompertz - RSS functions")
 
 test_that("Value of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
@@ -313,11 +313,11 @@ test_that("Value of the RSS", {
 
   theta <- c(4 / 100, 9 / 10, -2, -3 / 2)
 
-  true_value <- 0.11303184522146127
+  true_value <- 0.14821441202238303
 
   object <- structure(
     list(stats = cbind(x, n, m, v), m = 5),
-    class = "logistic4"
+    class = "gompertz"
   )
 
   rss_fn <- rss(object)
@@ -354,24 +354,24 @@ test_that("Gradient and Hessian of the RSS", {
   theta <- c(4 / 100, 9 / 10, -2, -3 / 2)
 
   true_gradient <- c(
-    -0.44448183274141616, -0.33640042687863516, 0.011139573467794527,
-    -0.087637515178570666
+    -0.62991438860939107, -0.34070142791491030, 0.034085930123255337,
+    -0.087075519079779177
   )
 
   true_hessian <- matrix(
     c(
       # alpha
-      6.6825689117006145, 0.46682906460177071, 0.18178820493109173,
-      0.48070540381088593,
+      7.0662376911651834, 0.30378070014214381, -0.080940272503724425,
+      0.20412286562894163,
       # beta
-      0.46682906460177071, 7.3837729590958440, -0.15237848511801803,
-      0.32224058730415969,
+      0.30378070014214381, 7.3262009085505290, -0.16221411023683938,
+      0.37153655314632497,
       # eta
-      0.18178820493109173, -0.15237848511801803, 0.022131256419080663,
-      -0.045877037358683589,
+      -0.080940272503724425, -0.16221411023683938, 0.044886511003499472,
+      -0.074635938611291648,
       # phi
-      0.48070540381088593, 0.32224058730415969, -0.045877037358683589,
-      0.19227987353030561
+      0.20412286562894163, 0.37153655314632497, -0.074635938611291648,
+      0.29863869130618845
     ),
     nrow = 4,
     ncol = 4
@@ -379,7 +379,7 @@ test_that("Gradient and Hessian of the RSS", {
 
   object <- structure(
     list(stats = cbind(x, n, m, v), m = 5),
-    class = "logistic4"
+    class = "gompertz"
   )
 
   rss_gh <- rss_gradient_hessian(object)
@@ -414,7 +414,7 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$H, true_hessian[2:3, 2:3])
 })
 
-context("4-parameter logistic - support functions")
+context("Gompertz - support functions")
 
 test_that("mle_asy", {
   x <- round(
@@ -434,14 +434,14 @@ test_that("mle_asy", {
 
   w <- rep(1, n)
 
-  theta <- c(0, 1, -0.89523277708641287, 0.13714073896752251)
+  theta <- c(0, 1, -0.55813290400196051, 0.77264827378630365)
 
   true_value <- c(
-    0.14236056369991001, 0.93473303092200540, -0.89523277708641287,
-    0.13714073896752251
+    0.15662111821394763, 0.95551649247615962, -0.55813290400196051,
+    0.77264827378630365
   )
 
-  object <- logistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- gompertz_new(x, y, w, NULL, 10000, NULL, NULL)
 
   result <- mle_asy(object, theta)
 
@@ -450,7 +450,7 @@ test_that("mle_asy", {
   expect_equal(result, true_value)
 })
 
-context("4-parameter logistic - fit")
+context("Gompertz - fit")
 
 test_that("fit", {
   x <- round(
@@ -473,57 +473,57 @@ test_that("fit", {
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.14236056369991001,
-    beta = 0.93473303092200540,
-    eta = -0.89523277708641287,
-    phi = 0.13714073896752251
+    alpha = 0.15662111821394763,
+    beta = 0.95551649247615962,
+    eta = -0.55813290400196051,
+    phi = 0.77264827378630365
   )
 
-  rss_value <- 0.030080292750857811
+  rss_value <- 0.040219212122823052
 
   fitted_values <- c(
-    rep(0.9332908321140832, 3), rep(0.9235378622597109, 2),
-    rep(0.8545832854276004, 2), rep(0.56283675776095411, 5),
-    rep(0.24201206136017809, 3), rep(0.15661550382373066, 4),
-    0.14420322010290027
+    rep(0.9446080059051645, 3), rep(0.9167702852554140, 2),
+    rep(0.8241333174784071, 2), rep(0.57380509005971934, 5),
+    rep(0.23286046858289257, 3), rep(0.15678520063890135, 4),
+    0.15662111821398466
   )
 
   residuals <- c(
-    -0.0052908321140832, -0.0452908321140832, 0.0467091678859168,
-    0.0244621377402891, -0.0675378622597109, 0.0424167145723996,
-    0.0284167145723996, -0.07483675776095411, -0.03083675776095411,
-    0.02316324223904589, 0.00316324223904589, 0.03616324223904589,
-    0.01698793863982191, 0.02298793863982191, 0.00098793863982191,
-    -0.03961550382373066, -0.01361550382373066, 0.02138449617626934,
-    0.06238449617626934, -0.05220322010290027
+    -0.0166080059051645, -0.0566080059051645, 0.0353919940948355,
+    0.0312297147445860, -0.0607702852554140, 0.0728666825215929,
+    0.0588666825215929, -0.08580509005971934, -0.04180509005971934,
+    0.01219490994028066, -0.00780509005971934, 0.02519490994028066,
+    0.02613953141710743, 0.03213953141710743, 0.01013953141710743,
+    -0.03978520063890135, -0.01378520063890135, 0.02121479936109865,
+    0.06221479936109865, -0.06462111821398466
   )
 
-  object <- logistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- gompertz_new(x, y, w, NULL, 10000, NULL, NULL)
 
   result <- fit(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
-  object <- logistic4_new(x, y, w, c(0, 1, -1, 0), 10000, NULL, NULL)
+  object <- gompertz_new(x, y, w, c(0, 1, -1, 1), 10000, NULL, NULL)
 
   result <- fit(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
@@ -550,80 +550,80 @@ test_that("fit_constrained: inequalities", {
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.14236056369991001,
-    beta = 0.93473303092200540,
-    eta = -0.89523277708641287,
-    phi = 0.13714073896752251
+    alpha = 0.15662111821394763,
+    beta = 0.95551649247615962,
+    eta = -0.55813290400196051,
+    phi = 0.77264827378630365
   )
 
-  rss_value <- 0.030080292750857811
+  rss_value <- 0.040219212122823052
 
   fitted_values <- c(
-    rep(0.9332908321140832, 3), rep(0.9235378622597109, 2),
-    rep(0.8545832854276004, 2), rep(0.56283675776095411, 5),
-    rep(0.24201206136017809, 3), rep(0.15661550382373066, 4),
-    0.14420322010290027
+    rep(0.9446080059051645, 3), rep(0.9167702852554140, 2),
+    rep(0.8241333174784071, 2), rep(0.57380509005971934, 5),
+    rep(0.23286046858289257, 3), rep(0.15678520063890135, 4),
+    0.15662111821398466
   )
 
   residuals <- c(
-    -0.0052908321140832, -0.0452908321140832, 0.0467091678859168,
-    0.0244621377402891, -0.0675378622597109, 0.0424167145723996,
-    0.0284167145723996, -0.07483675776095411, -0.03083675776095411,
-    0.02316324223904589, 0.00316324223904589, 0.03616324223904589,
-    0.01698793863982191, 0.02298793863982191, 0.00098793863982191,
-    -0.03961550382373066, -0.01361550382373066, 0.02138449617626934,
-    0.06238449617626934, -0.05220322010290027
+    -0.0166080059051645, -0.0566080059051645, 0.0353919940948355,
+    0.0312297147445860, -0.0607702852554140, 0.0728666825215929,
+    0.0588666825215929, -0.08580509005971934, -0.04180509005971934,
+    0.01219490994028066, -0.00780509005971934, 0.02519490994028066,
+    0.02613953141710743, 0.03213953141710743, 0.01013953141710743,
+    -0.03978520063890135, -0.01378520063890135, 0.02121479936109865,
+    0.06221479936109865, -0.06462111821398466
   )
 
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, NULL, 10000, c(-0.5, 0.9, -2, -1), c(0.5, 1.5, 0, 1)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(0, 1, -0.5, 0.5), 10000, c(-0.5, 0.9, -2, -1), c(0.5, 1.5, 0, 1)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(-1, 2, 3, -2), 10000, c(-0.5, 0.9, -2, -1), c(0.5, 1.5, 0, 1)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
@@ -652,78 +652,78 @@ test_that("fit_constrained: equalities", {
   theta <- c(
     alpha = 0,
     beta = 1,
-    eta = -0.48361565993858148,
-    phi = 0.55079105348629506
+    eta = -0.31497925998576551,
+    phi = 1.9292985149742921
   )
 
-  rss_value <- 0.061009639061112450
+  rss_value <- 0.095762067353560977
 
   fitted_values <- c(
-    rep(0.973588472981552128, 3), rep(0.92367933936267506, 2),
-    rep(0.79901316975086137, 2), rep(0.56620181868293205, 5),
-    rep(0.29997945701936762, 3), rep(0.12339358998664541, 4),
-    0.04417373430922942
+    rep(0.94005425461042752, 3), rep(0.88012827563932673, 2),
+    rep(0.76823294694391275, 2), rep(0.58006912883470518, 5),
+    rep(0.32467979372885109, 3), rep(0.09799490761511883, 4),
+    0.008246676243829067
   )
 
   residuals <- c(
-    -0.045588472981552128, -0.085588472981552128, 0.006411527018447872,
-    0.02432066063732494, -0.06767933936267506, 0.09798683024913863,
-    0.08398683024913863, -0.07820181868293205, -0.03420181868293205,
-    0.01979818131706795, -0.00020181868293205, 0.03279818131706795,
-    -0.04097945701936762, -0.03497945701936762, -0.05697945701936762,
-    -0.00639358998664541, 0.01960641001335459, 0.05460641001335459,
-    0.09560641001335459, 0.04782626569077058
+    -0.01205425461042752, -0.05205425461042752, 0.03994574538957248,
+    0.06787172436067327, -0.02412827563932673, 0.12876705305608725,
+    0.11476705305608725, -0.09206912883470518, -0.04806912883470518,
+    0.00593087116529482, -0.01406912883470518, 0.01893087116529482,
+    -0.06567979372885109, -0.05967979372885109, -0.08167979372885109,
+    0.01900509238488117, 0.04500509238488117, 0.08000509238488117,
+    0.12100509238488117, 0.083753323756170933
   )
 
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, NULL, 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 2)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values with same equalities
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(0, 1, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 2)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values with different equalities
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(1, 3, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 2)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
@@ -752,84 +752,84 @@ test_that("fit_constrained: equalities and inequalities", {
   theta <- c(
     alpha = 0,
     beta = 1,
-    eta = -0.48361565993858148,
-    phi = 0.55079105348629506
+    eta = -0.31497925998576551,
+    phi = 1.9292985149742921
   )
 
-  rss_value <- 0.061009639061112450
+  rss_value <- 0.095762067353560977
 
   fitted_values <- c(
-    rep(0.973588472981552128, 3), rep(0.92367933936267506, 2),
-    rep(0.79901316975086137, 2), rep(0.56620181868293205, 5),
-    rep(0.29997945701936762, 3), rep(0.12339358998664541, 4),
-    0.04417373430922942
+    rep(0.94005425461042752, 3), rep(0.88012827563932673, 2),
+    rep(0.76823294694391275, 2), rep(0.58006912883470518, 5),
+    rep(0.32467979372885109, 3), rep(0.09799490761511883, 4),
+    0.008246676243829067
   )
 
   residuals <- c(
-    -0.045588472981552128, -0.085588472981552128, 0.006411527018447872,
-    0.02432066063732494, -0.06767933936267506, 0.09798683024913863,
-    0.08398683024913863, -0.07820181868293205, -0.03420181868293205,
-    0.01979818131706795, -0.00020181868293205, 0.03279818131706795,
-    -0.04097945701936762, -0.03497945701936762, -0.05697945701936762,
-    -0.00639358998664541, 0.01960641001335459, 0.05460641001335459,
-    0.09560641001335459, 0.04782626569077058
+    -0.01205425461042752, -0.05205425461042752, 0.03994574538957248,
+    0.06787172436067327, -0.02412827563932673, 0.12876705305608725,
+    0.11476705305608725, -0.09206912883470518, -0.04806912883470518,
+    0.00593087116529482, -0.01406912883470518, 0.01893087116529482,
+    -0.06567979372885109, -0.05967979372885109, -0.08167979372885109,
+    0.01900509238488117, 0.04500509238488117, 0.08000509238488117,
+    0.12100509238488117, 0.083753323756170933
   )
 
-  object <- logistic4_new(
-    x, y, w, NULL, 10000, c(0, 1, -1, 0), c(0, 1, 0, 1)
+  object <- gompertz_new(
+    x, y, w, NULL, 10000, c(0, 1, -1, 0), c(0, 1, 0, 2)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 2)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  object <- logistic4_new(
-    x, y, w, c(0, 1, -0.8, 0.5), 10000, c(0, 1, -1, 0), c(0, 1, 0, 1)
+  object <- gompertz_new(
+    x, y, w, c(0, 1, -0.8, 0.5), 10000, c(0, 1, -1, 0), c(0, 1, 0, 2)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 2)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  object <- logistic4_new(
-    x, y, w, c(1, 2, -5, -1), 10000, c(0, 1, -1, 0), c(0, 1, 0, 1)
+  object <- gompertz_new(
+    x, y, w, c(1, 2, -5, -1), 10000, c(0, 1, -1, 0), c(0, 1, 0, 2)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 2)
+  expect_equal(result$df.residual, length(y) - 2)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 })
 
-context("4-parameter logistic - weighted fit")
+context("Gompertz - weighted fit")
 
 test_that("fit (weighted)", {
   x <- round(
@@ -853,35 +853,35 @@ test_that("fit (weighted)", {
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.17286261579329597,
-    beta = 0.94203946208670380,
-    eta = -0.96536781199483224,
-    phi = -0.0061161452508499899
+    alpha = 0.18884106587251166,
+    beta = 0.95399962011994593,
+    eta = -0.61538799796323045,
+    phi = 0.55914376657765553
   )
 
-  rss_value <- 0.015426894657174924
+  rss_value <- 0.021335475841876475
 
   fitted_values <- c(
-    rep(0.9410580985201252, 3), rep(0.9330686602484605, 1),
-    rep(0.8665029710263503, 2), rep(0.55631567380252894, 4),
-    rep(0.24759852669347845, 3), rep(0.18172932146179907, 3),
-    0.17383247345211994
+    rep(0.9463101911623085, 3), rep(0.9227699728144719, 1),
+    rep(0.8332069394171869, 2), rep(0.56545409142841065, 4),
+    rep(0.22992063611644200, 3), rep(0.18884549994968278, 3),
+    0.18884106587251166
   )
 
   residuals <- c(
-    -0.0130580985201252, -0.0530580985201252, 0.0389419014798748,
-    0.0149313397515395, 0.0304970289736497, 0.0164970289736497,
-    -0.06831567380252894, -0.02431567380252894, 0.00968432619747106,
-    0.04268432619747106, 0.01140147330652155, 0.01740147330652155,
-    -0.00459852669347845, -0.03872932146179907, -0.00372932146179907,
-    0.03727067853820093, -0.08183247345211994
+    -0.0183101911623085, -0.0583101911623085, 0.0336898088376915,
+    0.0252300271855281, 0.0637930605828131, 0.0497930605828131,
+    -0.07745409142841065, -0.03345409142841065, 0.00054590857158935,
+    0.03354590857158935, 0.02907936388355800, 0.03507936388355800,
+    0.01307936388355800, -0.04584549994968278, -0.01084549994968278,
+    0.03015450005031722, -0.09684106587251166
   )
 
-  object <- logistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- gompertz_new(x, y, w, NULL, 10000, NULL, NULL)
 
   result <- fit(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -892,11 +892,11 @@ test_that("fit (weighted)", {
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
-  object <- logistic4_new(x, y, w, c(0, 1, -1, 0), 10000, NULL, NULL)
+  object <- gompertz_new(x, y, w, c(0, 1, -1, 0), 10000, NULL, NULL)
 
   result <- fit(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -930,79 +930,79 @@ test_that("fit_constrained (weighted): inequalities", {
   estimated <- c(alpha = TRUE, beta = TRUE, eta = TRUE, phi = TRUE)
 
   theta <- c(
-    alpha = 0.17286261579329597,
-    beta = 0.94203946208670380,
-    eta = -0.96536781199483224,
-    phi = -0.0061161452508499899
+    alpha = 0.18884106587251166,
+    beta = 0.95399962011994593,
+    eta = -0.61538799796323045,
+    phi = 0.55914376657765553
   )
 
-  rss_value <- 0.015426894657174924
+  rss_value <- 0.021335475841876475
 
   fitted_values <- c(
-    rep(0.9410580985201252, 3), rep(0.9330686602484605, 1),
-    rep(0.8665029710263503, 2), rep(0.55631567380252894, 4),
-    rep(0.24759852669347845, 3), rep(0.18172932146179907, 3),
-    0.17383247345211994
+    rep(0.9463101911623085, 3), rep(0.9227699728144719, 1),
+    rep(0.8332069394171869, 2), rep(0.56545409142841065, 4),
+    rep(0.22992063611644200, 3), rep(0.18884549994968278, 3),
+    0.18884106587251166
   )
 
   residuals <- c(
-    -0.0130580985201252, -0.0530580985201252, 0.0389419014798748,
-    0.0149313397515395, 0.0304970289736497, 0.0164970289736497,
-    -0.06831567380252894, -0.02431567380252894, 0.00968432619747106,
-    0.04268432619747106, 0.01140147330652155, 0.01740147330652155,
-    -0.00459852669347845, -0.03872932146179907, -0.00372932146179907,
-    0.03727067853820093, -0.08183247345211994
+    -0.0183101911623085, -0.0583101911623085, 0.0336898088376915,
+    0.0252300271855281, 0.0637930605828131, 0.0497930605828131,
+    -0.07745409142841065, -0.03345409142841065, 0.00054590857158935,
+    0.03354590857158935, 0.02907936388355800, 0.03507936388355800,
+    0.01307936388355800, -0.04584549994968278, -0.01084549994968278,
+    0.03015450005031722, -0.09684106587251166
   )
 
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, NULL, 10000, c(-0.5, 0.9, -2, -1), c(0.5, 1.5, 0, 1)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(0, 1, -0.5, 0.5), 10000, c(-0.5, 0.9, -2, -1), c(0.5, 1.5, 0, 1)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(-1, 2, 3, -2), 10000, c(-0.5, 0.9, -2, -1), c(0.5, 1.5, 0, 1)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
   expect_equal(result$coefficients, theta)
   expect_equal(result$rss, rss_value)
-  expect_equal(result$df.residual, object$n - 4)
+  expect_equal(result$df.residual, length(y) - 4)
   expect_equal(result$fitted.values, fitted_values)
   expect_equal(result$residuals, residuals)
   expect_equal(result$weights, w)
@@ -1032,35 +1032,35 @@ test_that("fit_constrained (weighted): equalities", {
   theta <- c(
     alpha = 0,
     beta = 1,
-    eta = -0.45801428680160602,
-    phi = 0.56172839498959692
+    eta = -0.30463172419202541,
+    phi = 1.9984790796325234
   )
 
-  rss_value <- 0.040269628142735194
+  rss_value <- 0.061582287492551908
 
   fitted_values <- c(
-    rep(0.96836185505275455, 3), rep(0.91423176703152800, 1),
-    rep(0.78786209884225038, 2), rep(0.56396744745889192, 4),
-    rep(0.31055470762448156, 3), rep(0.13565276472766772, 3),
-    0.05182418247944707
+    rep(0.93582714909417189, 3), rep(0.87479075734980850, 1),
+    rep(0.76359246595046023, 2), rep(0.58042005084694914, 4),
+    rep(0.33380250491484725, 3), rep(0.10944953162467914, 3),
+    0.01153932721903692
   )
 
   residuals <- c(
-    -0.04036185505275455, -0.08036185505275455, 0.01163814494724545,
-    0.03376823296847200, 0.10913790115774962, 0.09513790115774962,
-    -0.07596744745889192, -0.03196744745889192, 0.00203255254110808,
-    0.03503255254110808, -0.05155470762448156, -0.04555470762448156,
-    -0.06755470762448156, 0.00734723527233228, 0.04234723527233228,
-    0.08334723527233228, 0.04017581752055293
+    -0.00782714909417189, -0.04782714909417189, 0.04417285090582811,
+    0.07320924265019150, 0.13340753404953977, 0.11940753404953977,
+    -0.09242005084694914, -0.04842005084694914, -0.01442005084694914,
+    0.01857994915305086, -0.07480250491484725, -0.06880250491484725,
+    -0.09080250491484725, 0.03355046837532086, 0.06855046837532086,
+    0.10955046837532086, 0.08046067278096308
   )
 
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, NULL, 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1072,13 +1072,13 @@ test_that("fit_constrained (weighted): equalities", {
   expect_equal(result$weights, w)
 
   # initial values with same equalities
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(0, 1, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1090,13 +1090,13 @@ test_that("fit_constrained (weighted): equalities", {
   expect_equal(result$weights, w)
 
   # initial values with different equalities
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(1, 3, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf,Inf)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1132,83 +1132,83 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   theta <- c(
     alpha = 0,
     beta = 1,
-    eta = -0.45801428680160602,
-    phi = 0.56172839498959692
+    eta = -0.30463172419202541,
+    phi = 1.9984790796325234
   )
 
-  rss_value <- 0.040269628142735194
+  rss_value <- 0.061582287492551908
 
   fitted_values <- c(
-    rep(0.96836185505275455, 3), rep(0.91423176703152800, 1),
-    rep(0.78786209884225038, 2), rep(0.56396744745889192, 4),
-    rep(0.31055470762448156, 3), rep(0.13565276472766772, 3),
-    0.05182418247944707
+    rep(0.93582714909417189, 3), rep(0.87479075734980850, 1),
+    rep(0.76359246595046023, 2), rep(0.58042005084694914, 4),
+    rep(0.33380250491484725, 3), rep(0.10944953162467914, 3),
+    0.01153932721903692
   )
 
   residuals <- c(
-    -0.04036185505275455, -0.08036185505275455, 0.01163814494724545,
-    0.03376823296847200, 0.10913790115774962, 0.09513790115774962,
-    -0.07596744745889192, -0.03196744745889192, 0.00203255254110808,
-    0.03503255254110808, -0.05155470762448156, -0.04555470762448156,
-    -0.06755470762448156, 0.00734723527233228, 0.04234723527233228,
-    0.08334723527233228, 0.04017581752055293
+    -0.00782714909417189, -0.04782714909417189, 0.04417285090582811,
+    0.07320924265019150, 0.13340753404953977, 0.11940753404953977,
+    -0.09242005084694914, -0.04842005084694914, -0.01442005084694914,
+    0.01857994915305086, -0.07480250491484725, -0.06880250491484725,
+    -0.09080250491484725, 0.03355046837532086, 0.06855046837532086,
+    0.10955046837532086, 0.08046067278096308
   )
 
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, NULL, 10000, c(0, 1, -2, 0), c(0, 1, 0, 2)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 2)
-  expect_equal(result$fitted.values, fitted_values)
-  expect_equal(result$residuals, residuals)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
   expect_equal(result$weights, w)
 
   # initial values within the boundaries
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(0, 1, -0.8, 0.5), 10000, c(0, 1, -2, 0), c(0, 1, 0, 2)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 2)
-  expect_equal(result$fitted.values, fitted_values)
-  expect_equal(result$residuals, residuals)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
   expect_equal(result$weights, w)
 
   # initial values outside the boundaries
-  object <- logistic4_new(
+  object <- gompertz_new(
     x, y, w, c(1, 2, -5, -1), 10000, c(0, 1, -2, 0), c(0, 1, 0, 2)
   )
 
   result <- fit_constrained(object)
 
-  expect_true(inherits(result, "logistic4_fit"))
+  expect_true(inherits(result, "gompertz_fit"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
-  expect_equal(result$coefficients, theta)
+  expect_equal(result$coefficients, theta, tolerance = 1.0e-6)
   expect_equal(result$rss, rss_value)
   expect_equal(result$df.residual, length(y) - 2)
-  expect_equal(result$fitted.values, fitted_values)
-  expect_equal(result$residuals, residuals)
+  expect_equal(result$fitted.values, fitted_values, tolerance = 1.0e-6)
+  expect_equal(result$residuals, residuals, tolerance = 1.0e-6)
   expect_equal(result$weights, w)
 })
 
-context("4-parameter logistic - general functions")
+context("Gompertz - general functions")
 
 test_that("fisher_info", {
   x <- round(
@@ -1240,20 +1240,20 @@ test_that("fisher_info", {
 
   true_value <- matrix(c(
       # alpha
-      3200.7334651687024, 131.73980832572013, 119.11651396790572,
-      210.06856397497571, 39707.343906259385,
+      3342.8932199135800, 67.811647332874071, -17.733850799910351,
+      43.927487173638108, 43592.808103392150,
       # beta
-      131.73980832572013, 2517.7869181798573, -75.884747727720387,
-      16.523906345262924, 6591.5447019487505,
+      67.811647332874071, 2503.4834854206719, -35.563453987617197,
+      84.661231390286641, 5397.2473298858682,
       # eta
-      119.11651396790572, -75.884747727720387, -44.467697395836343,
-      -51.884823618362492, 1436.4916158378913,
+      -17.733850799910351, -35.563453987617197, 10.741431979171633,
+      -17.141181890023916, -290.45079925888223,
       # phi
-      210.06856397497571, 16.523906345262924, -51.884823618362492,
-      -46.573859172100720, 2759.2902437346177,
+      43.927487173638108, 84.661231390286641, -17.141181890023916,
+      64.543412202089920, 715.35910155304622,
       # sigma
-      39707.343906259385, 6591.5447019487505, 1436.4916158378913,
-      2759.2902437346177, 479738.08567645750
+      43592.808103392150, 5397.2473298858682, -290.45079925888223,
+      715.35910155304622, 554058.41271733448
     ),
     nrow = 5,
     ncol = 5
@@ -1263,7 +1263,7 @@ test_that("fisher_info", {
     "alpha", "beta", "eta", "phi", "sigma"
   )
 
-  object <- logistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- gompertz_new(x, y, w, NULL, 10000, NULL, NULL)
 
   fim <- fisher_info(object, theta, sigma)
 
@@ -1272,7 +1272,7 @@ test_that("fisher_info", {
   expect_equal(fim, true_value)
 })
 
-context("4-parameter logistic - drda fit")
+context("Gompertz - drda fit")
 
 test_that("drda: 'lower_bound' argument errors", {
   x <- round(
@@ -1290,7 +1290,7 @@ test_that("drda: 'lower_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = c("a", "b", "c", "d")
     ),
     "'lower_bound' must be a numeric vector"
@@ -1298,7 +1298,7 @@ test_that("drda: 'lower_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = matrix(-Inf, nrow = 4, ncol = 2),
       upper_bound = rep(Inf, 4)
     ),
@@ -1307,7 +1307,7 @@ test_that("drda: 'lower_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = rep(-Inf, 5),
       upper_bound = rep(Inf, 4)
     ),
@@ -1316,7 +1316,7 @@ test_that("drda: 'lower_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = c( 0, -Inf, -Inf, -Inf),
       upper_bound = c(-1, Inf, Inf, Inf)
     ),
@@ -1325,7 +1325,7 @@ test_that("drda: 'lower_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = c(Inf, -Inf, -Inf, -Inf),
       upper_bound = c(Inf, Inf, Inf, Inf)
     ),
@@ -1334,7 +1334,7 @@ test_that("drda: 'lower_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = rep(-Inf, 5),
       upper_bound = rep(Inf, 5)
     ),
@@ -1358,7 +1358,7 @@ test_that("drda: 'upper_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       upper_bound = c("a", "b", "c", "d")
     ),
     "'upper_bound' must be a numeric vector"
@@ -1366,7 +1366,7 @@ test_that("drda: 'upper_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = rep(-Inf, 4),
       upper_bound = matrix(Inf, nrow = 4, ncol = 2)
     ),
@@ -1375,7 +1375,7 @@ test_that("drda: 'upper_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = c(-Inf, -Inf, -Inf, -Inf),
       upper_bound = c(-Inf, Inf, Inf, Inf)
     ),
@@ -1384,7 +1384,7 @@ test_that("drda: 'upper_bound' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       lower_bound = rep(-Inf, 5),
       upper_bound = rep(Inf, 5)
     ),
@@ -1408,7 +1408,7 @@ test_that("drda: 'start' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       start = c("a", "b", "c", "d")
     ),
     "'start' must be a numeric vector"
@@ -1416,7 +1416,7 @@ test_that("drda: 'start' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       start = c(0, Inf, -1, 0)
     ),
     "'start' must be finite"
@@ -1424,7 +1424,7 @@ test_that("drda: 'start' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       start = c(-Inf, 0, -1, 0)
     ),
     "'start' must be finite"
@@ -1432,7 +1432,7 @@ test_that("drda: 'start' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       start = c(0, 0, -1, 0, 1)
     ),
     "'start' must be of length 4"
@@ -1448,7 +1448,7 @@ test_that("drda: 'start' argument errors", {
 
   expect_error(
     drda(
-      y ~ x, mean_function = "logistic4",
+      y ~ x, mean_function = "gompertz",
       start = c(0, 1, 0, 0)
     ),
     "parameter 'eta' cannot be initialized to zero"

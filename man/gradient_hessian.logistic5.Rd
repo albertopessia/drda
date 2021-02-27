@@ -10,7 +10,7 @@
 \item{object}{object of class \code{logistic5}.}
 
 \item{theta}{numeric vector with the five parameters in the form
-\code{c(alpha, omega, eta, phi, nu)}.}
+\code{c(alpha, beta, eta, phi, nu)}.}
 }
 \value{
 List of two elements: \code{G} the gradient and \code{H} the Hessian.
@@ -20,14 +20,9 @@ Evaluate at a particular set of parameters the gradient and Hessian of the
 5-parameter logistic function.
 }
 \details{
-The 5-parameter logistic function \verb{f(x; theta)} is defined in this package as
+The 5-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, omega, eta, phi, nu)}.
-
-In our optimization algorithm, however, we consider instead the equivalent
-function \verb{f(x; theta')}
-
-\verb{alpha + exp(omega') / (1 + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
+where \code{theta = c(alpha, beta, eta, phi, nu)}, \code{beta > alpha}, and \code{nu > 0}.
 }

@@ -26,5 +26,7 @@ observations \code{y} are independent and such that
 distribution \code{N(0, 1)}.
 
 The 5-by-5 (symmetric) Fisher information matrix is the expected value of
-the negative Hessian matrix of the log-likelihood function.
+the negative Hessian matrix of the log-likelihood function. We compute the
+observed Fisher information matrix because it has better finite sample
+properties.
 }

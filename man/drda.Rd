@@ -11,6 +11,7 @@ drda(
   weights,
   na.action,
   mean_function = "logistic4",
+  is_log = TRUE,
   lower_bound = NULL,
   upper_bound = NULL,
   start = NULL,
@@ -20,7 +21,7 @@ drda(
 \arguments{
 \item{formula}{an object of class \code{link[stats]{formula}} (or one that
 can be coerced to that class): a symbolic description of the model to be
-fitted. Currently supports only formulas of the type \code{response ~ log_dose}.}
+fitted. Currently supports only formulas of the type \code{y ~ x}.}
 
 \item{data}{an optional data frame, list or environment (or object coercible
 by \code{\link[base]{as.data.frame}} to a data frame) containing the
@@ -45,6 +46,10 @@ can be useful.}
 
 \item{mean_function}{the model to be fitted. See \code{details} for available
 models.}
+
+\item{is_log}{a logical value indicating whether the predictor variable \code{x}
+is already log-transformed. Default to \code{TRUE}. Set to \code{FALSE} if \code{x} is
+on its natural scale, i.e. strictly positive.}
 
 \item{lower_bound}{numeric vector with the minimum admissible values of the
 parameters. Use \code{-Inf} to specify an unbounded parameter.}
@@ -84,7 +89,6 @@ deviation.}
 maximum likelihood estimator.}
 \item{vcov}{approximate variance-covariance matrix of the model
 parameters.}
-\item{mean_function}{string with the chosen model used for fitting.}
 \item{call}{the matched call.}
 \item{terms}{the \code{\link[stats]{terms}} object used.}
 \item{model}{the model frame used.}
@@ -104,17 +108,17 @@ The most general model in this package is the generalized logistic function
 selected by setting \code{mean_function = "logistic6"}. It is defined in this
 package as the 6-parameter function
 
-\code{alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{eta != 0}, \code{nu > 0}, and \code{xi > 0}. Although \code{omega} can be any real
-value, we use the convention \code{omega > 0} to avoid identifiability problems:
-when \code{omega < 0} it is always possible to adjust the other parameter to
-obtain the same exact curve. When \code{omega > 0} and \code{eta > 0} the curve is
-monotonically increasing. If \code{omega > 0} and \code{eta < 0} the curve is
-monotonically decreasing.
+where \code{eta != 0}, \code{nu > 0}, and \code{xi > 0}. Although \code{beta} can be any real
+value, we use the convention \code{beta > alpha} to avoid identifiability
+problems: when \code{beta < alpha} it is always possible to adjust the other
+parameters to obtain the same exact curve. When \code{beta > alpha} and \code{eta > 0}
+the curve is monotonically increasing. If \code{beta > alpha} and \code{eta < 0} the
+curve is monotonically decreasing.
 
-Parameter \code{omega > 0} is related to the width of the curve.
 Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
+Parameter \code{beta} is related to the upper horizontal asymptote of the curve.
 Parameter \code{eta} represents the steepness (growth rate) of the curve.
 Parameter \code{phi} is related to the value of the function at \code{x = 0}.
 Parameter \code{nu} affects near which asymptote maximum growth occurs.
@@ -127,15 +131,14 @@ research convenience.
 
 \subsection{5-parameter logistic function}{
 
-The 5-parameter logistic function can be selected by setting
+The 5-parameter logistic function can be selected by choosing
 \code{mean_function = "logistic5"}. The function is obtained by setting \code{xi = 1}
 in the generalized logistic function, that is
 
-\code{alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
 Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
-Parameter \code{omega > 0} represents the width of the curve. The upper horizontal
-asymptote is simply equal to \code{alpha + omega}.
+Parameter \code{beta} represents the upper horizontal asymptote of the curve.
 Parameter \code{eta} represents the steepness (growth rate) of the curve.
 Parameter \code{phi} is related to the value of the function at \code{x = 0}.
 Parameter \code{nu} affects near which asymptote maximum growth occurs.
@@ -144,25 +147,24 @@ Parameter \code{nu} affects near which asymptote maximum growth occurs.
 \subsection{4-parameter logistic function}{
 
 The 4-parameter logistic function is the default model of \code{drda}. It can be
-explicitly selected by setting \code{mean_function = "logistic4"}. The function is
-obtained by setting \code{xi = 1} and \code{nu = 1} in the generalized logistic
+explicitly selected by choosing \code{mean_function = "logistic4"}. The function
+is obtained by setting \code{xi = 1} and \code{nu = 1} in the generalized logistic
 function, that is
 
-\code{alpha + omega / (1 + exp(-eta * (x - phi)))}
+\code{alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))}
 
 Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
-Parameter \code{omega > 0} represents the width of the curve. The upper horizontal
-asymptote is simply equal to \code{alpha + omega}.
+Parameter \code{beta} represents the upper horizontal asymptote of the curve.
 Parameter \code{eta} represents the steepness (growth rate) of the curve.
 Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
-mid-point, i.e. \verb{f(phi; alpha, omega, eta, phi) = alpha + omega / 2}.
+mid-point, i.e. \verb{f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2}.
 }
 
 \subsection{2-parameter logistic function}{
 
-The 2-parameter logistic function can be selected by setting
+The 2-parameter logistic function can be selected by choosing
 \code{mean_function = "logistic2"}. The function is obtained by setting \code{xi = 1},
-\code{nu = 1}, \code{omega = 1}, and \code{alpha = 0} in the generalized logistic function,
+\code{nu = 1}, \code{beta = 1}, and \code{alpha = 0} in the generalized logistic function,
 that is
 
 \code{1 / (1 + exp(-eta * (x - phi)))}
@@ -175,28 +177,28 @@ mid-point, i.e. \verb{f(phi; eta, phi) = 1 / 2}.
 \subsection{Gompertz function}{
 
 The Gompertz function is the limit for \code{nu -> 0} of the 5-parameter logistic
-function. It can be selected by setting \code{mean_function = "gompertz"}. The
+function. It can be selected by choosing \code{mean_function = "gompertz"}. The
 function is defined in this package as
 
-\code{alpha + omega * exp(-exp(-eta * (x - phi)))}
+\code{alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))}
 
 where \code{eta != 0}.
 
 Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
-Parameter \code{omega > 0} represents the width of the curve. The upper horizontal
-asymptote is simply equal to \code{alpha + omega}.
+Parameter \code{beta} represents the upper horizontal asymptote of the curve.
 Parameter \code{eta} represents the steepness (growth rate) of the curve.
 Parameter \code{phi} is related to the value of the function at \code{x = 0}.
 }
 
-\subsection{Notes on the chosen parametrization}{
+\subsection{Constrained optimization}{
 
-In the literature it is often found an alternative parametrization in which
-our curve width \code{omega} is replaced by the difference between the upper
-horizontal asymptote \code{beta} and the lower horizontal asymptote \code{alpha}, that
-is \code{omega = beta - alpha} or \code{beta = alpha + omega}.
+It is possible to search for the maximum likelihood estimates within
+pre-specified interval regions. Since the upper horizontal asymptote \code{beta}
+must be greater than the lower horizontal asymptote \code{alpha}, intervals are
+adjusted to satisfy this constraint.
 
-The two versions are equivalent and lead to the same inference results.
+\emph{Note}: Hypothesis testing is not available for constrained estimates
+because asymptotic approximations might not be valid
 }
 
 }
