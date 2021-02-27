@@ -19,7 +19,7 @@ Evaluate at a particular set of parameters the gradient and Hessian of the
 2-parameter logistic function.
 }
 \details{
-The 2-parameter logistic function \verb{f(x; theta)} is defined in this package as
+The 2-parameter logistic function \verb{f(x; theta)} is defined here as
 
 \code{1 / (1 + exp(-eta * (x - phi)))}
 

@@ -42,6 +42,10 @@ fisher_info <- function(object, theta, sigma) {
   UseMethod("fisher_info", object)
 }
 
+curve_variance <- function(object, x) {
+  UseMethod("curve_variance", object)
+}
+
 nauc <- function(object, lower_bound, upper_bound) {
   UseMethod("nauc", object)
 }

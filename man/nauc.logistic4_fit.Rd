@@ -26,23 +26,23 @@ Evaluate the normalized area under the curve (AUC) and area above the curve
 (AAC).
 }
 \details{
-The 4-parameter logistic function \verb{f(x; theta)} is defined in this package as
+The 4-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + omega / (1 + exp(-eta * (x - phi)))}
+\code{alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))}
 
-where \code{theta = c(alpha, omega, eta, phi)}, \code{alpha} is the lower horizontal
-asymptote, \code{omega} is the width of the curve, \code{eta} is the steepness
-of the curve or growth rate (also known as the Hill coefficient), and \code{phi}
-is the value of \code{x} at which the curve is equal to its mid-point.
+where \code{theta = c(alpha, beta, eta, phi)}, \code{alpha} is the lower horizontal
+asymptote, \code{beta > alpha} is the upper horizontal asymptote, \code{eta} is the
+steepness of the curve or growth rate (also known as the Hill coefficient),
+and \code{phi} is the value of \code{x} at which the curve is equal to its mid-point.
 
 The area under the curve (AUC) is simply the integral of \verb{f(x; theta)}
 between \code{lower_bound} and \code{upper_bound} with respect to \code{x}.
 
 When the interval of integration is fixed, since the the curve ranges between
-\code{alpha} and \code{alpha + omega}, the curve \verb{f(x; theta)} is contained into the
-rectangle of height \code{omega} and width \code{upper_bound - lower_bound}. The
-maximum area the curve can have is obviously
-\code{(upper_bound - lower_bound) * omega}.
+\code{alpha} and \code{beta}, the curve \verb{f(x; theta)} is contained into the rectangle
+of height \code{beta - alpha} and width \code{upper_bound - lower_bound}. The maximum
+area the curve can have is obviously
+\code{(upper_bound - lower_bound) * (beta - alpha)}.
 
 We first shift the curve by \code{alpha} to set the minimum to 0. We then
 integrate the curve and define the normalized AUC (NAUC) by dividing its

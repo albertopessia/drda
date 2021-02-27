@@ -10,7 +10,7 @@
 \item{object}{object of class \code{logistic6}.}
 
 \item{theta}{numeric vector with the six parameters in the form
-\code{c(alpha, omega, eta, phi, nu, xi)}.}
+\code{c(alpha, beta, eta, phi, nu, xi)}.}
 }
 \value{
 List of two elements: \code{G} the gradient and \code{H} the Hessian.
@@ -20,14 +20,10 @@ Evaluate at a particular set of parameters the gradient and Hessian of the
 6-parameter logistic function.
 }
 \details{
-The 6-parameter logistic function \verb{f(x; theta)} is defined in this package as
+The 6-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
-where \code{theta = c(alpha, omega, eta, phi, nu, xi)}.
-
-In our optimization algorithm, however, we consider instead the equivalent
-function \verb{f(x; theta')}
-
-\verb{alpha + exp(omega') / (exp(xi') + exp(nu' - eta * (x - phi)))^(-exp(-nu'))}
+where \code{theta = c(alpha, beta, eta, phi, nu, xi)}, \code{beta > alpha}, \code{xi > 0},
+and \code{nu > 0}.
 }

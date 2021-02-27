@@ -205,6 +205,72 @@ ntrm_inertia_correction <- function(
   kappa
 }
 
+#' Initialize solution object
+#'
+#' @param fn function handle to evaluate the function to minimize.
+#' @param gh function handle to evaluate both the gradient and Hessian of the
+#'   function to minimize.
+#' @param C function handle to evaluate the distances of the current solution
+#'   from the boundary.
+#' @param x initial values of the solution.
+#' @param s initial values of slack variables.
+#' @param A Jacobian of the constraints
+#' @param mu barrier penalty parameter.
+#'
+#' @return List with all important variables initialized.
+ntrm_init_obj <- function(fn, gh, C, x, s, A, mu) {
+  n_var <- ncol(A)
+  n_slk <- nrow(A)
+  n_tot <- n_var + n_slk
+
+  obj <- list(
+    # Jabobian of constraints
+    A = A,
+    # number of variables
+    k = n_var,
+    # number of constraints (slacks)
+    m = n_slk,
+    # number of unknowns
+    n = n_var + n_slk,
+    # index of original variables in the joint vector
+    idx_x = seq_len(n_var),
+    # index of slack variables in the joint vector
+    idx_s = (n_var + 1):n_tot,
+    # optimum
+    x = x,
+    # function value
+    f = fn(x),
+    # slack variables
+    s = s,
+    # slack residuals (distances from boundary)
+    r = C(x) - s
+  )
+
+  # Equation (19.41+) at page 580
+  obj$m0 <- ntrm_norm(obj$r)
+
+  # Lagrangian Hessian (with respect to cur_optimum) is the same as the
+  # Hessian of the function to optimize. This is because our constraints
+  # are linear (either `x - lb - s` or `ub - x - s`) and the second
+  # derivatives are all equal to zero
+  gradient_hessian <- gh(obj$x)
+  obj$G <- gradient_hessian$G
+  obj$H <- gradient_hessian$H
+
+  obj$B <- cbind(A, -diag(s, nrow = n_slk))
+  obj$Y <- rbind(
+    cbind(diag(n_tot), t(obj$B)),
+    cbind(obj$B, matrix(0, nrow = n_slk, ncol = n_slk))
+  )
+
+  obj$u <- c(obj$G, -rep(mu, obj$m))
+
+  # compute multipliers with equations (19.36)-(19.38) at page 581
+  obj$z <- ntrm_lagrange_multiplier(obj, mu)
+
+  obj
+}
+
 #' Compute Lagrange multipliers
 #'
 #' Update the Lagrange multipliers given the current optimum and slack
@@ -968,10 +1034,10 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   converged <- FALSE
 
   # setup constraints
-  tmp <- ntrm_create_constraints(lower_bound, upper_bound)
+  constraints <- ntrm_create_constraints(lower_bound, upper_bound)
 
-  il <- tmp$idx_lb
-  iu <- tmp$idx_ub
+  il <- constraints$idx_lb
+  iu <- constraints$idx_ub
 
   lb <- lower_bound[il]
   ub <- upper_bound[iu]
@@ -984,7 +1050,7 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
 
   # initial value must be within the constraint region
   is_out <- (init < lower_bound) | (init > upper_bound)
-  for (i in seq_len(ncol(tmp$A))) {
+  for (i in seq_len(ncol(constraints$A))) {
     if (is_out[i]) {
       if (is.infinite(lower_bound[i])) {
         # value is greater than the upper bound
@@ -999,52 +1065,40 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     }
   }
 
-  obj <- list(
-    # Jabobian of constraints
-    A = tmp$A,
-    # number of variables
-    k = ncol(tmp$A),
-    # number of constraints (slacks)
-    m = nrow(tmp$A),
-    # number of unknowns
-    n = nrow(tmp$A) + ncol(tmp$A),
-    # index of original variables in the joint vector
-    idx_x = seq_len(ncol(tmp$A)),
-    # index of slack variables in the joint vector
-    idx_s = (ncol(tmp$A) + 1):(nrow(tmp$A) + ncol(tmp$A)),
-    # optimum
-    x = cur_optimum,
-    # function value
-    f = fn(cur_optimum),
-    # slack variables
-    # TODO: algorithm is very sensitive to slack initialization, find some good
-    #       way to initialize these variables
-    s = rep(10, nrow(tmp$A)),
-    # slack residuals (distances from boundary)
-    r = C(cur_optimum) - 10
+  # the algorithm is very sensitive to the initial slack variables
+  #
+  # we try to find a value for which the error is already small
+  s <- tryCatch(
+    {
+      ntrm_line_search(
+        function(x) {
+          slacks <- rep(x, nrow(constraints$A))
+          ntrm_error(
+            ntrm_init_obj(fn, gh, C, cur_optimum, slacks, constraints$A, mu),
+            mu
+          )
+        },
+        0.01,
+        100
+      )
+    },
+    error = function(e) {
+      1
+    }
   )
 
-  # Equation (19.41+) at page 580
-  obj$m0 <- ntrm_norm(obj$r)
-
-  # Lagrangian Hessian (with respect to cur_optimum) is the same as the
-  # Hessian of the function to optimize. This is because our constraints
-  # are linear (either `x - lb - s` or `ub - x - s`) and the second
-  # derivatives are all equal to zero
-  gradient_hessian <- gh(obj$x)
-  obj$G <- gradient_hessian$G
-  obj$H <- gradient_hessian$H
-
-  obj$B <- cbind(obj$A, -diag(obj$s, nrow = obj$m))
-  obj$Y <- rbind(
-    cbind(diag(obj$n), t(obj$B)),
-    cbind(obj$B, matrix(0, nrow = obj$m, ncol = obj$m))
+  # if the starting point is way too far from the true solution, the previous
+  # strategy might not work
+  obj <- ntrm_init_obj(
+    fn, gh, C, cur_optimum, rep(s, nrow(constraints$A)), constraints$A, mu
   )
 
-  obj$u <- c(obj$G, -rep(mu, obj$m))
-
-  # compute multipliers with equations (19.36)-(19.38) at page 581
-  obj$z <- ntrm_lagrange_multiplier(obj, mu)
+  error <- ntrm_error(obj, mu)
+  if (error > 100) {
+    obj <- ntrm_init_obj(
+      fn, gh, C, cur_optimum, rep(1, nrow(constraints$A)), constraints$A, mu
+    )
+  }
 
   i <- 0
   repeat {

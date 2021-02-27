@@ -5,7 +5,7 @@
 #'
 #' @param formula an object of class \code{link[stats]{formula}} (or one that
 #'   can be coerced to that class): a symbolic description of the model to be
-#'   fitted. Currently supports only formulas of the type `response ~ log_dose`.
+#'   fitted. Currently supports only formulas of the type `y ~ x`.
 #' @param data an optional data frame, list or environment (or object coercible
 #'   by \code{\link[base]{as.data.frame}} to a data frame) containing the
 #'   variables in the model. If not found in `data`, the variables are taken
@@ -25,6 +25,9 @@
 #'   can be useful.
 #' @param mean_function the model to be fitted. See `details` for available
 #'   models.
+#' @param is_log a logical value indicating whether the predictor variable `x`
+#'   is already log-transformed. Default to `TRUE`. Set to `FALSE` if `x` is
+#'   on its natural scale, i.e. strictly positive.
 #' @param lower_bound numeric vector with the minimum admissible values of the
 #'   parameters. Use `-Inf` to specify an unbounded parameter.
 #' @param upper_bound numeric vector with the maximum admissible values of the
@@ -42,17 +45,17 @@
 #' selected by setting `mean_function = "logistic6"`. It is defined in this
 #' package as the 6-parameter function
 #'
-#' `alpha + omega / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `eta != 0`, `nu > 0`, and `xi > 0`. Although `omega` can be any real
-#' value, we use the convention `omega > 0` to avoid identifiability problems:
-#' when `omega < 0` it is always possible to adjust the other parameter to
-#' obtain the same exact curve. When `omega > 0` and `eta > 0` the curve is
-#' monotonically increasing. If `omega > 0` and `eta < 0` the curve is
-#' monotonically decreasing.
+#' where `eta != 0`, `nu > 0`, and `xi > 0`. Although `beta` can be any real
+#' value, we use the convention `beta > alpha` to avoid identifiability
+#' problems: when `beta < alpha` it is always possible to adjust the other
+#' parameters to obtain the same exact curve. When `beta > alpha` and `eta > 0`
+#' the curve is monotonically increasing. If `beta > alpha` and `eta < 0` the
+#' curve is monotonically decreasing.
 #'
-#' Parameter `omega > 0` is related to the width of the curve.
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
+#' Parameter `beta` is related to the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
@@ -64,15 +67,14 @@
 #'
 #' ### 5-parameter logistic function
 #'
-#' The 5-parameter logistic function can be selected by setting
+#' The 5-parameter logistic function can be selected by choosing
 #' `mean_function = "logistic5"`. The function is obtained by setting `xi = 1`
 #' in the generalized logistic function, that is
 #'
-#' `alpha + omega / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `omega > 0` represents the width of the curve. The upper horizontal
-#' asymptote is simply equal to `alpha + omega`.
+#' Parameter `beta` represents the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
@@ -80,24 +82,23 @@
 #' ### 4-parameter logistic function
 #'
 #' The 4-parameter logistic function is the default model of `drda`. It can be
-#' explicitly selected by setting `mean_function = "logistic4"`. The function is
-#' obtained by setting `xi = 1` and `nu = 1` in the generalized logistic
+#' explicitly selected by choosing `mean_function = "logistic4"`. The function
+#' is obtained by setting `xi = 1` and `nu = 1` in the generalized logistic
 #' function, that is
 #'
-#' `alpha + omega / (1 + exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
 #'
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `omega > 0` represents the width of the curve. The upper horizontal
-#' asymptote is simply equal to `alpha + omega`.
+#' Parameter `beta` represents the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
-#' mid-point, i.e. `f(phi; alpha, omega, eta, phi) = alpha + omega / 2`.
+#' mid-point, i.e. `f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2`.
 #'
 #' ### 2-parameter logistic function
 #'
-#' The 2-parameter logistic function can be selected by setting
+#' The 2-parameter logistic function can be selected by choosing
 #' `mean_function = "logistic2"`. The function is obtained by setting `xi = 1`,
-#' `nu = 1`, `omega = 1`, and `alpha = 0` in the generalized logistic function,
+#' `nu = 1`, `beta = 1`, and `alpha = 0` in the generalized logistic function,
 #' that is
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
@@ -109,27 +110,27 @@
 #' ### Gompertz function
 #'
 #' The Gompertz function is the limit for `nu -> 0` of the 5-parameter logistic
-#' function. It can be selected by setting `mean_function = "gompertz"`. The
+#' function. It can be selected by choosing `mean_function = "gompertz"`. The
 #' function is defined in this package as
 #'
-#' `alpha + omega * exp(-exp(-eta * (x - phi)))`
+#' `alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))`
 #'
 #' where `eta != 0`.
 #'
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `omega > 0` represents the width of the curve. The upper horizontal
-#' asymptote is simply equal to `alpha + omega`.
+#' Parameter `beta` represents the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
 #'
-#' ### Notes on the chosen parametrization
+#' ### Constrained optimization
 #'
-#' In the literature it is often found an alternative parametrization in which
-#' our curve width `omega` is replaced by the difference between the upper
-#' horizontal asymptote `beta` and the lower horizontal asymptote `alpha`, that
-#' is `omega = beta - alpha` or `beta = alpha + omega`.
+#' It is possible to search for the maximum likelihood estimates within
+#' pre-specified interval regions. Since the upper horizontal asymptote `beta`
+#' must be greater than the lower horizontal asymptote `alpha`, intervals are
+#' adjusted to satisfy this constraint.
 #'
-#' The two versions are equivalent and lead to the same inference results.
+#' *Note*: Hypothesis testing is not available for constrained estimates
+#' because asymptotic approximations might not be valid
 #'
 #' @return An object of class `drda` and `model_fit`, where `model` is the
 #' chosen mean function. It is a list containing the following components:
@@ -158,7 +159,6 @@
 #'       maximum likelihood estimator.}
 #'     \item{vcov}{approximate variance-covariance matrix of the model
 #'       parameters.}
-#'     \item{mean_function}{string with the chosen model used for fitting.}
 #'     \item{call}{the matched call.}
 #'     \item{terms}{the \code{\link[stats]{terms}} object used.}
 #'     \item{model}{the model frame used.}
@@ -171,7 +171,8 @@
 #' @export
 drda <- function(
   formula, data, subset, weights, na.action, mean_function = "logistic4",
-  lower_bound = NULL, upper_bound = NULL, start = NULL, max_iter = 10000
+  is_log = TRUE, lower_bound = NULL, upper_bound = NULL, start = NULL,
+  max_iter = 10000
 ) {
   # first, we expand the call to this function
   model_frame <- match.call(expand.dots = FALSE)
@@ -215,7 +216,9 @@ drda <- function(
 
   w <- as.vector(model.weights(model_frame))
 
-  if (!is.null(w)) {
+  if (is.null(w)) {
+    w <- rep(1, length(y))
+  } else {
     if (!is.numeric(w)) {
       stop("'weights' must be a numeric vector", call. = FALSE)
     }
@@ -227,8 +230,6 @@ drda <- function(
     if (any(w < 0 | is.na(w))) {
       stop("missing or negative weights not allowed", call. = FALSE)
     }
-  } else {
-    w <- rep(1, length(y))
   }
 
   w_zero <- w == 0
@@ -243,6 +244,20 @@ drda <- function(
     if (length(y) == 0) {
       stop("weights cannot be all zero", call. = FALSE)
     }
+  }
+
+  if (!is_log) {
+    if (any(x <= 0)) {
+      stop(
+        paste(
+          "predictor variable `x` is not strictly positive",
+          "and cannot be log-transformed"
+        ),
+        call. = FALSE
+      )
+    }
+
+    x <- log(x)
   }
 
   max_iter <- ceiling(max_iter[1])
@@ -306,12 +321,15 @@ drda <- function(
     ),
     logistic6 = logistic6_new(
       x, y, w, start, max_iter, lower_bound, upper_bound
+    ),
+    gompertz = gompertz_new(
+      x, y, w, start, max_iter, lower_bound, upper_bound
     )
   )
 
   if (is.null(object)) {
     stop(
-      "provided 'mean_function' is wrongly typed or not yet available",
+      "chosen 'mean_function' is wrongly typed or not yet available",
       call. = FALSE
     )
   }
@@ -321,6 +339,8 @@ drda <- function(
   } else {
     fit_constrained(object)
   }
+
+  result$mean_function <- mean_function
 
   log_w <- sum(log(result$weights))
   v <- variance_normal(result$rss, result$df.residual)
@@ -340,8 +360,6 @@ drda <- function(
     vcov
   }
 
-  result$mean_function <- mean_function
-
   result$call <- match.call()
   result$terms <- model_terms
   result$model <- model_frame
@@ -356,12 +374,6 @@ drda <- function(
 #'
 #' @export
 anova.drda <- function(object, ...) {
-  if (object$constrained) {
-    # solution to the constrained problem is unlikely the maximum likelihood
-    # estimator, therefore the asymptotic approximation might not hold
-    stop("hypothesis testing is not available for constrained optimization")
-  }
-
   ## check for multiple objects
   dotargs <- list(...)
 
@@ -385,6 +397,12 @@ anova.drda <- function(object, ...) {
 
   if (length(dotargs)) {
     return(anova.drdalist(c(list(object), dotargs)))
+  }
+
+  if (object$constrained) {
+    # solution to the constrained problem is unlikely the maximum likelihood
+    # estimator, therefore the asymptotic approximation might not hold
+    stop("hypothesis testing is not available for constrained optimization")
   }
 
   y <- object$model[, 1]
@@ -472,6 +490,14 @@ anova.drdalist <- function(object, ...) {
 
   if (n_models == 1) {
     return(anova.drda(object[[1L]]))
+  }
+
+  is_constrained <- any(vapply(object, function(x) x$constrained, FALSE))
+
+  if (any(is_constrained)) {
+    # solution to the constrained problem is unlikely the maximum likelihood
+    # estimator, therefore the asymptotic approximation might not hold
+    stop("hypothesis testing is not available for constrained optimization")
   }
 
   n_residuals <- vapply(object, function(x) length(x$residuals), 0)
@@ -620,16 +646,21 @@ logLik.drda <- function(object, ...) {
   object$loglik
 }
 
-#' @importFrom graphics axis box curve legend lines plot.default
+#' @importFrom graphics axis box curve legend lines polygon plot.default
 #' @importFrom grDevices dev.flush dev.hold extendrange
+#' @importFrom stats qchisq
 #'
 #' @export
-plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
-  theta <- coef(x)
-
-  f <- function(z) {
-    fn(x, z, theta)
+plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
+  if (missing(xlab)) {
+    xlab <- "log(Predictor)"
   }
+
+  if (missing(ylab)) {
+    ylab <- "Response"
+  }
+
+  theta <- coef(x)
 
   xv <- x$model[, 2]
   yv <- x$model[, 1]
@@ -643,41 +674,48 @@ plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
     wv <- wv[idx]
   }
 
-  xlim <- extendrange(xv, f = 0.08)
-  ylim <- extendrange(yv, f = 0.08)
+  if (missing(xlim)) {
+    xlim <- extendrange(xv, f = 0.08)
+  }
+
+  if (missing(ylim)) {
+    ylim <- extendrange(yv, f = 0.08)
+  }
+
+  xx <- seq(xlim[1], xlim[2], length.out = 500)
+  mu <- fn(x, xx, theta)
 
   dev.hold()
 
   plot.default(
     xv, yv, type = "p", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE, ...
+    axes = FALSE
   )
+
+  axis(1, at = pretty(xlim))
+  axis(2, at = pretty(ylim))
+  box()
+
+  lines(xx, mu, lty = 2, col = "red")
+
+  if (level > 0) {
+    q <- qchisq(level, sum(x$estimated))
+    cv <- curve_variance(x, xx)
+    cs <- sqrt(q * cv)
+
+    upper_bound <- mu + cs
+    lower_bound <- mu - cs
+
+    xci <- c(xx, rev(xx))
+    yci <- c(upper_bound, rev(lower_bound))
+    polygon(xci, yci, col = "#BDBDBD33", border = FALSE)
+  }
 
   eta <- if (x$mean_function != "logistic2") {
     theta[3]
   } else {
     theta[1]
   }
-
-  phi <- if (x$mean_function != "logistic2") {
-    theta[4]
-  } else {
-    theta[2]
-  }
-
-  lines(
-    x = rep(phi, 2), y = c(ylim[1] - 1, f(phi)), lty = 2, col = "gray"
-  )
-
-  lines(
-    x = c(xlim[1] - 1, phi), y = rep(f(phi), 2), lty = 2, col = "gray"
-  )
-
-  axis(1, at = pretty(xv))
-  axis(2, at = pretty(yv))
-  box()
-
-  curve(f(x), add = TRUE, lty = 2, col = "red")
 
   location <- if (eta <= 0) {
     "bottomleft"
@@ -688,6 +726,24 @@ plot.drda <- function(x, xlab = "log(dose)", ylab = "Response", ...) {
   legend(
     location, legend = "Maximum likelihood fit", col = "red", lty = 2, bty = "n"
   )
+
+  if (x$mean_function == "logistic2" || x$mean_function == "logistic4") {
+    phi <- if (x$mean_function == "logistic4") {
+      theta[4]
+    } else {
+      theta[2]
+    }
+
+    f <- fn(x, phi, theta)
+
+    lines(
+      x = rep(phi, 2), y = c(ylim[1] - 1, f), lty = 2, col = "gray"
+    )
+
+    lines(
+      x = c(xlim[1] - 1, phi), y = rep(f, 2), lty = 2, col = "gray"
+    )
+  }
 
   dev.flush()
 
