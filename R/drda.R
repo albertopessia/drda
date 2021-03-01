@@ -662,6 +662,21 @@ plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
 
   theta <- coef(x)
 
+  alpha <- 0
+  beta <- 1
+  eta <- -1
+  phi <- 0
+
+  if (x$mean_function != "logistic2") {
+    alpha <- theta[1]
+    beta <- theta[2]
+    eta <- theta[3]
+    phi <- theta[4]
+  } else {
+    eta <- theta[1]
+    phi <- theta[2]
+  }
+
   xv <- x$model[, 2]
   yv <- x$model[, 1]
   wv <- x$weights
@@ -676,10 +691,32 @@ plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
 
   if (missing(xlim)) {
     xlim <- extendrange(xv, f = 0.08)
+
+    if (xlim[1] > phi) {
+      xlim[1] <- phi - 50
+    } else if (xlim[2] < phi) {
+      xlim[2] <- phi + 50
+    }
   }
 
   if (missing(ylim)) {
     ylim <- extendrange(yv, f = 0.08)
+
+    if (ylim[1] > alpha) {
+      ylim[1] <- alpha - 0.5
+    }
+
+    if (ylim[2] < beta) {
+      ylim[2] < beta + 0.5
+    }
+
+    if ((ylim[1] > 0) && (ylim[1] < 1)) {
+      ylim[1] <- 0
+    }
+
+    if ((ylim[2] > 0) && (ylim[2] < 1)) {
+      ylim[2] <- 1
+    }
   }
 
   xx <- seq(xlim[1], xlim[2], length.out = 500)
@@ -698,7 +735,7 @@ plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
 
   lines(xx, mu, lty = 2, col = "red")
 
-  if (level > 0) {
+  if ((level > 0) && (level < 1)) {
     q <- qchisq(level, sum(x$estimated))
     cv <- curve_variance(x, xx)
     cs <- sqrt(q * cv)
@@ -709,12 +746,6 @@ plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
     xci <- c(xx, rev(xx))
     yci <- c(upper_bound, rev(lower_bound))
     polygon(xci, yci, col = "#BDBDBD33", border = FALSE)
-  }
-
-  eta <- if (x$mean_function != "logistic2") {
-    theta[3]
-  } else {
-    theta[1]
   }
 
   location <- if (eta <= 0) {
@@ -728,12 +759,6 @@ plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
   )
 
   if (x$mean_function == "logistic2" || x$mean_function == "logistic4") {
-    phi <- if (x$mean_function == "logistic4") {
-      theta[4]
-    } else {
-      theta[2]
-    }
-
     f <- fn(x, phi, theta)
 
     lines(
