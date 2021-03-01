@@ -393,50 +393,50 @@ mle_asy.gompertz <- function(object, theta) {
 init.gompertz <- function(object) {
   m <- object$m
   stats <- object$stats
+  rss_fn <- rss(object)
 
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
 
+  theta <- c(
+    min(stats[, 3]),
+    max(stats[, 3]),
+    if (linear_coef[2, 1] < 0) -1 else 1,
+    stats[which.min(abs(stats[, 3] - mean(range(stats[, 3])))), 1]
+  )
+
+  best_rss <- rss_fn(theta)
+
   if (linear_coef[2, 4] > 0.2) {
     # we are in big problems as a flat horizontal line is likely the best model
     weighted_mean <- sum(object$w * object$y) / sum(object$w)
-    tiny <- 1.0e-30
-    return(
-      c(
-        # alpha
-        weighted_mean,
-        # beta
-        weighted_mean + tiny,
-        # eta
-        if (linear_coef[2, 1] <= 0) -tiny else tiny,
-        # phi
-        object$stats[m, 1] + 1000
-      )
+    small <- 1.0e-3
+
+    current_par <- c(
+      weighted_mean,
+      weighted_mean + small,
+      if (linear_coef[2, 1] <= 0) -small else small,
+      object$stats[m, 1] + 100
     )
+
+    current_rss <- rss_fn(current_par)
+
+    if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      theta <- current_par
+      best_rss <- current_rss
+    }
   }
 
   delta <- mean(diff(stats[, 1]))
 
-  rss_fn <- rss(object)
-
-  eta_set <- seq(-2, -0.01, length.out = 15)
+  eta_set <- if (linear_coef[2, 1] < 0) {
+    seq(-2, -0.01, length.out = 15)
+  } else {
+    seq(0.01, 2, length.out = 15)
+  }
   phi_set <- seq(
     stats[1, 1] - 0.5 * delta, stats[m, 1] + 0.5 * delta, length.out = 15
   )
-
-  theta <- c(
-    min(stats[, 3]),
-    max(stats[, 3]) - min(stats[, 3]),
-    -1,
-    stats[which.min(abs(stats[, 3] - median(stats[, 3]))), 1]
-  )
-
-  if (linear_coef[2, 1] > 0) {
-    eta_set <- seq(0.01, 2, length.out = 15)
-    theta[3] <- 1
-  }
-
-  best_rss <- rss_fn(theta)
 
   for (phi in phi_set) {
     for (eta in eta_set) {
@@ -485,6 +485,7 @@ init.gompertz <- function(object) {
 
     if (!is.nan(current_rss) && (current_rss < best_rss)) {
       theta <- current_par
+      best_rss <- current_rss
     }
   }
 
@@ -519,6 +520,7 @@ init.gompertz <- function(object) {
 
     if (!is.nan(current_rss) && (current_rss < best_rss)) {
       theta <- current_par
+      best_rss <- current_rss
     }
   }
 
