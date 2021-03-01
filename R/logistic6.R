@@ -559,6 +559,41 @@ init.logistic6 <- function(object) {
     }
   }
 
+  fit_optim <- tryCatch(
+    {
+      rss_gh <- rss_gradient_hessian(object)
+      gr <- function(par) {
+        rss_gh(par)$G
+      }
+
+      suppressWarnings(
+        if (!object$constrained) {
+          optim(
+            theta, rss_fn, gr, method = "BFGS",
+            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+          )
+        } else {
+          optim(
+            theta, rss_fn, gr, method = "L-BFGS-B",
+            lower = object$lower_bound, upper = object$upper_bound,
+            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+          )
+        }
+      )
+    },
+    error = function(e) NULL
+  )
+
+  if (!is.null(fit_optim)) {
+    current_par <- mle_asy(object, fit_optim$par)
+    current_rss <- rss_fn(current_par)
+
+    if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      theta <- current_par
+      best_rss <- current_rss
+    }
+  }
+
   D <- data.frame(y = object$y, x = object$x)
   frm <- y ~ alpha + (beta - alpha) / (
     exp(lambda) + exp(psi - eta * (x - phi))
@@ -593,41 +628,6 @@ init.logistic6 <- function(object) {
 
   if (!is.null(fit_nls)) {
     current_par <- mle_asy(object, coefficients(fit_nls))
-    current_rss <- rss_fn(current_par)
-
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      theta <- current_par
-      best_rss <- current_rss
-    }
-  }
-
-  fit_optim <- tryCatch(
-    {
-      suppressWarnings(
-        if (!object$constrained) {
-          optim(
-            theta, rss_fn,
-            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
-          )
-        } else {
-          rss_gh <- rss_gradient_hessian(object)
-          gr <- function(par) {
-            rss_gh(par)$G
-          }
-
-          optim(
-            theta, rss_fn, gr, method = "L-BFGS-B",
-            lower = object$lower_bound, upper = object$upper_bound,
-            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
-          )
-        }
-      )
-    },
-    error = function(e) NULL
-  )
-
-  if (!is.null(fit_optim)) {
-    current_par <- mle_asy(object, fit_optim$par)
     current_rss <- rss_fn(current_par)
 
     if (!is.nan(current_rss) && (current_rss < best_rss)) {
