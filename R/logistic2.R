@@ -631,6 +631,12 @@ curve_variance.logistic2_fit <- function(object, x) {
   G[, 1] <- t
   G[, 2] <- u
 
+  # When `b` is infinite, gradient shows NaNs
+  if (any(is.nan(G))) {
+    # these are the limits for b -> Inf
+    G[is.nan(G)] <- 0
+  }
+
   variance <- rep(NA_real_, m)
 
   for (i in seq_len(m)) {

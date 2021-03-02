@@ -224,8 +224,8 @@ gradient_hessian.logistic5 <- function(object, theta) {
   # When `b` is infinite, gradient and Hessian show NaNs
   # these are the limits for b -> Inf
   if (any(is.nan(gradient))) {
-    gradient[is.nan(gradient[, 1]), 1] <- 1
-    gradient[is.nan(gradient[, 2:5]), 2:5] <- 0
+    gradient[, 1][is.nan(gradient[, 1])] <- 1
+    gradient[, 2:5][is.nan(gradient[, 2:5])] <- 0
   }
 
   if (any(is.nan(hessian))) {
@@ -755,8 +755,8 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
   # When `b` is infinite, gradient shows NaNs
   if (any(is.nan(gradient))) {
     # these are the limits for b -> Inf
-    gradient[is.nan(gradient[, 1]), 1] <- 1
-    gradient[is.nan(gradient[, 2:5]), 2:5] <- 0
+    gradient[, 1][is.nan(gradient[, 1])] <- 1
+    gradient[, 2:5][is.nan(gradient[, 2:5])] <- 0
   }
 
   # in case of theta being the maximum likelihood estimator, this gradient G
@@ -876,6 +876,13 @@ curve_variance.logistic5_fit <- function(object, x) {
   G[, 3] <- omega * t
   G[, 4] <- omega * u
   G[, 5] <- omega * v / nu
+
+  # When `b` is infinite, gradient shows NaNs
+  if (any(is.nan(G))) {
+    # these are the limits for b -> Inf
+    G[, 1][is.nan(G[, 1])] <- 1
+    G[, 2:5][is.nan(G[, 2:5])] <- 0
+  }
 
   variance <- rep(NA_real_, m)
 
