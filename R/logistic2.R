@@ -331,95 +331,53 @@ init.logistic2 <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
+  v <- 15
   eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-2, -0.01, length.out = 15)
+    seq(-2, -0.01, length.out = v)
   } else {
-    seq(0.01, 2, length.out = 15)
+    seq(0.01, 2, length.out = v)
   }
   phi_set <- seq(
-    stats[1, 1] - 0.5 * delta, stats[m, 1] + 0.5 * delta, length.out = 15
+    stats[1, 1] - 0.5 * delta, stats[m, 1] + 0.5 * delta, length.out = v
   )
+
+  theta_tmp <- matrix(nrow = 2, ncol = v^2)
+  rss_tmp <- rep(10000, v^2)
+  i <- 0
 
   for (phi in phi_set) {
     for (eta in eta_set) {
-      current_par <- c(eta, phi)
-      current_rss <- rss_fn(current_par)
-
-      if (!is.nan(current_rss) && (current_rss < best_rss)) {
-        theta <- current_par
-        best_rss <- current_rss
-      }
+      i <- i + 1
+      theta_tmp[, i] <- c(eta, phi)
+      rss_tmp[i] <- rss_fn(c(eta, phi))
     }
   }
 
-  fit_optim <- tryCatch(
-    {
-      rss_gh <- rss_gradient_hessian(object)
-      gr <- function(par) {
-        rss_gh(par)$G
-      }
+  ord <- order(rss_tmp)
 
-      suppressWarnings(
-        if (!object$constrained) {
-          optim(
-            theta, rss_fn, gr, method = "BFGS",
-            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
-          )
-        } else {
-          optim(
-            theta, rss_fn, gr, method = "L-BFGS-B",
-            lower = object$lower_bound, upper = object$upper_bound,
-            control = list(trace = 0, maxit = 10000, reltol = 1.0e-10)
-          )
-        }
-      )
-    },
-    error = function(e) NULL
+  theta_1 <- theta_tmp[, ord[1]]
+  theta_2 <- theta_tmp[, ord[25]]
+  theta_3 <- theta_tmp[, ord[50]]
+
+  names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
+    "eta", "phi"
   )
 
-  if (!is.null(fit_optim)) {
-    current_par <- mle_asy(object, fit_optim$par)
-    current_rss <- rss_fn(current_par)
+  formula <- y ~ 1 / (1 + exp(-eta * (x - phi)))
+  start <- cbind(theta, theta_1, theta_2, theta_3)
 
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      theta <- current_par
-      best_rss <- current_rss
-    }
+  tmp <- fit_nls(object, rss_fn, formula, start)
+
+  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
+    theta <- tmp$theta
+    best_rss <- tmp$rss
   }
 
-  D <- data.frame(y = object$y, x = object$x)
-  frm <- y ~ 1 / (1 + exp(-eta * (x - phi)))
-  start <- c(eta = theta[1], phi = theta[2])
-  ctrl <- nls.control(tol = 1.0e-10, minFactor = 1.0e-5, warnOnly = TRUE)
+  tmp <- fit_optim(object, rss_fn, theta)
 
-  fit_nls <- tryCatch(
-    {
-      suppressWarnings(
-        if (!object$constrained) {
-          nls(
-            formula = frm, data = D, start = start, control = ctrl,
-            weights = object$w
-          )
-        } else {
-          nls(
-            formula = frm, data = D, start = start, control = ctrl,
-            algorithm = "port", weights = object$w, lower = object$lower_bound,
-            upper = object$upper_bound
-          )
-        }
-      )
-    },
-    error = function(e) NULL
-  )
-
-  if (!is.null(fit_nls)) {
-    current_par <- mle_asy(object, coefficients(fit_nls))
-    current_rss <- rss_fn(current_par)
-
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      theta <- current_par
-      best_rss <- current_rss
-    }
+  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
+    theta <- tmp$theta
+    best_rss <- tmp$rss
   }
 
   names(theta) <- NULL
