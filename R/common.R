@@ -107,12 +107,12 @@ approx_vcov <- function(fim) {
 #' Use `nls` to find a good initial value.
 #'
 #' @param object object of some model class.
-#' @param fn residual sum of squares to be minimized.
+#' @param rss_fn residual sum of squares to be minimized.
 #' @param formula a nonlinear model formula including variables and parameters.
 #' @param start matrix of candidate starting points.
 #'
 #' @importFrom stats coef nls nls.control
-fit_nls <- function(object, fn, formula, start) {
+fit_nls <- function(object, rss_fn, formula, start) {
   data <- data.frame(y = object$y, x = object$x)
 
   control <- nls.control(
@@ -121,7 +121,7 @@ fit_nls <- function(object, fn, formula, start) {
 
   f <- if (!object$constrained) {
     function(x) {
-      y <- nls(formula, data, x, control, weights = object$w)
+      y <- nls(formula, data, x, control, "port", weights = object$w)
       mle_asy(object, coef(y))
     }
   } else {
@@ -144,7 +144,7 @@ fit_nls <- function(object, fn, formula, start) {
     )
 
     if (!is.null(current_par)) {
-      current_rss <- fn(current_par)
+      current_rss <- rss_fn(current_par)
 
       if (!is.nan(current_rss) && (current_rss < best_rss)) {
         best_par <- current_par

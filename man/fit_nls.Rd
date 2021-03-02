@@ -4,12 +4,12 @@
 \alias{fit_nls}
 \title{Algorithm initialization}
 \usage{
-fit_nls(object, fn, formula, start)
+fit_nls(object, rss_fn, formula, start)
 }
 \arguments{
 \item{object}{object of some model class.}
 
-\item{fn}{residual sum of squares to be minimized.}
+\item{rss_fn}{residual sum of squares to be minimized.}
 
 \item{formula}{a nonlinear model formula including variables and parameters.}
 

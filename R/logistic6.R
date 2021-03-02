@@ -567,8 +567,8 @@ init.logistic6 <- function(object) {
   ord <- order(rss_tmp)
 
   theta_1 <- theta_tmp[, ord[1]]
-  theta_2 <- theta_tmp[, ord[25]]
-  theta_3 <- theta_tmp[, ord[50]]
+  theta_2 <- theta_tmp[, ord[313]]
+  theta_3 <- theta_tmp[, ord[625]]
 
   names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
     "alpha", "beta", "eta", "phi", "psi", "lambda"
