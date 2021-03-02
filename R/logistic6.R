@@ -983,3 +983,72 @@ curve_variance.logistic6_fit <- function(object, x) {
 
   variance
 }
+
+#' 6-parameter logistic fit
+#'
+#' Evaluate the normalized area under the curve (AUC) and area above the curve
+#' (AAC).
+#'
+#' @details
+#' The 6-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#'
+#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+#' and `nu > 0`. The upper horizontal asymptote is
+#' `lambda = alpha + (beta - alpha) / xi^(1 / nu)`. When `xi = 1` it is
+#' obviously `lambda = beta`.
+#'
+#' The area under the curve (AUC) is simply the integral of `f(x; theta)`
+#' between `lower_bound` and `upper_bound` with respect to `x`.
+#'
+#' When the interval of integration is fixed, since the the curve ranges between
+#' `alpha` and `lambda`, the curve `f(x; theta)` is contained into the rectangle
+#' of height `lambda - alpha` and width `upper_bound - lower_bound`. The maximum
+#' area the curve can have is obviously
+#' `(upper_bound - lower_bound) * (lambda - alpha)`.
+#'
+#' We first shift the curve by `alpha` to set the minimum to 0. We then
+#' integrate the curve and define the normalized AUC (NAUC) by dividing its
+#' value by the maximum area. As a consequence, the normalized area above the
+#' curve is simply `NAAC = 1 - NAUC`.
+#'
+#' Default values of `lower_bound` and `upper_bound` were chosen based on common
+#' dose ranges used in the literature. They are also symmetric around zero
+#' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
+#'
+#' @param object object of class `logistic6_fit`.
+#' @param lower_bound numeric value with the lower bound of the integration
+#'   interval.
+#' @param upper_bound numeric value with the upper bound of the integration
+#'   interval.
+#'
+#' @return Numeric value with the requested area.
+#'
+#' @importFrom stats integrate
+nauc.logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+  alpha <- object$coefficients[1]
+  beta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+  nu <- object$coefficients[5]
+  xi <- object$coefficients[5]
+
+  omega <- (beta - alpha) / xi^(1 / nu)
+
+  f <- function(z) {
+    1 / (xi + nu * exp(-eta * (z - phi)))^(1 / nu)
+  }
+
+  I <- integrate(f, lower = lower_bound, upper = upper_bound)
+
+  nauc <- I$value / (omega * (upper_bound - lower_bound))
+  names(nauc) <- NULL
+
+  nauc
+}
+
+#' @rdname nauc.logistic6_fit
+naac_logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+  1 - nauc(object, lower_bound, upper_bound)
+}

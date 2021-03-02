@@ -774,7 +774,7 @@ curve_variance.gompertz_fit <- function(object, x) {
 #'
 #' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 #' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate, and `phi` related to the function
+#' steepness of the curve or growth rate, and `phi` is related to the function
 #' value at `x = 0`.
 #'
 #' The area under the curve (AUC) is simply the integral of `f(x; theta)`
@@ -805,13 +805,17 @@ curve_variance.gompertz_fit <- function(object, x) {
 #'
 #' @export
 nauc.gompertz_fit <- function(object, lower_bound = -10, upper_bound = 10) {
-  eta <- object$coefficients[1]
-  phi <- object$coefficients[2]
+  omega <- object$coefficients[2] - object$coefficients[1]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
 
-  t1 <- 1 + exp(-eta * (upper_bound - phi))
-  t2 <- 1 + exp(-eta * (lower_bound - phi))
+  f <- function(z) {
+    exp(-exp(-eta * (z - phi)))
+  }
 
-  nauc <- 1 + log(t1 / t2) / (eta * (upper_bound - lower_bound))
+  I <- integrate(f, lower = lower_bound, upper = upper_bound)
+
+  nauc <- I$value / (omega * (upper_bound - lower_bound))
   names(nauc) <- NULL
 
   nauc

@@ -49,9 +49,4 @@ curve is simply \code{NAAC = 1 - NAUC}.
 Default values of \code{lower_bound} and \code{upper_bound} were chosen based on common
 dose ranges used in the literature. They are also symmetric around zero
 so that \code{NAUC} and \code{NAAC} are equal to \code{0.5} in the standard logistic model.
-
-\strong{Note}: Integral of a 5-parameter logistic function involves Gaussian
-hypergeometric functions, which are prone to numerical errors and not part
-of base R. For this reason, we opt here to simply use the \code{integrate}
-function from base R.
 }

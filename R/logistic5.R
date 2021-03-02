@@ -923,11 +923,6 @@ curve_variance.logistic5_fit <- function(object, x) {
 #' dose ranges used in the literature. They are also symmetric around zero
 #' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
 #'
-#' **Note**: Integral of a 5-parameter logistic function involves Gaussian
-#' hypergeometric functions, which are prone to numerical errors and not part
-#' of base R. For this reason, we opt here to simply use the `integrate`
-#' function from base R.
-#'
 #' @param object object of class `logistic5_fit`.
 #' @param lower_bound numeric value with the lower bound of the integration
 #'   interval.
