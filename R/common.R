@@ -1,16 +1,16 @@
-#' Sufficient statistics
-#'
-#' Compute sufficient statistics for each unique value of the predictor
-#' variable.
-#'
-#' @param x numeric vector representing the fixed predictor variable.
-#' @param y numeric vector of observed values.
-#' @param w numeric vector of weights.
-#'
-#' @return Numeric matrix where the first column are the sorted unique values of
-#'   input vector `x`, second column are the total weights (sample size if no
-#'   weights), third column are the (weighted) sample means, and fourth column
-#'   are the uncorrected (weighted) sample variances.
+# Sufficient statistics
+#
+# Compute sufficient statistics for each unique value of the predictor
+# variable.
+#
+# @param x numeric vector representing the fixed predictor variable.
+# @param y numeric vector of observed values.
+# @param w numeric vector of weights.
+#
+# @return Numeric matrix where the first column are the sorted unique values of
+#   input vector `x`, second column are the total weights (sample size if no
+#   weights), third column are the (weighted) sample means, and fourth column
+#   are the uncorrected (weighted) sample variances.
 suff_stats <- function(x, y, w) {
   unique_x <- sort(unique(x))
   k <- length(unique_x)
@@ -37,41 +37,41 @@ suff_stats <- function(x, y, w) {
   stats
 }
 
-#' Variance estimator
-#'
-#' Compute the corrected variance estimate associated with a Normal
-#' distribution.
-#'
-#' @param rss value of the residual sum of squares.
-#' @param df residual degrees of freedom.
-#'
-#' @return Corrected maximum likelihood estimate of the variance.
+# Variance estimator
+#
+# Compute the corrected variance estimate associated with a Normal
+# distribution.
+#
+# @param rss value of the residual sum of squares.
+# @param df residual degrees of freedom.
+#
+# @return Corrected maximum likelihood estimate of the variance.
 variance_normal <- function(rss, df) {
   rss / df
 }
 
-#' Log-likelihood value
-#'
-#' Evaluate the maximum of the log-likelihood function associated with a Normal
-#' distribution.
-#'
-#' @param deviance deviance value, i.e. residual sum of squares.
-#' @param n total sample size.
-#' @param log_w sum of log-weights.
-#'
-#' @return Value of the log-likelihood function at the MLE.
+# Log-likelihood value
+#
+# Evaluate the maximum of the log-likelihood function associated with a Normal
+# distribution.
+#
+# @param deviance deviance value, i.e. residual sum of squares.
+# @param n total sample size.
+# @param log_w sum of log-weights.
+#
+# @return Value of the log-likelihood function at the MLE.
 loglik_normal <- function(deviance, n, log_w = 0) {
   - (n * (1 + log(2 * pi * deviance / n)) - log_w) / 2
 }
 
-#' Approximate variance-covariance matrix
-#'
-#' Using the Fisher information matrix, compute an approximate
-#' variance-covariance matrix of the estimated model parameters.
-#'
-#' @param fim Fisher information matrix.
-#'
-#' @return Approximate variance-covariance matrix.
+# Approximate variance-covariance matrix
+#
+# Using the Fisher information matrix, compute an approximate
+# variance-covariance matrix of the estimated model parameters.
+#
+# @param fim Fisher information matrix.
+#
+# @return Approximate variance-covariance matrix.
 approx_vcov <- function(fim) {
   vcov <- tryCatch({
       chol2inv(chol(fim))
@@ -102,15 +102,15 @@ approx_vcov <- function(fim) {
   vcov
 }
 
-#' Algorithm initialization
-#'
-#' Use `nls` to find a good initial value.
-#'
-#' @param object object of some model class.
-#' @param rss_fn residual sum of squares to be minimized.
-#' @param formula a nonlinear model formula including variables and parameters.
-#' @param start matrix of candidate starting points.
-#'
+# Algorithm initialization
+#
+# Use `nls` to find a good initial value.
+#
+# @param object object of some model class.
+# @param rss_fn residual sum of squares to be minimized.
+# @param formula a nonlinear model formula including variables and parameters.
+# @param start matrix of candidate starting points.
+#
 #' @importFrom stats coef nls nls.control
 fit_nls <- function(object, rss_fn, formula, start) {
   data <- data.frame(y = object$y, x = object$x)
@@ -156,14 +156,14 @@ fit_nls <- function(object, rss_fn, formula, start) {
   list(theta = best_par, rss = best_rss)
 }
 
-#' Algorithm initialization
-#'
-#' Use `optim` to find a good initial value.
-#'
-#' @param object object of some model class.
-#' @param fn residual sum of squares to be minimized.
-#' @param start candidate starting point.
-#'
+# Algorithm initialization
+#
+# Use `optim` to find a good initial value.
+#
+# @param object object of some model class.
+# @param fn residual sum of squares to be minimized.
+# @param start candidate starting point.
+#
 #' @importFrom stats optim
 fit_optim <- function(object, fn, start) {
   rss_gh <- rss_gradient_hessian(object)
@@ -209,24 +209,24 @@ fit_optim <- function(object, fn, start) {
   list(theta = best_par, rss = best_rss)
 }
 
-#' Fit a function to observed data
-#'
-#' Use a Newton trust-region method to fit a function to observed data.
-#'
-#' @param object object of some model class.
-#' @param constraint boolean matrix with constraint specifications.
-#' @param known_param numeric vector of fixed known parameters.
-#'
-#' @return A list with the following components:
-#'   \describe{
-#'     \item{optimum}{maximum likelihood estimates of the model parameters.}
-#'     \item{minimum}{(local) minimum of the residual sum of squares around the
-#'      means.}
-#'     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
-#'       `FALSE` otherwise.}
-#'     \item{iterations}{total number of iterations performed by the
-#'       optimization algorithm}
-#'   }
+# Fit a function to observed data
+#
+# Use a Newton trust-region method to fit a function to observed data.
+#
+# @param object object of some model class.
+# @param constraint boolean matrix with constraint specifications.
+# @param known_param numeric vector of fixed known parameters.
+#
+# @return A list with the following components:
+#   \describe{
+#     \item{optimum}{maximum likelihood estimates of the model parameters.}
+#     \item{minimum}{(local) minimum of the residual sum of squares around the
+#      means.}
+#     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
+#       `FALSE` otherwise.}
+#     \item{iterations}{total number of iterations performed by the
+#       optimization algorithm}
+#   }
 find_optimum <- function(object) {
   start <- if (!is.null(object$start)) {
     object$start
@@ -244,7 +244,7 @@ find_optimum <- function(object) {
   ntrm(rss_fn, rss_gh, start, object$max_iter, update_fn)
 }
 
-#' @rdname find_optimum
+# @rdname find_optimum
 find_optimum_constrained <- function(object, constraint, known_param) {
   start <- if (!is.null(object$start)) {
     # equality constraints have the priority over the provided starting values

@@ -1,39 +1,39 @@
-#' Maximum absolute value
-#'
-#' Find the maximum absolute value in a vector, i.e. `max(abs(x))`, calling
-#' `abs` only once.
-#'
-#' @param x numeric vector.
-#'
-#' @return Maximum absolute value in `x`.
+# Maximum absolute value
+#
+# Find the maximum absolute value in a vector, i.e. `max(abs(x))`, calling
+# `abs` only once.
+#
+# @param x numeric vector.
+#
+# @return Maximum absolute value in `x`.
 ntrm_max_abs <- function(x) {
   min_max <- range(x)
   max(abs(min_max[1]), min_max[2])
 }
 
-#' Euclidean norm of a vector
-#'
-#' Compute the Euclidean norm of a vector `x`, i.e. `|x| = sqrt(sum(x^2))`.
-#'
-#' @param x numeric vector.
-#'
-#' @return Euclidean norm of `x`.
+# Euclidean norm of a vector
+#
+# Compute the Euclidean norm of a vector `x`, i.e. `|x| = sqrt(sum(x^2))`.
+#
+# @param x numeric vector.
+#
+# @return Euclidean norm of `x`.
 ntrm_norm <- function(x) {
   sqrt(sum(x^2))
 }
 
-#' Solutions of a quadratic equation
-#'
-#' Solve the equation `a x^2 + b x + c = 0` for x, in a numerically stable
-#' manner. However, the discriminant is still evaluated using the actual
-#' formula.
-#'
-#' @param a quadratic coefficient.
-#' @param b linear coefficient.
-#' @param c constant.
-#'
-#' @return Numeric vector of length 2 with the solutions of the quadratic
-#'   equation.
+# Solutions of a quadratic equation
+#
+# Solve the equation `a x^2 + b x + c = 0` for x, in a numerically stable
+# manner. However, the discriminant is still evaluated using the actual
+# formula.
+#
+# @param a quadratic coefficient.
+# @param b linear coefficient.
+# @param c constant.
+#
+# @return Numeric vector of length 2 with the solutions of the quadratic
+#   equation.
 ntrm_solve_quadratic_equation <- function(a, b, c) {
   eps <- 1.0e-12
 
@@ -75,24 +75,24 @@ ntrm_solve_quadratic_equation <- function(a, b, c) {
   }
 }
 
-#' Find the minimum of a function by line search
-#'
-#' Using the Brent's method, find the value of `x` that minimize a function
-#' `f(x)` in the interval `[a, b]`.
-#'
-#' @details
-#' This is a direct port of the algorithm from section 10.3 at page 498 of Press
-#' et al. (2007).
-#'
-#' @param f one-dimensional function to minimize.
-#' @param a lower bound.
-#' @param b upper bound.
-#'
-#' @return Scalar value `a <= x <= b` such that `f(x)` is minimum.
-#'
-#' @references
-#' William H. Press et al. **Numerical recipes**. Cambridge University Press,
-#' Cambridge, UK, third edition, 2007. ISBN 978-0-511-33555-6.
+# Find the minimum of a function by line search
+#
+# Using the Brent's method, find the value of `x` that minimize a function
+# `f(x)` in the interval `[a, b]`.
+#
+# @details
+# This is a direct port of the algorithm from section 10.3 at page 498 of Press
+# et al. (2007).
+#
+# @param f one-dimensional function to minimize.
+# @param a lower bound.
+# @param b upper bound.
+#
+# @return Scalar value `a <= x <= b` such that `f(x)` is minimum.
+#
+# @references
+# William H. Press et al. **Numerical recipes**. Cambridge University Press,
+# Cambridge, UK, third edition, 2007. ISBN 978-0-511-33555-6.
 ntrm_line_search <- function(f, a, b) {
   # 1 - golden_ratio
   k <- 0.381966

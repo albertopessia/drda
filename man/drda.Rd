@@ -40,9 +40,8 @@ least squares is used.}
 \item{na.action}{a function which indicates what should happen when the data
 contain \code{NA}s. The default is set by the \code{na.action} setting of
 \code{\link[base]{options}}, and is \code{\link[stats]{na.fail}} if that is
-unset. The ‘factory-fresh’ default is \code{\link[stats]{na.omit}}. Another
-possible value is \code{NULL}, no action. Value \code{\link[stats]{na.exclude}}
-can be useful.}
+unset. The ‘factory-fresh’ default is \code{na.omit}. Another
+possible value is \code{NULL}, no action. Value \code{na.exclude} can be useful.}
 
 \item{mean_function}{the model to be fitted. See \code{details} for available
 models.}

@@ -1,20 +1,20 @@
-#' Fit dose-response data
-#'
-#' Use a Newton trust-region method to fit a logistic function to dose-response
-#' data.
-#'
-#' @param x numeric vector representing the fixed predictor variable.
-#' @param y numeric vector of observed values.
-#' @param w an optional vector of weights to be used in the fitting
-#'   process.
-#' @param start starting values for the parameters.
-#' @param max_iter maximum number of iterations in the optimization algorithm.
-#' @param lower_bound numeric vector with the minimum admissible values of the
-#'   parameters.
-#' @param upper_bound numeric vector with the maximum admissible values of the
-#'   parameters.
-#'
-#' @return An object of class `logistic*`.
+# Fit dose-response data
+#
+# Use a Newton trust-region method to fit a logistic function to dose-response
+# data.
+#
+# @param x numeric vector representing the fixed predictor variable.
+# @param y numeric vector of observed values.
+# @param w an optional vector of weights to be used in the fitting
+#   process.
+# @param start starting values for the parameters.
+# @param max_iter maximum number of iterations in the optimization algorithm.
+# @param lower_bound numeric vector with the minimum admissible values of the
+#   parameters.
+# @param upper_bound numeric vector with the maximum admissible values of the
+#   parameters.
+#
+# @return An object of class `logistic*`.
 logistic6_new <-  function(
   x, y, w, start, max_iter, lower_bound, upper_bound
 ) {
@@ -149,52 +149,52 @@ logistic6_fn <- function(x, theta) {
   alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)
 }
 
-#' 6-parameter logistic function
-#'
-#' Evaluate at a particular set of parameters the 6-parameter logistic function.
-#'
-#' @details
-#' The 6-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
-#' and `nu > 0`.
-#'
-#' @param object object of class `logistic6`.
-#' @param x numeric vector at which the logistic function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
-#'   `c(alpha, beta, eta, phi, nu, xi)`.
-#'
-#' @return Numeric vector of the same length of `x` with the values of the
-#'   logistic function.
+# 6-parameter logistic function
+#
+# Evaluate at a particular set of parameters the 6-parameter logistic function.
+#
+# @details
+# The 6-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#
+# where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+# and `nu > 0`.
+#
+# @param object object of class `logistic6`.
+# @param x numeric vector at which the logistic function is to be evaluated.
+# @param theta numeric vector with the six parameters in the form
+#   `c(alpha, beta, eta, phi, nu, xi)`.
+#
+# @return Numeric vector of the same length of `x` with the values of the
+#   logistic function.
 fn.logistic6 <- function(object, x, theta) {
   logistic6_fn(x, theta)
 }
 
-#' @rdname fn.logistic6
+# @rdname fn.logistic6
 fn.logistic6_fit <- function(object, x, theta) {
   logistic6_fn(x, theta)
 }
 
-#' 6-parameter logistic function
-#'
-#' Evaluate at a particular set of parameters the gradient and Hessian of the
-#' 6-parameter logistic function.
-#'
-#' @details
-#' The 6-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
-#' and `nu > 0`.
-#'
-#' @param object object of class `logistic6`.
-#' @param theta numeric vector with the six parameters in the form
-#'   `c(alpha, beta, eta, phi, nu, xi)`.
-#'
-#' @return List of two elements: `G` the gradient and `H` the Hessian.
+# 6-parameter logistic function
+#
+# Evaluate at a particular set of parameters the gradient and Hessian of the
+# 6-parameter logistic function.
+#
+# @details
+# The 6-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#
+# where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+# and `nu > 0`.
+#
+# @param object object of class `logistic6`.
+# @param theta numeric vector with the six parameters in the form
+#   `c(alpha, beta, eta, phi, nu, xi)`.
+#
+# @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic6 <- function(object, theta) {
   x <- object$stats[, 1]
 
@@ -286,30 +286,30 @@ gradient_hessian.logistic6 <- function(object, theta) {
   list(G = gradient, H = hessian)
 }
 
-#' Residual sum of squares
-#'
-#' Evaluate the residual sum of squares (RSS) against the mean of a
-#' 6-parameter logistic model.
-#'
-#' @details
-#' The 6-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
-#' and `nu > 0`.
-#'
-#' In our optimization algorithm, however, we consider instead the equivalent
-#' function `f(x; theta')`
-#'
-#' `alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))`
-#'
-#' @param object object of class `logistic6`.
-#' @param known_param numeric vector with the known fixed values of the model
-#'   parameters, if any.
-#'
-#' @return Function handle `f(theta)` to evaluate the RSS associated to a
-#'   particular parameter choice `theta`.
+# Residual sum of squares
+#
+# Evaluate the residual sum of squares (RSS) against the mean of a
+# 6-parameter logistic model.
+#
+# @details
+# The 6-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#
+# where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+# and `nu > 0`.
+#
+# In our optimization algorithm, however, we consider instead the equivalent
+# function `f(x; theta')`
+#
+# `alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))`
+#
+# @param object object of class `logistic6`.
+# @param known_param numeric vector with the known fixed values of the model
+#   parameters, if any.
+#
+# @return Function handle `f(theta)` to evaluate the RSS associated to a
+#   particular parameter choice `theta`.
 rss.logistic6 <- function(object) {
   function(theta) {
     theta[5] <- exp(theta[5])
@@ -320,7 +320,7 @@ rss.logistic6 <- function(object) {
   }
 }
 
-#' @rdname rss.logistic6
+# @rdname rss.logistic6
 rss_fixed.logistic6 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -337,30 +337,30 @@ rss_fixed.logistic6 <- function(object, known_param) {
   }
 }
 
-#' Residual sum of squares
-#'
-#' Evaluate the gradient and Hessian of the residual sum of squares (RSS)
-#' against the mean of a 6-parameter logistic model.
-#'
-#' @details
-#' The 6-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
-#' and `nu > 0`.
-#'
-#' In our optimization algorithm, however, we consider instead the equivalent
-#' function `f(x; theta')`
-#'
-#' `alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))`
-#'
-#' @param object object of class `logistic6`.
-#' @param known_param numeric vector with the known fixed values of the model
-#'   parameters, if any.
-#'
-#' @return Function handle `f(theta)` to evaluate the gradient and Hessian of
-#'   the RSS associated to a particular parameter choice `theta`.
+# Residual sum of squares
+#
+# Evaluate the gradient and Hessian of the residual sum of squares (RSS)
+# against the mean of a 6-parameter logistic model.
+#
+# @details
+# The 6-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#
+# where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+# and `nu > 0`.
+#
+# In our optimization algorithm, however, we consider instead the equivalent
+# function `f(x; theta')`
+#
+# `alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))`
+#
+# @param object object of class `logistic6`.
+# @param known_param numeric vector with the known fixed values of the model
+#   parameters, if any.
+#
+# @return Function handle `f(theta)` to evaluate the gradient and Hessian of
+#   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.logistic6 <- function(object) {
   function(theta) {
     theta[5] <- exp(theta[5])
@@ -388,7 +388,7 @@ rss_gradient_hessian.logistic6 <- function(object) {
   }
 }
 
-#' @rdname rss_gradient_hessian.logistic6
+# @rdname rss_gradient_hessian.logistic6
 rss_gradient_hessian_fixed.logistic6 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -425,15 +425,15 @@ rss_gradient_hessian_fixed.logistic6 <- function(object, known_param) {
   }
 }
 
-#' Maximum likelihood estimators
-#'
-#' Given a set of parameters, compute the maximum likelihood estimates of the
-#' lower and upper horizontal asymptotes.
-#'
-#' @param object object of class `logistic6`.
-#' @param theta vector of parameters.
-#'
-#' @return Numeric vector of length 2 with the MLE of the two asymptotes.
+# Maximum likelihood estimators
+#
+# Given a set of parameters, compute the maximum likelihood estimates of the
+# lower and upper horizontal asymptotes.
+#
+# @param object object of class `logistic6`.
+# @param theta vector of parameters.
+#
+# @return Numeric vector of length 2 with the MLE of the two asymptotes.
 mle_asy.logistic6 <- function(object, theta) {
   m <- object$m
 
@@ -477,15 +477,15 @@ mle_asy.logistic6 <- function(object, theta) {
   theta
 }
 
-#' Initialize vector of parameters
-#'
-#' Given the sufficient statistics, try to guess a good approximation to the
-#' Maximum Likelihood estimator of the six parameters of the logistic function.
-#'
-#' @param object object of class `logistic6`.
-#'
-#' @return Numeric vector of length 6 with a (hopefully) good starting point.
-#'
+# Initialize vector of parameters
+#
+# Given the sufficient statistics, try to guess a good approximation to the
+# Maximum Likelihood estimator of the six parameters of the logistic function.
+#
+# @param object object of class `logistic6`.
+#
+# @return Numeric vector of length 6 with a (hopefully) good starting point.
+#
 #' @importFrom stats coefficients lm median nls nls.control optim
 init.logistic6 <- function(object) {
   m <- object$m
@@ -598,44 +598,44 @@ init.logistic6 <- function(object) {
   theta
 }
 
-#' 6-parameter logistic fit
-#'
-#' Fit a 6-parameter logistic function to observed data with a Maximum
-#' Likelihood approach.
-#'
-#' @details
-#' The 6-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
-#' and `nu > 0`.
-#'
-#' In our optimization algorithm, however, we consider instead the equivalent
-#' function `f(x; theta')`
-#'
-#' `alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))`
-#'
-#' @param object object of class `logistic6`.
-#'
-#' @return A list with the following components:
-#'   \describe{
-#'     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
-#'       `FALSE` otherwise.}
-#'     \item{iterations}{total number of iterations performed by the
-#'       optimization algorithm}
-#'     \item{constrained}{boolean. `TRUE` if optimization was constrained,
-#'       `FALSE` otherwise.}
-#'     \item{estimated}{boolean vector indicating which parameters were
-#'       estimated from the data.}
-#'     \item{coefficients}{maximum likelihood estimates of the model
-#'       parameters.}
-#'     \item{rss}{minimum value found of the residual sum of squares.}
-#'     \item{df.residual}{residual degrees of freedom.}
-#'     \item{fitted.values}{fitted mean values.}
-#'     \item{residuals}{residuals, that is response minus fitted values.}
-#'     \item{weights}{vector of weights used for the fit.}
-#'   }
+# 6-parameter logistic fit
+#
+# Fit a 6-parameter logistic function to observed data with a Maximum
+# Likelihood approach.
+#
+# @details
+# The 6-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#
+# where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+# and `nu > 0`.
+#
+# In our optimization algorithm, however, we consider instead the equivalent
+# function `f(x; theta')`
+#
+# `alpha + (beta - alpha) / (exp(u) + exp(v - eta * (x - phi)))^(-exp(-v))`
+#
+# @param object object of class `logistic6`.
+#
+# @return A list with the following components:
+#   \describe{
+#     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
+#       `FALSE` otherwise.}
+#     \item{iterations}{total number of iterations performed by the
+#       optimization algorithm}
+#     \item{constrained}{boolean. `TRUE` if optimization was constrained,
+#       `FALSE` otherwise.}
+#     \item{estimated}{boolean vector indicating which parameters were
+#       estimated from the data.}
+#     \item{coefficients}{maximum likelihood estimates of the model
+#       parameters.}
+#     \item{rss}{minimum value found of the residual sum of squares.}
+#     \item{df.residual}{residual degrees of freedom.}
+#     \item{fitted.values}{fitted mean values.}
+#     \item{residuals}{residuals, that is response minus fitted values.}
+#     \item{weights}{vector of weights used for the fit.}
+#   }
 fit.logistic6 <- function(object) {
   solution <- find_optimum(object)
 
@@ -668,7 +668,7 @@ fit.logistic6 <- function(object) {
   result
 }
 
-#' @rdname fit.logistic6
+# @rdname fit.logistic6
 fit_constrained.logistic6 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -725,26 +725,26 @@ fit_constrained.logistic6 <- function(object) {
   result
 }
 
-#' 6-parameter logistic fit
-#'
-#' Evaluate the Fisher information matrix at the maximum likelihood estimate.
-#'
-#' @details
-#' Let `mu(x; theta)` be the 6-parameter logistic function. We assume that our
-#' observations `y` are independent and such that
-#' `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
-#' distribution `N(0, 1)`.
-#'
-#' The 6-by-6 (symmetric) Fisher information matrix is the expected value of
-#' the negative Hessian matrix of the log-likelihood function. We compute the
-#' observed Fisher information matrix because it has better finite sample
-#' properties.
-#'
-#' @param object object of class `logistic6`.
-#' @param theta numeric vector with the model parameters.
-#' @param sigma estimate of the standard deviation.
-#'
-#' @return Fisher information matrix evaluated at `theta`.
+# 6-parameter logistic fit
+#
+# Evaluate the Fisher information matrix at the maximum likelihood estimate.
+#
+# @details
+# Let `mu(x; theta)` be the 6-parameter logistic function. We assume that our
+# observations `y` are independent and such that
+# `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
+# distribution `N(0, 1)`.
+#
+# The 6-by-6 (symmetric) Fisher information matrix is the expected value of
+# the negative Hessian matrix of the log-likelihood function. We compute the
+# observed Fisher information matrix because it has better finite sample
+# properties.
+#
+# @param object object of class `logistic6`.
+# @param theta numeric vector with the model parameters.
+# @param sigma estimate of the standard deviation.
+#
+# @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic6 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -876,15 +876,15 @@ fisher_info.logistic6 <- function(object, theta, sigma) {
   fim
 }
 
-#' 6-parameter logistic fit
-#'
-#' Evaluate the variance of the maximum likelihood curve at different predictor
-#' values.
-#'
-#' @param object object of class `logistic6_fit`.
-#' @param x numeric vector at which to evaluate the variance.
-#'
-#' @return Numeric vector with the variances of the maximum likelihood curve.
+# 6-parameter logistic fit
+#
+# Evaluate the variance of the maximum likelihood curve at different predictor
+# values.
+#
+# @param object object of class `logistic6_fit`.
+# @param x numeric vector at which to evaluate the variance.
+#
+# @return Numeric vector with the variances of the maximum likelihood curve.
 curve_variance.logistic6_fit <- function(object, x) {
   m <- length(x)
 
@@ -941,47 +941,47 @@ curve_variance.logistic6_fit <- function(object, x) {
   variance
 }
 
-#' 6-parameter logistic fit
-#'
-#' Evaluate the normalized area under the curve (AUC) and area above the curve
-#' (AAC).
-#'
-#' @details
-#' The 6-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
-#' and `nu > 0`. The upper horizontal asymptote is
-#' `lambda = alpha + (beta - alpha) / xi^(1 / nu)`. When `xi = 1` it is
-#' obviously `lambda = beta`.
-#'
-#' The area under the curve (AUC) is simply the integral of `f(x; theta)`
-#' between `lower_bound` and `upper_bound` with respect to `x`.
-#'
-#' When the interval of integration is fixed, since the the curve ranges between
-#' `alpha` and `lambda`, the curve `f(x; theta)` is contained into the rectangle
-#' of height `lambda - alpha` and width `upper_bound - lower_bound`. The maximum
-#' area the curve can have is obviously
-#' `(upper_bound - lower_bound) * (lambda - alpha)`.
-#'
-#' We first shift the curve by `alpha` to set the minimum to 0. We then
-#' integrate the curve and define the normalized AUC (NAUC) by dividing its
-#' value by the maximum area. As a consequence, the normalized area above the
-#' curve is simply `NAAC = 1 - NAUC`.
-#'
-#' Default values of `lower_bound` and `upper_bound` were chosen based on common
-#' dose ranges used in the literature. They are also symmetric around zero
-#' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
-#'
-#' @param object object of class `logistic6_fit`.
-#' @param lower_bound numeric value with the lower bound of the integration
-#'   interval.
-#' @param upper_bound numeric value with the upper bound of the integration
-#'   interval.
-#'
-#' @return Numeric value with the requested area.
-#'
+# 6-parameter logistic fit
+#
+# Evaluate the normalized area under the curve (AUC) and area above the curve
+# (AAC).
+#
+# @details
+# The 6-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#
+# where `theta = c(alpha, beta, eta, phi, nu, xi)`, `beta > alpha`, `xi > 0`,
+# and `nu > 0`. The upper horizontal asymptote is
+# `lambda = alpha + (beta - alpha) / xi^(1 / nu)`. When `xi = 1` it is
+# obviously `lambda = beta`.
+#
+# The area under the curve (AUC) is simply the integral of `f(x; theta)`
+# between `lower_bound` and `upper_bound` with respect to `x`.
+#
+# When the interval of integration is fixed, since the the curve ranges between
+# `alpha` and `lambda`, the curve `f(x; theta)` is contained into the rectangle
+# of height `lambda - alpha` and width `upper_bound - lower_bound`. The maximum
+# area the curve can have is obviously
+# `(upper_bound - lower_bound) * (lambda - alpha)`.
+#
+# We first shift the curve by `alpha` to set the minimum to 0. We then
+# integrate the curve and define the normalized AUC (NAUC) by dividing its
+# value by the maximum area. As a consequence, the normalized area above the
+# curve is simply `NAAC = 1 - NAUC`.
+#
+# Default values of `lower_bound` and `upper_bound` were chosen based on common
+# dose ranges used in the literature. They are also symmetric around zero
+# so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
+#
+# @param object object of class `logistic6_fit`.
+# @param lower_bound numeric value with the lower bound of the integration
+#   interval.
+# @param upper_bound numeric value with the upper bound of the integration
+#   interval.
+#
+# @return Numeric value with the requested area.
+#
 #' @importFrom stats integrate
 nauc.logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   alpha <- object$coefficients[1]
@@ -1005,7 +1005,7 @@ nauc.logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   nauc
 }
 
-#' @rdname nauc.logistic6_fit
+# @rdname nauc.logistic6_fit
 naac_logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }

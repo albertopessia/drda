@@ -1,4 +1,4 @@
-#' @rdname logistic6_new
+# @rdname logistic6_new
 logistic4_new <-  function(
   x, y, w, start, max_iter, lower_bound, upper_bound
 ) {
@@ -99,55 +99,55 @@ logistic4_fn <- function(x, theta) {
   alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))
 }
 
-#' 4-parameter logistic function
-#'
-#' Evaluate at a particular set of parameters the 4-parameter logistic function.
-#'
-#' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#'
-#' @param object object of class `logistic4`.
-#' @param x numeric vector at which the logistic function is to be evaluated.
-#' @param theta numeric vector with the four parameters in the form
-#'   `c(alpha, beta, eta, phi)`.
-#'
-#' @return Numeric vector with the values of the logistic function.
+# 4-parameter logistic function
+#
+# Evaluate at a particular set of parameters the 4-parameter logistic function.
+#
+# @details
+# The 4-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate (also known as the Hill coefficient),
+# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#
+# @param object object of class `logistic4`.
+# @param x numeric vector at which the logistic function is to be evaluated.
+# @param theta numeric vector with the four parameters in the form
+#   `c(alpha, beta, eta, phi)`.
+#
+# @return Numeric vector with the values of the logistic function.
 fn.logistic4 <- function(object, x, theta) {
   logistic4_fn(x, theta)
 }
 
-#' @rdname fn.logistic4
+# @rdname fn.logistic4
 fn.logistic4_fit <- function(object, x, theta) {
   logistic4_fn(x, theta)
 }
 
-#' 4-parameter logistic function
-#'
-#' Evaluate at a particular set of parameters the gradient and Hessian of the
-#' 4-parameter logistic function.
-#'
-#' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#'
-#' @param object object of class `logistic4`.
-#' @param theta numeric vector with the four parameters in the form
-#'   `c(alpha, beta, eta, phi)`.
-#'
-#' @return List of two elements: `G` the gradient and `H` the Hessian.
+# 4-parameter logistic function
+#
+# Evaluate at a particular set of parameters the gradient and Hessian of the
+# 4-parameter logistic function.
+#
+# @details
+# The 4-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate (also known as the Hill coefficient),
+# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#
+# @param object object of class `logistic4`.
+# @param theta numeric vector with the four parameters in the form
+#   `c(alpha, beta, eta, phi)`.
+#
+# @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic4 <- function(object, theta) {
   x <- object$stats[, 1]
 
@@ -211,27 +211,27 @@ gradient_hessian.logistic4 <- function(object, theta) {
   list(G = gradient, H = hessian)
 }
 
-#' Residual sum of squares
-#'
-#' Evaluate the residual sum of squares (RSS) against the mean of a
-#' 4-parameter logistic model.
-#'
-#' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#'
-#' @param object object of class `logistic4`.
-#' @param known_param numeric vector with the known fixed values of the model
-#'   parameters, if any.
-#'
-#' @return Function handle `f(theta)` to evaluate the RSS associated to a
-#'   particular parameter choice `theta`.
+# Residual sum of squares
+#
+# Evaluate the residual sum of squares (RSS) against the mean of a
+# 4-parameter logistic model.
+#
+# @details
+# The 4-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate (also known as the Hill coefficient),
+# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#
+# @param object object of class `logistic4`.
+# @param known_param numeric vector with the known fixed values of the model
+#   parameters, if any.
+#
+# @return Function handle `f(theta)` to evaluate the RSS associated to a
+#   particular parameter choice `theta`.
 rss.logistic4 <- function(object) {
   function(theta) {
     mu <- fn(object, object$stats[, 1], theta)
@@ -239,7 +239,7 @@ rss.logistic4 <- function(object) {
   }
 }
 
-#' @rdname rss.logistic4
+# @rdname rss.logistic4
 rss_fixed.logistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -253,27 +253,27 @@ rss_fixed.logistic4 <- function(object, known_param) {
   }
 }
 
-#' Residual sum of squares
-#'
-#' Evaluate the gradient and Hessian of the residual sum of squares (RSS)
-#' against the mean of a 4-parameter logistic model.
-#'
-#' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#'
-#' @param object object of class `logistic4`.
-#' @param known_param numeric vector with the known fixed values of the model
-#'   parameters, if any.
-#'
-#' @return Function handle `f(theta)` to evaluate the gradient and Hessian of
-#'   the RSS associated to a particular parameter choice `theta`.
+# Residual sum of squares
+#
+# Evaluate the gradient and Hessian of the residual sum of squares (RSS)
+# against the mean of a 4-parameter logistic model.
+#
+# @details
+# The 4-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate (also known as the Hill coefficient),
+# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#
+# @param object object of class `logistic4`.
+# @param known_param numeric vector with the known fixed values of the model
+#   parameters, if any.
+#
+# @return Function handle `f(theta)` to evaluate the gradient and Hessian of
+#   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.logistic4 <- function(object) {
   function(theta) {
     mu <- fn(object, object$stats[, 1], theta)
@@ -296,7 +296,7 @@ rss_gradient_hessian.logistic4 <- function(object) {
   }
 }
 
-#' @rdname rss_gradient_hessian.logistic4
+# @rdname rss_gradient_hessian.logistic4
 rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -328,15 +328,15 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
   }
 }
 
-#' Maximum likelihood estimators
-#'
-#' Given a set of parameters, compute the maximum likelihood estimates of the
-#' lower and upper horizontal asymptotes.
-#'
-#' @param object object of class `logistic4`.
-#' @param theta vector of parameters.
-#'
-#' @return Numeric vector of length 2 with the MLE of the two asymptotes.
+# Maximum likelihood estimators
+#
+# Given a set of parameters, compute the maximum likelihood estimates of the
+# lower and upper horizontal asymptotes.
+#
+# @param object object of class `logistic4`.
+# @param theta vector of parameters.
+#
+# @return Numeric vector of length 2 with the MLE of the two asymptotes.
 mle_asy.logistic4 <- function(object, theta) {
   m <- object$m
 
@@ -378,15 +378,15 @@ mle_asy.logistic4 <- function(object, theta) {
   theta
 }
 
-#' Initialize vector of parameters
-#'
-#' Given the sufficient statistics, try to guess a good approximation to the
-#' Maximum Likelihood estimator of the four parameters of the logistic function.
-#'
-#' @param object object of class `logistic4`.
-#'
-#' @return Numeric vector of length 4 with a (hopefully) good starting point.
-#'
+# Initialize vector of parameters
+#
+# Given the sufficient statistics, try to guess a good approximation to the
+# Maximum Likelihood estimator of the four parameters of the logistic function.
+#
+# @param object object of class `logistic4`.
+#
+# @return Numeric vector of length 4 with a (hopefully) good starting point.
+#
 #' @importFrom stats lm
 init.logistic4 <- function(object) {
   m <- object$m
@@ -485,41 +485,41 @@ init.logistic4 <- function(object) {
   theta
 }
 
-#' 4-parameter logistic fit
-#'
-#' Fit a 4-parameter logistic function to observed data with a Maximum
-#' Likelihood approach.
-#'
-#' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#'
-#' @param object object of class `logistic4`.
-#'
-#' @return A list with the following components:
-#'   \describe{
-#'     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
-#'       `FALSE` otherwise.}
-#'     \item{iterations}{total number of iterations performed by the
-#'       optimization algorithm}
-#'     \item{constrained}{boolean. `TRUE` if optimization was constrained,
-#'       `FALSE` otherwise.}
-#'     \item{estimated}{boolean vector indicating which parameters were
-#'       estimated from the data.}
-#'     \item{coefficients}{maximum likelihood estimates of the model
-#'       parameters.}
-#'     \item{rss}{minimum value found of the residual sum of squares.}
-#'     \item{df.residual}{residual degrees of freedom.}
-#'     \item{fitted.values}{fitted mean values.}
-#'     \item{residuals}{residuals, that is response minus fitted values.}
-#'     \item{weights}{vector of weights used for the fit.}
-#'   }
+# 4-parameter logistic fit
+#
+# Fit a 4-parameter logistic function to observed data with a Maximum
+# Likelihood approach.
+#
+# @details
+# The 4-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate (also known as the Hill coefficient),
+# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#
+# @param object object of class `logistic4`.
+#
+# @return A list with the following components:
+#   \describe{
+#     \item{converged}{boolean. `TRUE` if the optimization algorithm converged,
+#       `FALSE` otherwise.}
+#     \item{iterations}{total number of iterations performed by the
+#       optimization algorithm}
+#     \item{constrained}{boolean. `TRUE` if optimization was constrained,
+#       `FALSE` otherwise.}
+#     \item{estimated}{boolean vector indicating which parameters were
+#       estimated from the data.}
+#     \item{coefficients}{maximum likelihood estimates of the model
+#       parameters.}
+#     \item{rss}{minimum value found of the residual sum of squares.}
+#     \item{df.residual}{residual degrees of freedom.}
+#     \item{fitted.values}{fitted mean values.}
+#     \item{residuals}{residuals, that is response minus fitted values.}
+#     \item{weights}{vector of weights used for the fit.}
+#   }
 fit.logistic4 <- function(object) {
   solution <- find_optimum(object)
 
@@ -557,7 +557,7 @@ fit.logistic4 <- function(object) {
   result
 }
 
-#' @rdname fit.logistic4
+# @rdname fit.logistic4
 fit_constrained.logistic4 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -620,24 +620,24 @@ fit_constrained.logistic4 <- function(object) {
   result
 }
 
-#' 4-parameter logistic fit
-#'
-#' Evaluate the Fisher information matrix at the maximum likelihood estimate.
-#'
-#' @details
-#' Let `mu(x; theta)` be the 4-parameter logistic function. We assume that our
-#' observations `y` are independent and such that
-#' `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
-#' distribution `N(0, 1)`.
-#'
-#' The 4-by-4 (symmetric) Fisher information matrix is the expected value of
-#' the negative Hessian matrix of the log-likelihood function.
-#'
-#' @param object object of class `logistic4`.
-#' @param theta numeric vector with the model parameters.
-#' @param sigma estimate of the standard deviation.
-#'
-#' @return Fisher information matrix evaluated at `theta`.
+# 4-parameter logistic fit
+#
+# Evaluate the Fisher information matrix at the maximum likelihood estimate.
+#
+# @details
+# Let `mu(x; theta)` be the 4-parameter logistic function. We assume that our
+# observations `y` are independent and such that
+# `y = mu(x; theta) + sigma * epsilon`, where `epsilon` has a standard Normal
+# distribution `N(0, 1)`.
+#
+# The 4-by-4 (symmetric) Fisher information matrix is the expected value of
+# the negative Hessian matrix of the log-likelihood function.
+#
+# @param object object of class `logistic4`.
+# @param theta numeric vector with the model parameters.
+# @param sigma estimate of the standard deviation.
+#
+# @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic4 <- function(object, theta, sigma) {
   w <- object$stats[, 2]
   d <- fn(object, object$stats[, 1], theta) - object$stats[, 3]
@@ -676,15 +676,15 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
   fim
 }
 
-#' 4-parameter logistic fit
-#'
-#' Evaluate the variance of the maximum likelihood curve at different predictor
-#' values.
-#'
-#' @param object object of class `logistic4_fit`.
-#' @param x numeric vector at which to evaluate the variance.
-#'
-#' @return Numeric vector with the variances of the maximum likelihood curve.
+# 4-parameter logistic fit
+#
+# Evaluate the variance of the maximum likelihood curve at different predictor
+# values.
+#
+# @param object object of class `logistic4_fit`.
+# @param x numeric vector at which to evaluate the variance.
+#
+# @return Numeric vector with the variances of the maximum likelihood curve.
 curve_variance.logistic4_fit <- function(object, x) {
   m <- length(x)
 
@@ -735,48 +735,46 @@ curve_variance.logistic4_fit <- function(object, x) {
   variance
 }
 
-#' 4-parameter logistic fit
-#'
-#' Evaluate the normalized area under the curve (AUC) and area above the curve
-#' (AAC).
-#'
-#' @details
-#' The 4-parameter logistic function `f(x; theta)` is defined here as
-#'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#'
-#' The area under the curve (AUC) is simply the integral of `f(x; theta)`
-#' between `lower_bound` and `upper_bound` with respect to `x`.
-#'
-#' When the interval of integration is fixed, since the the curve ranges between
-#' `alpha` and `beta`, the curve `f(x; theta)` is contained into the rectangle
-#' of height `beta - alpha` and width `upper_bound - lower_bound`. The maximum
-#' area the curve can have is obviously
-#' `(upper_bound - lower_bound) * (beta - alpha)`.
-#'
-#' We first shift the curve by `alpha` to set the minimum to 0. We then
-#' integrate the curve and define the normalized AUC (NAUC) by dividing its
-#' value by the maximum area. As a consequence, the normalized area above the
-#' curve is simply `NAAC = 1 - NAUC`.
-#'
-#' Default values of `lower_bound` and `upper_bound` were chosen based on common
-#' dose ranges used in the literature. They are also symmetric around zero
-#' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
-#'
-#' @param object object of class `logistic4_fit`.
-#' @param lower_bound numeric value with the lower bound of the integration
-#'   interval.
-#' @param upper_bound numeric value with the upper bound of the integration
-#'   interval.
-#'
-#' @return Numeric value with the requested area.
-#'
-#' @export
+# 4-parameter logistic fit
+#
+# Evaluate the normalized area under the curve (AUC) and area above the curve
+# (AAC).
+#
+# @details
+# The 4-parameter logistic function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate (also known as the Hill coefficient),
+# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#
+# The area under the curve (AUC) is simply the integral of `f(x; theta)`
+# between `lower_bound` and `upper_bound` with respect to `x`.
+#
+# When the interval of integration is fixed, since the the curve ranges between
+# `alpha` and `beta`, the curve `f(x; theta)` is contained into the rectangle
+# of height `beta - alpha` and width `upper_bound - lower_bound`. The maximum
+# area the curve can have is obviously
+# `(upper_bound - lower_bound) * (beta - alpha)`.
+#
+# We first shift the curve by `alpha` to set the minimum to 0. We then
+# integrate the curve and define the normalized AUC (NAUC) by dividing its
+# value by the maximum area. As a consequence, the normalized area above the
+# curve is simply `NAAC = 1 - NAUC`.
+#
+# Default values of `lower_bound` and `upper_bound` were chosen based on common
+# dose ranges used in the literature. They are also symmetric around zero
+# so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
+#
+# @param object object of class `logistic4_fit`.
+# @param lower_bound numeric value with the lower bound of the integration
+#   interval.
+# @param upper_bound numeric value with the upper bound of the integration
+#   interval.
+#
+# @return Numeric value with the requested area.
 nauc.logistic4_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   eta <- object$coefficients[1]
   phi <- object$coefficients[2]
@@ -790,9 +788,7 @@ nauc.logistic4_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   nauc
 }
 
-#' @rdname nauc.logistic4_fit
-#'
-#' @export
+# @rdname nauc.logistic4_fit
 naac.logistic4_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }

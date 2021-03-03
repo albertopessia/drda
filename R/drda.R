@@ -20,9 +20,8 @@
 #' @param na.action a function which indicates what should happen when the data
 #'   contain `NA`s. The default is set by the `na.action` setting of
 #'   \code{\link[base]{options}}, and is \code{\link[stats]{na.fail}} if that is
-#'   unset. The ‘factory-fresh’ default is \code{\link[stats]{na.omit}}. Another
-#'   possible value is `NULL`, no action. Value \code{\link[stats]{na.exclude}}
-#'   can be useful.
+#'   unset. The ‘factory-fresh’ default is \code{na.omit}. Another
+#'   possible value is `NULL`, no action. Value \code{na.exclude} can be useful.
 #' @param mean_function the model to be fitted. See `details` for available
 #'   models.
 #' @param is_log a logical value indicating whether the predictor variable `x`
