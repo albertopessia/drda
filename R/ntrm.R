@@ -75,6 +75,28 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 
   k <- length(G)
 
+  b <- 1.0e-3
+  w <- if (min(diag(H)) > 0) {
+    0
+  } else {
+    b - min(diag(H))
+  }
+  i <- 0
+
+  B <- H
+  diag(B) <- diag(B) + w
+  H_chol <- tryCatch(chol(B), error = function(e) NULL)
+  while (is.null(H_chol) && (i < 10)) {
+    w <- max(10 * w, b)
+    diag(B) <- diag(H) + w
+    H_chol <- tryCatch(chol(B), error = function(e) NULL)
+    i <- i + 1
+  }
+
+  if (is.null(H_chol)) {
+    stop("Hessian matrix is ill-conditioned", call. = FALSE)
+  }
+
   H_eig <- eigen(H, symmetric = TRUE)
   H_ev_min <- H_eig$values[k]
 
@@ -126,12 +148,7 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
       for (i in seq_len(10)) {
         diag(B) <- diag(H) + lambda
 
-        R <- tryCatch(
-          chol(B),
-          error = function(e) {
-            NULL
-          }
-        )
+        R <- tryCatch(chol(B), error = function(e) NULL)
 
         if (is.null(R)) {
           lambda <- 10 * lambda
@@ -228,6 +245,14 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
     gradient_hessian <- gh(cur_optimum)
 
     g_converged <- ntrm_max_abs(gradient_hessian$G) <= eps
+
+    if (!g_converged && any(is.infinite(gradient_hessian$H))) {
+      g_converged <- ntrm_max_abs(gradient_hessian$G) <= 1.5e-8
+
+      if (!g_converged) {
+        break
+      }
+    }
 
     # we use a counter for f_converged because the objective function might
     # be very flat around the optimum. Once we hit a flat region, we explore the
