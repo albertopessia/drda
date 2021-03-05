@@ -75,28 +75,6 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 
   k <- length(G)
 
-  b <- 1.0e-3
-  w <- if (min(diag(H)) > 0) {
-    0
-  } else {
-    b - min(diag(H))
-  }
-  i <- 0
-
-  B <- H
-  diag(B) <- diag(B) + w
-  H_chol <- tryCatch(chol(B), error = function(e) NULL)
-  while (is.null(H_chol) && (i < 10)) {
-    w <- max(10 * w, b)
-    diag(B) <- diag(H) + w
-    H_chol <- tryCatch(chol(B), error = function(e) NULL)
-    i <- i + 1
-  }
-
-  if (is.null(H_chol)) {
-    stop("Hessian matrix is ill-conditioned", call. = FALSE)
-  }
-
   H_eig <- eigen(H, symmetric = TRUE)
   H_ev_min <- H_eig$values[k]
 
@@ -244,12 +222,19 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
 
     gradient_hessian <- gh(cur_optimum)
 
-    g_converged <- ntrm_max_abs(gradient_hessian$G) <= eps
+    g_min <- ntrm_max_abs(gradient_hessian$G)
+    g_converged <- g_min <= eps
 
     if (!g_converged && any(is.infinite(gradient_hessian$H))) {
-      g_converged <- ntrm_max_abs(gradient_hessian$G) <= 1.5e-8
+      # when the model is close to non-identifiability the gradient might be
+      # close to zero, but not enough for our previous check to succeed
+      #
+      # if the Hessian contains infinite values, we relax the condition for
+      # convergence
+      g_converged <- g_min <= sqrt(.Machine$double.eps)
 
       if (!g_converged) {
+        # this was our last try because we cannot continue our search
         break
       }
     }
@@ -263,9 +248,9 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
       break
     }
 
-    result <- ntrm_solve_tr_subproblem(
-      gradient_hessian$G, gradient_hessian$H, delta
-    )
+    # perform a correction in case the Hessian is not positive definite
+    B <- ntrm_correct_hessian(gradient_hessian$H)
+    result <- ntrm_solve_tr_subproblem(gradient_hessian$G, B, delta)
 
     candidate <- cur_optimum + result$p
 

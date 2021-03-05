@@ -1,3 +1,41 @@
+# Hessian matrix correction
+#
+# Correct the Hessian matrix to be positive definite
+#
+# @param H Hessian matrix to correct.
+#
+# @return Matrix `H` if it is already positive definite, otherwise a new matrix
+#  `H + w I` that is positive definite.
+ntrm_correct_hessian <- function(H) {
+  z <- diag(H)
+  h <- min(z)
+  b <- 1.0e-3
+  w <- 0
+
+  if (h <= 0) {
+    w <- b - h
+  }
+
+  diag(H) <- z + w
+  H_chol <- tryCatch(chol(H), error = function(e) NULL)
+
+  i <- 0
+  while (is.null(H_chol) && (i < 100)) {
+    w <- max(2 * w, b)
+
+    diag(H) <- z + w
+    H_chol <- tryCatch(chol(H), error = function(e) NULL)
+
+    i <- i + 1
+  }
+
+  if (is.null(H_chol)) {
+    stop("Hessian matrix is ill-conditioned", call. = FALSE)
+  }
+
+  H
+}
+
 # Maximum absolute value
 #
 # Find the maximum absolute value in a vector, i.e. `max(abs(x))`, calling
@@ -47,7 +85,10 @@ ntrm_solve_quadratic_equation <- function(a, b, c) {
     } else if (discriminant > -eps) {
       0
     } else {
-      stop("Negative discriminant when solving quadratic equation.")
+      stop(
+        "negative discriminant when solving quadratic equation",
+        call. = FALSE
+      )
     }
 
     if (t0 != 0) {
@@ -70,7 +111,7 @@ ntrm_solve_quadratic_equation <- function(a, b, c) {
     } else if (y >= -eps) {
       c(0, 0)
     } else {
-      stop("Complex solutions while solving quadratic equation.")
+      stop("complex solutions while solving quadratic equation", call. = FALSE)
     }
   }
 }
@@ -218,7 +259,7 @@ ntrm_line_search <- function(f, a, b) {
   }
 
   if (i == 101) {
-    stop("Line search not converged.")
+    stop("line search not converged", call. = FALSE)
   }
 
   y
