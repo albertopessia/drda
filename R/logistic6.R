@@ -983,6 +983,7 @@ curve_variance.logistic6_fit <- function(object, x) {
 # @return Numeric value with the requested area.
 #
 #' @importFrom stats integrate
+#' @export
 nauc.logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   alpha <- object$coefficients[1]
   beta <- object$coefficients[2]
@@ -1006,6 +1007,7 @@ nauc.logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
 }
 
 # @rdname nauc.logistic6_fit
+#' @export
 naac_logistic6_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }

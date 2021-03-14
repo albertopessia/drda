@@ -762,6 +762,7 @@ curve_variance.gompertz_fit <- function(object, x) {
 # @return Numeric value with the requested area.
 #
 #' @importFrom stats integrate
+#' @export
 nauc.gompertz_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   omega <- object$coefficients[2] - object$coefficients[1]
   eta <- object$coefficients[3]
@@ -780,6 +781,7 @@ nauc.gompertz_fit <- function(object, lower_bound = -10, upper_bound = 10) {
 }
 
 # @rdname nauc.gompertz_fit
+#' @export
 naac.gompertz_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }

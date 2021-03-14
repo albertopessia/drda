@@ -891,6 +891,7 @@ curve_variance.logistic5_fit <- function(object, x) {
 # @return Numeric value with the requested area.
 #
 #' @importFrom stats integrate
+#' @export
 nauc.logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   omega <- object$coefficients[2] - object$coefficients[1]
   eta <- object$coefficients[3]
@@ -910,6 +911,7 @@ nauc.logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
 }
 
 # @rdname nauc.logistic5_fit
+#' @export
 naac_logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }

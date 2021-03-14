@@ -46,10 +46,43 @@ curve_variance <- function(object, x) {
   UseMethod("curve_variance", object)
 }
 
-#' Area under or above the curve
+#' Area under the curve
 #'
-#' Evaluate the normalized area under the curve (AUC) and the normalized area
-#' above the curve (AAC).
+#' Evaluate the normalized area under the curve (AUC).
+#'
+#' @details
+#' The area under the curve (AUC) is simply the integral of the chosen model
+#' `f(x; theta)` between `lower_bound` and `upper_bound` with respect to `x`.
+#'
+#' When the interval of integration is fixed, the curve `f(x; theta)` is
+#' contained into the rectangle of height `omega` and width
+#' `upper_bound - lower_bound`. The maximum area the curve can have is obviously
+#' `(upper_bound - lower_bound) * omega`.
+#'
+#' We first shift the curve to set its minimum to 0. We then integrate the curve
+#' and define the normalized AUC (NAUC) by dividing its value by the maximum
+#' area.
+#'
+#' Default values of `lower_bound` and `upper_bound` were chosen based on common
+#' dose ranges used in the literature. They are also symmetric around zero
+#' so that `NAUC` is equal to `0.5` in the standard logistic model.
+#'
+#' @param object fit object as returned by \code{\link[drda]{drda}}.
+#' @param lower_bound numeric value with the lower bound of the integration
+#'   interval.
+#' @param upper_bound numeric value with the upper bound of the integration
+#'   interval.
+#'
+#' @return Numeric value representing the normalized area under the curve.
+#'
+#' @export
+nauc <- function(object, lower_bound = -10, upper_bound = 10) {
+  UseMethod("nauc", object)
+}
+
+#' Area above the curve
+#'
+#' Evaluate the normalized area above the curve (AAC).
 #'
 #' @details
 #' The area under the curve (AUC) is simply the integral of the chosen model
@@ -67,7 +100,7 @@ curve_variance <- function(object, x) {
 #'
 #' Default values of `lower_bound` and `upper_bound` were chosen based on common
 #' dose ranges used in the literature. They are also symmetric around zero
-#' so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
+#' so that `NAAC` is equal to `0.5` in the standard logistic model.
 #'
 #' @param object fit object as returned by \code{\link[drda]{drda}}.
 #' @param lower_bound numeric value with the lower bound of the integration
@@ -78,13 +111,6 @@ curve_variance <- function(object, x) {
 #' @return Numeric value with the requested area.
 #'
 #' @export
-nauc <- function(object, lower_bound, upper_bound) {
-  UseMethod("nauc", object)
-}
-
-#' @rdname nauc
-#'
-#' @export
-naac <- function(object, lower_bound, upper_bound) {
+naac <- function(object, lower_bound = -10, upper_bound = 10) {
   UseMethod("naac", object)
 }

@@ -640,6 +640,7 @@ curve_variance.logistic2_fit <- function(object, x) {
 #   interval.
 #
 # @return Numeric value with the requested area.
+#' @export
 nauc.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   eta <- object$coefficients[1]
   phi <- object$coefficients[2]
@@ -654,6 +655,7 @@ nauc.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
 }
 
 # @rdname nauc.logistic2_fit
+#' @export
 naac.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }
