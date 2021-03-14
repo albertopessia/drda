@@ -1,38 +1,38 @@
-#' Solution to the (unconstrained) trust-region sub-problem
-#'
-#' Compute the current best step of the trust-region sub-problem.
-#'
-#' @param Q numeric matrix of dot products between eigenvectors and gradient.
-#' @param X numeric matrix of eigenvectors.
-#' @param L numeric vector of eigenvalues.
-#' @param lambda lambda parameter of the trust-region method.
-#'
-#' @return Current best solution to the trust-region sub-problem.
-#'
-#' @references
-#' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
-#' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
+# Solution to the (unconstrained) trust-region sub-problem
+#
+# Compute the current best step of the trust-region sub-problem.
+#
+# @param Q numeric matrix of dot products between eigenvectors and gradient.
+# @param X numeric matrix of eigenvectors.
+# @param L numeric vector of eigenvalues.
+# @param lambda lambda parameter of the trust-region method.
+#
+# @return Current best solution to the trust-region sub-problem.
+#
+# @references
+# Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
+# New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_calc_p <- function(Q, X, L, lambda) {
   # Equation (4.38) at page 84 from Nocedal and Wright (2006)
   - colSums((t(X) * Q) / (L + lambda))
 }
 
-#' Safeguard parameter computation
-#'
-#' Update the current value of `lambda` to hopefully obtain a non-singular
-#' matrix.
-#'
-#' @param lambda lambda parameter of the trust-region method.
-#' @param G gradient vector.
-#' @param H hessian matrix.
-#' @param delta radius of the trust region.
-#'
-#' @return Updated scalar value `lambda`.
-#'
-#' @references
-#' Jorge J Moré and D C Sorensen. Computing a Trust Region Step.
-#' **SIAM Journal on Scientific and Statistical Computing**, 4(3):553-572, 1983.
-#' doi: 10.1137/0904038.
+# Safeguard parameter computation
+#
+# Update the current value of `lambda` to hopefully obtain a non-singular
+# matrix.
+#
+# @param lambda lambda parameter of the trust-region method.
+# @param G gradient vector.
+# @param H hessian matrix.
+# @param delta radius of the trust region.
+#
+# @return Updated scalar value `lambda`.
+#
+# @references
+# Jorge J Moré and D C Sorensen. Computing a Trust Region Step.
+# **SIAM Journal on Scientific and Statistical Computing**, 4(3):553-572, 1983.
+# doi: 10.1137/0904038.
 ntrm_safeguard <- function(lambda, G, H, delta) {
   # Equations are on page 560 of Moré and Sorensen (1983)
   lambda_S <- max(-diag(H))
@@ -55,20 +55,20 @@ ntrm_safeguard <- function(lambda, G, H, delta) {
   lambda
 }
 
-#' Iterative solution to the (unconstrained) trust-region sub-problem
-#'
-#' Compute the best step of the trust-region sub-problem.
-#'
-#' @param G gradient vector.
-#' @param H hessian matrix.
-#' @param delta radius of the trust region.
-#'
-#' @return List with the best step solution `p` to the trust-region sub-problem
-#'   and the value `m` of the objective function `m(p)`.
-#'
-#' @references
-#' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
-#' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
+# Iterative solution to the (unconstrained) trust-region sub-problem
+#
+# Compute the best step of the trust-region sub-problem.
+#
+# @param G gradient vector.
+# @param H hessian matrix.
+# @param delta radius of the trust region.
+#
+# @return List with the best step solution `p` to the trust-region sub-problem
+#   and the value `m` of the objective function `m(p)`.
+#
+# @references
+# Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
+# New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_solve_tr_subproblem <- function(G, H, delta) {
   eps <- sqrt(.Machine$double.eps)
   delta_2 <- delta^2
@@ -126,12 +126,7 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
       for (i in seq_len(10)) {
         diag(B) <- diag(H) + lambda
 
-        R <- tryCatch(
-          chol(B),
-          error = function(e) {
-            NULL
-          }
-        )
+        R <- tryCatch(chol(B), error = function(e) NULL)
 
         if (is.null(R)) {
           lambda <- 10 * lambda
@@ -172,41 +167,41 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
   )
 }
 
-#' Newton with Trust Region Method
-#'
-#' Find the minimum of a function using the Newton's method, combined with the
-#' Trust Region method.
-#'
-#' @details
-#' The code is adapted from the Julia implementation of
-#' [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl). See
-#' 'src/multivariate/solvers/second_order/newton_trust_region.jl'
-#' file for the original source code.
-#'
-#' @param fn function handle to evaluate the function to minimize.
-#' @param gh function handle to evaluate both the gradient and Hessian of the
-#'   function to minimize.
-#' @param init numeric vector of starting values.
-#' @param max_iter integer value for the maximum number of iterations.
-#' @param update_fn function handle to update a subset of parameters with the
-#'   actual optimum.
-#'
-#' @return A list containing the value `optimum` for which `f(optimum)` is
-#'   minimum, the value `minimum` containing `f(optimum)`, and a boolean
-#'   value `converged` stating if the algorithm converged or not.
-#'
-#' @references
-#' Jorge J Moré and D C Sorensen. Computing a Trust Region Step.
-#' **SIAM Journal on Scientific and Statistical Computing**, 4(3):553-572, 1983.
-#' doi: 10.1137/0904038.
-#'
-#' Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
-#' New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
-#'
-#' Patrick Kofod Mogensen and Asbjørn Nilsen Riseth.
-#' Optim: A mathematical optimization package for Julia.
-#' **Journal of Open Source Software**, 3(24):615, 2018.
-#' doi: 10.21105/joss.00615.
+# Newton with Trust Region Method
+#
+# Find the minimum of a function using the Newton's method, combined with the
+# Trust Region method.
+#
+# @details
+# The code is adapted from the Julia implementation of
+# [Optim.jl](https://github.com/JuliaNLSolvers/Optim.jl). See
+# 'src/multivariate/solvers/second_order/newton_trust_region.jl'
+# file for the original source code.
+#
+# @param fn function handle to evaluate the function to minimize.
+# @param gh function handle to evaluate both the gradient and Hessian of the
+#   function to minimize.
+# @param init numeric vector of starting values.
+# @param max_iter integer value for the maximum number of iterations.
+# @param update_fn function handle to update a subset of parameters with the
+#   actual optimum.
+#
+# @return A list containing the value `optimum` for which `f(optimum)` is
+#   minimum, the value `minimum` containing `f(optimum)`, and a boolean
+#   value `converged` stating if the algorithm converged or not.
+#
+# @references
+# Jorge J Moré and D C Sorensen. Computing a Trust Region Step.
+# **SIAM Journal on Scientific and Statistical Computing**, 4(3):553-572, 1983.
+# doi: 10.1137/0904038.
+#
+# Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
+# New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
+#
+# Patrick Kofod Mogensen and Asbjørn Nilsen Riseth.
+# Optim: A mathematical optimization package for Julia.
+# **Journal of Open Source Software**, 3(24):615, 2018.
+# doi: 10.21105/joss.00615.
 ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
   eps <- 1.0e-10
   converged <- FALSE
@@ -227,7 +222,22 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
 
     gradient_hessian <- gh(cur_optimum)
 
-    g_converged <- ntrm_max_abs(gradient_hessian$G) <= eps
+    g_min <- ntrm_max_abs(gradient_hessian$G)
+    g_converged <- g_min <= eps
+
+    if (!g_converged && any(is.infinite(gradient_hessian$H))) {
+      # when the model is close to non-identifiability the gradient might be
+      # close to zero, but not enough for our previous check to succeed
+      #
+      # if the Hessian contains infinite values, we relax the condition for
+      # convergence
+      g_converged <- g_min <= sqrt(.Machine$double.eps)
+
+      if (!g_converged) {
+        # this was our last try because we cannot continue our search
+        break
+      }
+    }
 
     # we use a counter for f_converged because the objective function might
     # be very flat around the optimum. Once we hit a flat region, we explore the
@@ -238,9 +248,9 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
       break
     }
 
-    result <- ntrm_solve_tr_subproblem(
-      gradient_hessian$G, gradient_hessian$H, delta
-    )
+    # perform a correction in case the Hessian is not positive definite
+    B <- ntrm_correct_hessian(gradient_hessian$H)
+    result <- ntrm_solve_tr_subproblem(gradient_hessian$G, B, delta)
 
     candidate <- cur_optimum + result$p
 
