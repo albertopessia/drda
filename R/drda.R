@@ -918,11 +918,12 @@ summary.drda <- function(object, ...) {
   object$param <- c(object$coefficients, sigma = object$sigma)
 
   if (inherits(object, "logistic2_fit")) {
-    names(object$param) <- c("Growth rate", "Midpoint at", "sigma")
+    names(object$param) <- c(
+      "Growth rate", "Midpoint at", "Residual std err."
+    )
   } else if (inherits(object, "logistic4_fit")) {
     names(object$param) <- c(
-      "Lower bound", "Upper bound", "Growth rate", "Midpoint at",
-      "Residual std err."
+      "Minimum", "Maximum", "Growth rate", "Midpoint at", "Residual std err."
     )
   }
 

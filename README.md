@@ -48,7 +48,7 @@ weights <- c(
 
 test_data <- data.frame(
   y = relative_viability,
-  x = log_doses
+  x = log_dose
 )
 ```
 
@@ -96,9 +96,10 @@ anova(fit)
 fit_logistic2 <- drda(y ~ x, data = test_data, mean_function = "logistic2")
 fit_logistic4 <- drda(y ~ x, data = test_data, mean_function = "logistic4")
 fit_logistic5 <- drda(y ~ x, data = test_data, mean_function = "logistic5")
+fit_gompertz <- drda(y ~ x, data = test_data, mean_function = "gompertz")
 
 # which model should be chosen?
-anova(fit_logistic2, fit_logistic4, fit_logistic5)
+anova(fit_logistic2, fit_logistic4, fit_logistic5, fit_gompertz)
 
 # 4-parameter logistic function provides the best fit (AIC is minimum)
 #
