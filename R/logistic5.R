@@ -912,6 +912,6 @@ nauc.logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
 
 # @rdname nauc.logistic5_fit
 #' @export
-naac_logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+naac.logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
   1 - nauc(object, lower_bound, upper_bound)
 }
