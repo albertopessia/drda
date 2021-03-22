@@ -864,54 +864,97 @@ curve_variance.logistic5_fit <- function(object, x) {
 #
 # where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
 #
-# The area under the curve (AUC) is simply the integral of `f(x; theta)`
-# between `lower_bound` and `upper_bound` with respect to `x`.
-#
-# When the interval of integration is fixed, since the the curve ranges between
-# `alpha` and `beta`, the curve `f(x; theta)` is contained into the rectangle
-# of height `beta - alpha` and width `upper_bound - lower_bound`. The maximum
-# area the curve can have is obviously
-# `(upper_bound - lower_bound) * (beta - alpha)`.
-#
-# We first shift the curve by `alpha` to set the minimum to 0. We then
-# integrate the curve and define the normalized AUC (NAUC) by dividing its
-# value by the maximum area. As a consequence, the normalized area above the
-# curve is simply `NAAC = 1 - NAUC`.
-#
-# Default values of `lower_bound` and `upper_bound` were chosen based on common
-# dose ranges used in the literature. They are also symmetric around zero
-# so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
-#
-# @param object object of class `logistic5_fit`.
-# @param lower_bound numeric value with the lower bound of the integration
-#   interval.
-# @param upper_bound numeric value with the upper bound of the integration
-#   interval.
-#
-# @return Numeric value with the requested area.
+# The area under the curve (AUC) is simply the integral of `f(x; theta)` with
+# respect to `x`.
 #
 #' @importFrom stats integrate
 #' @export
-nauc.logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
-  omega <- object$coefficients[2] - object$coefficients[1]
+nauc.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  if (length(xlim) != 2) {
+    stop("'xlim' must be of length 2", call. = FALSE)
+  }
+
+  if (!is.numeric(xlim)) {
+    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
+  }
+
+  if (xlim[1] >= xlim[2]) {
+    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
+  }
+
+  if (length(ylim) != 2) {
+    stop("'ylim' must be of length 2", call. = FALSE)
+  }
+
+  if (!is.numeric(ylim)) {
+    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
+  }
+
+  if (ylim[1] >= ylim[2]) {
+    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
+  }
+
+  if (ylim[1] < 0) {
+    stop("'ylim[1]' cannot be negative", call. = FALSE)
+  }
+
+  f <- function(x) {
+    fn(object, x, object$coefficients)
+  }
+
+  alpha <- object$coefficients[1]
+  beta <- object$coefficients[2]
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
   nu <- object$coefficients[5]
 
-  f <- function(z) {
-    1 / (1 + nu * exp(-eta * (z - phi)))^(1 / nu)
+  I <- 0
+  xlim_new <- xlim
+
+  if (alpha < ylim[1]) {
+    tmp <- phi - log((((beta - alpha) / (ylim[1] - alpha))^nu - 1) / nu) / eta
+
+    if (eta < 0) {
+      # the curve is decreasing so this affects the upper bound of integration
+      if (tmp < xlim[2]) {
+        xlim_new[2] <- tmp
+      }
+    } else {
+      # the curve is increasing so this affects the lower bound of integration
+      if (tmp > xlim[1]) {
+        xlim_new[1] <- tmp
+      }
+    }
   }
 
-  I <- integrate(f, lower = lower_bound, upper = upper_bound)
+  if (beta > ylim[2]) {
+    tmp <- phi - log((((beta - alpha) / (ylim[2] - alpha))^nu - 1) / nu) / eta
 
-  nauc <- I$value / (omega * (upper_bound - lower_bound))
+    if (eta < 0) {
+      # the curve is decreasing so this affects the lower bound of integration
+      if (tmp > xlim[1]) {
+        # we must consider the area of the rectangle
+        I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
+        xlim_new[1] <- tmp
+      }
+    } else {
+      # the curve is increasing so this affects the upper bound of integration
+      if (tmp < xlim[2]) {
+        I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
+        xlim_new[2] <- tmp
+      }
+    }
+  }
+
+  I <- I + integrate(f, lower = xlim_new[1], upper = xlim_new[2])$value
+
+  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
   names(nauc) <- NULL
 
   nauc
 }
 
-# @rdname nauc.logistic5_fit
 #' @export
-naac.logistic5_fit <- function(object, lower_bound = -10, upper_bound = 10) {
-  1 - nauc(object, lower_bound, upper_bound)
+naac.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  1 - nauc(object, xlim, ylim)
 }

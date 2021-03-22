@@ -4,38 +4,46 @@
 \alias{naac}
 \title{Area above the curve}
 \usage{
-naac(object, lower_bound = -10, upper_bound = 10)
+naac(object, xlim = c(-10, 10), ylim = c(0, 1))
 }
 \arguments{
 \item{object}{fit object as returned by \code{\link[drda]{drda}}.}
 
-\item{lower_bound}{numeric value with the lower bound of the integration
-interval.}
+\item{xlim}{numeric vector of length 2 with the lower and upped bound of the
+integration interval. Default is \code{c(-10, 10)}.}
 
-\item{upper_bound}{numeric value with the upper bound of the integration
-interval.}
+\item{ylim}{numeric vector of length 2 with the lower and upped bound of the
+allowed function values. Default is \code{c(0, 1)}.}
 }
 \value{
-Numeric value with the requested area.
+Numeric value representing the normalized area above the curve.
 }
 \description{
-Evaluate the normalized area above the curve (AAC).
+Evaluate the normalized area above the curve (NAAC).
 }
 \details{
 The area under the curve (AUC) is simply the integral of the chosen model
-\verb{f(x; theta)} between \code{lower_bound} and \code{upper_bound} with respect to \code{x}.
+\verb{y(x; theta)} with respect to \code{x}.
 
-When the interval of integration is fixed, the curve \verb{f(x; theta)} is
-contained into the rectangle of height \code{omega} and width
-\code{upper_bound - lower_bound}. The maximum area the curve can have is obviously
-\code{(upper_bound - lower_bound) * omega}.
+In real applications the response variable is usually contained within a
+known interval. For example, if our response represents relative viability
+against a control compound, the curve is then expected to be between 0 and 1.
 
-We first shift the curve to set its minimum to 0. We then integrate the curve
-and define the normalized AUC (NAUC) by dividing its value by the maximum
-area. As a consequence, the normalized area above the curve is simply
-\code{NAAC = 1 - NAUC}.
+To make the AUC value comparable between different compounds and/or studies,
+this function set a hard constraint on both the \code{x} variable and the function
+\code{y}. The intervals can always be changed if needed.
 
-Default values of \code{lower_bound} and \code{upper_bound} were chosen based on common
-dose ranges used in the literature. They are also symmetric around zero
-so that \code{NAAC} is equal to \code{0.5} in the standard logistic model.
+The function \verb{f(x; theta)} that is integrated here is defined as
+
+\verb{f(x; theta) = ylim[1], if y(x; theta) < ylim[1]}
+
+\verb{f(x; theta) = y(x; theta), if ylim[1] <= y(x; theta) <= ylim[2]}
+
+\verb{f(x; theta) = ylim[2], if y(x; theta) > ylim[2]}
+
+Finally, the AUC is normalized by its maximum possible value, that is the
+area of the rectangle with width \code{xlim[2] - xlim[1]} and height
+\code{ylim[2] - ylim[1]}.
+
+The normalized area above the curve is simply \code{NAAC = 1 - NAUC}.
 }
