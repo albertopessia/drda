@@ -618,44 +618,91 @@ curve_variance.logistic2_fit <- function(object, x) {
 # rate (also known as the Hill coefficient), and `phi` is the value of `x` at
 # which the curve is equal to its mid-point, i.e. 1 / 2.
 #
-# The area under the curve (AUC) is simply the integral of `f(x; theta)`
-# between `lower_bound` and `upper_bound` with respect to `x`.
+# The area under the curve (AUC) is simply the integral of `f(x; theta)` with
+# respect to `x`.
 #
-# When the interval of integration is fixed, since the maximum value the curve
-# can attain is 1, the curve `f(x; theta)` is contained into the rectangle
-# of height 1 and width `upper_bound - lower_bound`. The maximum area the curve
-# can have is obviously `upper_bound - lower_bound`.
-#
-# The normalized AUC is simply `NAUC = AUC / (upper_bound - lower_bound)`. As a
-# consequence, the normalized area above the curve is `NAAC = 1 - NAUC`.
-#
-# Default values of `lower_bound` and `upper_bound` were chosen based on common
-# dose ranges used in the literature. They are also symmetric around zero
-# so that `NAUC` and `NAAC` are equal to `0.5` in the standard logistic model.
-#
-# @param object object of class `logistic2_fit`.
-# @param lower_bound numeric value with the lower bound of the integration
-#   interval.
-# @param upper_bound numeric value with the upper bound of the integration
-#   interval.
-#
-# @return Numeric value with the requested area.
 #' @export
-nauc.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
+nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  if (length(xlim) != 2) {
+    stop("'xlim' must be of length 2", call. = FALSE)
+  }
+
+  if (!is.numeric(xlim)) {
+    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
+  }
+
+  if (xlim[1] >= xlim[2]) {
+    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
+  }
+
+  if (length(ylim) != 2) {
+    stop("'ylim' must be of length 2", call. = FALSE)
+  }
+
+  if (!is.numeric(ylim)) {
+    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
+  }
+
+  if (ylim[1] >= ylim[2]) {
+    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
+  }
+
+  if (ylim[1] > 1) {
+    stop("'ylim[1]' cannot be larger or equal to 1", call. = FALSE)
+  }
+
   eta <- object$coefficients[1]
   phi <- object$coefficients[2]
 
-  t1 <- 1 + exp(-eta * (upper_bound - phi))
-  t2 <- 1 + exp(-eta * (lower_bound - phi))
+  I <- 0
+  xlim_new <- xlim
 
-  nauc <- 1 + log(t1 / t2) / (eta * (upper_bound - lower_bound))
+  if (ylim[1] > 0) {
+    tmp <- phi + log(ylim[1] / (1 - ylim[1])) / eta
+
+    if (eta < 0) {
+      # the curve is decreasing so this affects the upper bound of integration
+      if (tmp < xlim[2]) {
+        xlim_new[2] <- tmp
+      }
+    } else {
+      # the curve is increasing so this affects the lower bound of integration
+      if (tmp > xlim[1]) {
+        xlim_new[1] <- tmp
+      }
+    }
+  }
+
+  if (ylim[2] < 1) {
+    tmp <- phi + log(ylim[2] / (1 - ylim[2])) / eta
+
+    if (eta < 0) {
+      # the curve is decreasing so this affects the lower bound of integration
+      if (tmp > xlim[1]) {
+        # we must consider the area of the rectangle
+        I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
+        xlim_new[1] <- tmp
+      }
+    } else {
+      # the curve is increasing so this affects the upper bound of integration
+      if (tmp < xlim[2]) {
+        I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
+        xlim_new[2] <- tmp
+      }
+    }
+  }
+
+  t1 <- 1 + exp(-eta * (xlim_new[2] - phi))
+  t2 <- 1 + exp(-eta * (xlim_new[1] - phi))
+  I <- I + (xlim_new[2] - xlim_new[1]) + log(t1 / t2) / eta
+
+  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
   names(nauc) <- NULL
 
   nauc
 }
 
-# @rdname nauc.logistic2_fit
 #' @export
-naac.logistic2_fit <- function(object, lower_bound = -10, upper_bound = 10) {
-  1 - nauc(object, lower_bound, upper_bound)
+naac.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  1 - nauc(object, xlim, ylim)
 }
