@@ -1248,3 +1248,101 @@ test_that("drda: 'start' argument errors", {
     "parameter 'eta' cannot be initialized to zero"
   )
 })
+
+context("2-parameter logistic - Area under and above the curve")
+
+test_that("nauc: decreasing", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  )
+
+  result <- drda(y ~ x, mean_function = "logistic2")
+
+  expect_equal(nauc(result), 0.52710078010808987)
+  expect_equal(nauc(result, xlim = c(-1, 2)), 0.50588473625160243)
+  expect_equal(nauc(result, ylim = c(0.2, 0.8)), 0.52753955267431475)
+  expect_equal(
+    nauc(result, xlim = c(-1, 2), ylim = c(0.2, 0.8)), 0.50980789375267071
+  )
+})
+
+test_that("naac: decreasing", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  )
+
+  result <- drda(y ~ x, mean_function = "logistic2")
+
+  expect_equal(naac(result), 1 - 0.52710078010808987)
+  expect_equal(naac(result, xlim = c(-1, 2)), 1 - 0.50588473625160243)
+  expect_equal(naac(result, ylim = c(0.2, 0.8)), 1 - 0.52753955267431475)
+  expect_equal(
+    naac(result, xlim = c(-1, 2), ylim = c(0.2, 0.8)), 1 - 0.50980789375267071
+  )
+})
+
+test_that("nauc: increasing", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- rev(c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  ))
+
+  result <- drda(y ~ x, mean_function = "logistic2")
+
+  expect_equal(nauc(result), 0.51082835161586119)
+  expect_equal(nauc(result, xlim = c(-1, 2)), 0.57318877340106192)
+  expect_equal(nauc(result, ylim = c(0.2, 0.8)), 0.51115463147639835)
+  expect_equal(
+    nauc(result, xlim = c(-1, 2), ylim = c(0.2, 0.8)), 0.62198128900176987
+  )
+})
+
+test_that("naac: increasing", {
+  x <- round(
+    rep(
+      -log(c(1000, 100, 10, 1, 0.1, 0.01, 0.001)),
+      times = c(3, 2, 2, 5, 3, 4, 1)
+    ),
+    digits = 3
+  )
+
+  y <- rev(c(
+    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
+    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
+  ))
+
+  result <- drda(y ~ x, mean_function = "logistic2")
+
+  expect_equal(naac(result), 1 - 0.51082835161586119)
+  expect_equal(naac(result, xlim = c(-1, 2)), 1 - 0.57318877340106192)
+  expect_equal(naac(result, ylim = c(0.2, 0.8)), 1 - 0.51115463147639835)
+  expect_equal(
+    naac(result, xlim = c(-1, 2), ylim = c(0.2, 0.8)), 1 - 0.62198128900176987
+  )
+})

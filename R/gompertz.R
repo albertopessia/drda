@@ -769,10 +769,6 @@ nauc.gompertz_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
     stop("'ylim[1]' cannot be negative", call. = FALSE)
   }
 
-  f <- function(x) {
-    fn(object, x, object$coefficients)
-  }
-
   alpha <- object$coefficients[1]
   beta <- object$coefficients[2]
   eta <- object$coefficients[3]
@@ -784,13 +780,13 @@ nauc.gompertz_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   if (alpha < ylim[1]) {
     tmp <- phi - log(log((beta - alpha) / (ylim[1] - alpha))) / eta
 
+    # if the curve is decreasing we change the upper bound of integration,
+    # otherwise the lower bound
     if (eta < 0) {
-      # the curve is decreasing so this affects the upper bound of integration
       if (tmp < xlim[2]) {
         xlim_new[2] <- tmp
       }
     } else {
-      # the curve is increasing so this affects the lower bound of integration
       if (tmp > xlim[1]) {
         xlim_new[1] <- tmp
       }
@@ -798,21 +794,31 @@ nauc.gompertz_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   }
 
   if (beta > ylim[2]) {
-    tmp <- phi - log(log((beta - alpha) / (ylim[1] - alpha))) / eta
+    tmp <- phi - log(log((beta - alpha) / (ylim[2] - alpha))) / eta
 
+    # if the curve is decreasing we change the lower bound of integration,
+    # otherwise the upper bound
+    # in any case, we must now consider the area of the rectangle
     if (eta < 0) {
-      # the curve is decreasing so this affects the lower bound of integration
       if (tmp > xlim[1]) {
-        # we must consider the area of the rectangle
         I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
         xlim_new[1] <- tmp
       }
     } else {
-      # the curve is increasing so this affects the upper bound of integration
       if (tmp < xlim[2]) {
         I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
         xlim_new[2] <- tmp
       }
+    }
+  }
+
+  f <- if (ylim[1] == 0) {
+    function(x) {
+      fn(object, x, object$coefficients)
+    }
+  } else {
+    function(x) {
+      fn(object, x, object$coefficients) - ylim[1]
     }
   }
 
