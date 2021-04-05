@@ -163,6 +163,8 @@
 #'     \item{model}{the model frame used.}
 #'     \item{na.action}{(where relevant) information returned by
 #'       \code{\link[stats]{model.frame}} on the special handling of `NA`s.}
+#'     \item{is_log}{boolean value. It is `TRUE` if the predictor variable was
+#'       given on the log scale.}
 #'   }
 #'
 #' @importFrom stats model.frame model.matrix model.response model.weights terms
@@ -262,7 +264,7 @@ drda <- function(
   max_iter <- ceiling(max_iter[1])
 
   if (max_iter <= 0) {
-    stop("maximum number of iterations must be positive")
+    stop("maximum number of iterations must be positive", call. = FALSE)
   }
 
   if (!is.null(lower_bound)) {
@@ -363,6 +365,7 @@ drda <- function(
   result$terms <- model_terms
   result$model <- model_frame
   result$na.action <- attr(model_frame, "na.action")
+  result$is_log <- is_log
 
   class(result) <- c("drda", class(result))
 
@@ -645,135 +648,6 @@ logLik.drda <- function(object, ...) {
   object$loglik
 }
 
-#' @importFrom graphics axis box curve legend lines polygon plot.default
-#' @importFrom grDevices dev.flush dev.hold extendrange
-#' @importFrom stats qchisq
-#'
-#' @export
-plot.drda <- function(x, xlim, ylim, xlab, ylab, level = 0.95, ...) {
-  if (missing(xlab)) {
-    xlab <- "log(Predictor)"
-  }
-
-  if (missing(ylab)) {
-    ylab <- "Response"
-  }
-
-  theta <- coef(x)
-
-  alpha <- 0
-  beta <- 1
-  eta <- -1
-  phi <- 0
-
-  if (x$mean_function != "logistic2") {
-    alpha <- theta[1]
-    beta <- theta[2]
-    eta <- theta[3]
-    phi <- theta[4]
-  } else {
-    eta <- theta[1]
-    phi <- theta[2]
-  }
-
-  xv <- x$model[, 2]
-  yv <- x$model[, 1]
-  wv <- x$weights
-
-  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
-
-  if (sum(idx) != length(yv)) {
-    yv <- yv[idx]
-    xv <- xv[idx]
-    wv <- wv[idx]
-  }
-
-  if (missing(xlim)) {
-    xlim <- extendrange(xv, f = 0.08)
-
-    if (xlim[1] > phi) {
-      xlim[1] <- phi - 50
-    } else if (xlim[2] < phi) {
-      xlim[2] <- phi + 50
-    }
-  }
-
-  if (missing(ylim)) {
-    ylim <- extendrange(yv, f = 0.08)
-
-    if (ylim[1] > alpha) {
-      ylim[1] <- alpha - 0.5
-    }
-
-    if (ylim[2] < beta) {
-      ylim[2] < beta + 0.5
-    }
-
-    if ((ylim[1] > 0) && (ylim[1] < 1)) {
-      ylim[1] <- 0
-    }
-
-    if ((ylim[2] > 0) && (ylim[2] < 1)) {
-      ylim[2] <- 1
-    }
-  }
-
-  xx <- seq(xlim[1], xlim[2], length.out = 500)
-  mu <- fn(x, xx, theta)
-
-  dev.hold()
-
-  plot.default(
-    xv, yv, type = "p", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE
-  )
-
-  axis(1, at = pretty(xlim))
-  axis(2, at = pretty(ylim))
-  box()
-
-  lines(xx, mu, lty = 2, col = "red")
-
-  if ((level > 0) && (level < 1)) {
-    q <- qchisq(level, sum(x$estimated))
-    cv <- curve_variance(x, xx)
-    cs <- sqrt(q * cv)
-
-    upper_bound <- mu + cs
-    lower_bound <- mu - cs
-
-    xci <- c(xx, rev(xx))
-    yci <- c(upper_bound, rev(lower_bound))
-    polygon(xci, yci, col = "#BDBDBD33", border = FALSE)
-  }
-
-  location <- if (eta <= 0) {
-    "bottomleft"
-  } else {
-    "topleft"
-  }
-
-  legend(
-    location, legend = "Maximum likelihood fit", col = "red", lty = 2, bty = "n"
-  )
-
-  if (x$mean_function == "logistic2" || x$mean_function == "logistic4") {
-    f <- fn(x, phi, theta)
-
-    lines(
-      x = rep(phi, 2), y = c(ylim[1] - 1, f), lty = 2, col = "gray"
-    )
-
-    lines(
-      x = c(xlim[1] - 1, phi), y = rep(f, 2), lty = 2, col = "gray"
-    )
-  }
-
-  dev.flush()
-
-  invisible(NULL)
-}
-
 #' @importFrom stats predict
 #'
 #' @export
@@ -939,6 +813,15 @@ summary.drda <- function(object, ...) {
       c("Estimate", "Lower .95", "Upper .95")
     )
   )
+
+  if (!object$is_log) {
+    # give the user summaries on the same scale they provided
+    if (inherits(object, "logistic2_fit")) {
+      object$param[2, ] <- exp(object$param[2, ])
+    } else if (inherits(object, "logistic4_fit")) {
+      object$param[4, ] <- exp(object$param[4, ])
+    }
+  }
 
   k <- sum(object$estimated)
 

@@ -93,6 +93,8 @@ parameters.}
 \item{model}{the model frame used.}
 \item{na.action}{(where relevant) information returned by
 \code{\link[stats]{model.frame}} on the special handling of \code{NA}s.}
+\item{is_log}{boolean value. It is \code{TRUE} if the predictor variable was
+given on the log scale.}
 }
 }
 \description{
