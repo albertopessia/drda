@@ -660,13 +660,13 @@ nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   if (ylim[1] > 0) {
     tmp <- phi + log(ylim[1] / (1 - ylim[1])) / eta
 
+    # if the curve is decreasing we change the upper bound of integration,
+    # otherwise the lower bound
     if (eta < 0) {
-      # the curve is decreasing so this affects the upper bound of integration
       if (tmp < xlim[2]) {
         xlim_new[2] <- tmp
       }
     } else {
-      # the curve is increasing so this affects the lower bound of integration
       if (tmp > xlim[1]) {
         xlim_new[1] <- tmp
       }
@@ -676,15 +676,15 @@ nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   if (ylim[2] < 1) {
     tmp <- phi + log(ylim[2] / (1 - ylim[2])) / eta
 
+    # if the curve is decreasing we change the lower bound of integration,
+    # otherwise the upper bound
+    # in any case, we must now consider the area of the rectangle
     if (eta < 0) {
-      # the curve is decreasing so this affects the lower bound of integration
       if (tmp > xlim[1]) {
-        # we must consider the area of the rectangle
         I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
         xlim_new[1] <- tmp
       }
     } else {
-      # the curve is increasing so this affects the upper bound of integration
       if (tmp < xlim[2]) {
         I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
         xlim_new[2] <- tmp
@@ -694,7 +694,7 @@ nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 
   t1 <- 1 + exp(-eta * (xlim_new[2] - phi))
   t2 <- 1 + exp(-eta * (xlim_new[1] - phi))
-  I <- I + (xlim_new[2] - xlim_new[1]) + log(t1 / t2) / eta
+  I <- I + (xlim_new[2] - xlim_new[1]) * (1 - ylim[1]) + log(t1 / t2) / eta
 
   nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
   names(nauc) <- NULL
