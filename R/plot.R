@@ -51,9 +51,9 @@ plot.drda <- function(x, ...) {
   xlab <- dotargs$xlab
   if (is.null(xlab)) {
     xlab <- if (base == "e") {
-      "log(predictor)"
+      "log(Predictor)"
     } else {
-      "predictor"
+      "Predictor"
     }
   }
 
@@ -233,9 +233,13 @@ plot.drda <- function(x, ...) {
     "topleft"
   }
 
+  legend_labels <- dotargs$legend
+  if (is.null(legend_labels)) {
+    legend_labels <- x$mean_function
+  }
+
   legend(
-    location, title = "MLE", col = col, lty = 2, lwd = 2, bg = "white",
-    legend = x$mean_function
+    location, col = col, lty = 2, lwd = 2, bg = "white", legend = legend_labels
   )
 
   dev.flush()
@@ -306,9 +310,9 @@ plot.drdalist <- function(x, ...) {
   xlab <- dotargs$xlab
   if (is.null(xlab)) {
     xlab <- if (base == "e") {
-      "log(predictor)"
+      "log(Predictor)"
     } else {
-      "predictor"
+      "Predictor"
     }
   }
 
@@ -543,9 +547,14 @@ plot.drdalist <- function(x, ...) {
     "topleft"
   }
 
+  legend_labels <- dotargs$legend
+  if (is.null(legend_labels)) {
+    legend_labels <- vapply(x, function(y) y$mean_function, "a")
+  }
+
   legend(
-    location, title = "MLE", col = col[1:M], lty = 2, lwd = 2, bg = "white",
-    legend = vapply(x, function(y) y$mean_function, "a")
+    location, col = col[1:M], lty = 2, lwd = 2, bg = "white",
+    legend = legend_labels
   )
 
   dev.flush()
