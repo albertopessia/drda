@@ -1,3 +1,32 @@
+#' Model fit plotting
+#'
+#' Plot maximum likelihood curves fitted with `drda`.
+#'
+#' @param x `drda` object as returned by the \code{link[drda]{drda}} function.
+#' @param ... other `drda` objects or parameters to be passed to the plotting
+#'   functions. See 'Details'.
+#'
+#' @details
+#'
+#' This function provides a scatter plot of the observed data, overlaid with the
+#' maximum likelihood curve fit.
+#' If multiple fit objects are given, they will all be placed in the same plot.
+#'
+#' Accepted plotting arguments are:
+#'
+#' \describe{
+#'   \item{base}{character string with the base used to print the values on the
+#'     x axis. Accepted values are `e` for the natural logarithm (the default),
+#'     `10` for base 10, and `2` for base 2.}
+#'   \item{col}{curve color(s). By default, up to 9 color-blind friendly
+#'     colors are provided.}
+#'   \item{xlab, ylab}{axis labels.}
+#'   \item{xlim, ylim}{the range of x and y values with sensible defaults.}
+#'   \item{level}{level of confidence intervals. Set to zero or a negative value
+#'     to disable confidence intervals.}
+#'   \item{legend}{custom labels for the legend model names.}
+#' }
+#'
 #' @importFrom graphics axis box curve legend lines par polygon points
 #' @importFrom graphics plot.default
 #' @importFrom grDevices col2rgb dev.flush dev.hold extendrange rgb
