@@ -5,7 +5,7 @@
 \alias{drda-package}
 \title{Dose-response data analysis}
 \description{
-\code{drda} is a package for fitting logistic curves and perform dose-response
+\code{drda} is a package for fitting logistic curves and performing dose-response
 data analysis.
 }
 \section{Available functions}{

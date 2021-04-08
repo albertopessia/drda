@@ -3,8 +3,8 @@
 
 ## Overview
 
-*drda* is a [R](https://www.r-project.org/) package for fitting growth curves,
-with a particular emphasis on dose-response data analysis.
+*drda* is a [R](https://www.r-project.org/) package for fitting growth curves
+and performing dose-response data analysis.
 
 The current available models are:
 
