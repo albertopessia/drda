@@ -104,56 +104,68 @@ approx_vcov <- function(fim) {
 
 # Algorithm initialization
 #
-# Use `nls` to find a good initial value.
+# Use `nlminb` to find a good initial value.
 #
 # @param object object of some model class.
 # @param rss_fn residual sum of squares to be minimized.
-# @param formula a nonlinear model formula including variables and parameters.
+# @param rss_gh gradient and Hessian of the residual sum of squares.
 # @param start matrix of candidate starting points.
 #
-#' @importFrom stats coef nls nls.control
-fit_nls <- function(object, rss_fn, formula, start) {
-  data <- data.frame(y = object$y, x = object$x)
+#' @importFrom stats nlminb
+fit_nlminb <- function(object, rss_fn, rss_gh, start) {
+  rss_gr <- function(x) {
+    rss_gh(x)$G
+  }
 
-  control <- nls.control(
-    tol = sqrt(.Machine$double.eps), minFactor = 1.0e-5, warnOnly = TRUE
-  )
+  rss_he <- function(x) {
+    rss_gh(x)$H
+  }
+
+  control <- list(eval.max = 1000L, iter.max = 1000L)
 
   f <- if (!object$constrained) {
     function(x) {
-      y <- nls(formula, data, x, control, "port", weights = object$w)
-      mle_asy(object, coef(y))
+      y <- nlminb(x, rss_fn, rss_gr, rss_he, control = control)
+      list(
+        par = mle_asy(object, y$par),
+        niter = y$iterations
+      )
     }
   } else {
     function(x) {
-      y <- nls(
-        formula, data, x, control, "port", weights = object$w,
+      y <- nlminb(
+        x, rss_fn, rss_gr, rss_he, control = control,
         lower = object$lower_bound, upper = object$upper_bound
       )
-      mle_asy(object, coef(y))
+      list(
+        par = mle_asy(object, y$par),
+        niter = y$iterations
+      )
     }
   }
 
   best_par <- rep(NA_real_, nrow(start))
   best_rss <- Inf
+  best_iter <- 1000L
 
   for (i in seq_len(ncol(start))) {
-    current_par <- tryCatch(
+    tmp <- tryCatch(
       suppressWarnings(f(start[, i])),
       error = function(e) NULL
     )
 
-    if (!is.null(current_par)) {
-      current_rss <- rss_fn(current_par)
+    if (!is.null(tmp)) {
+      current_rss <- rss_fn(tmp$par)
 
       if (!is.nan(current_rss) && (current_rss < best_rss)) {
-        best_par <- current_par
+        best_par <- tmp$par
         best_rss <- current_rss
+        best_iter <- tmp$niter
       }
     }
   }
 
-  list(theta = best_par, rss = best_rss)
+  list(theta = best_par, rss = best_rss, niter = best_iter)
 }
 
 # Algorithm initialization
@@ -161,52 +173,59 @@ fit_nls <- function(object, rss_fn, formula, start) {
 # Use `optim` to find a good initial value.
 #
 # @param object object of some model class.
-# @param fn residual sum of squares to be minimized.
-# @param start candidate starting point.
+# @param rss_fn residual sum of squares to be minimized.
+# @param rss_gh gradient and Hessian of the residual sum of squares.
+# @param start matrix of candidate starting points.
 #
 #' @importFrom stats optim
-fit_optim <- function(object, fn, start) {
-  rss_gh <- rss_gradient_hessian(object)
-
-  gr <- function(x) {
+fit_optim <- function(object, rss_fn, rss_gh, start) {
+  rss_gr <- function(x) {
     rss_gh(x)$G
   }
 
-  control <- list(trace = 0, maxit = 10000, reltol = 1.0e-10)
+  control <- list(trace = 0, maxit = 10000L, reltol = 1.0e-10)
 
   f <- if (!object$constrained) {
     function(x) {
-      y <- optim(x, fn, gr, method = "BFGS", control = control)
-      mle_asy(object, y$par)
+      y <- optim(x, rss_fn, rss_gr, method = "BFGS", control = control)
+      list(
+        par = mle_asy(object, y$par),
+        niter = y$counts["gradient"]
+      )
     }
   } else {
     function(x) {
       y <- optim(
-        x, fn, gr, method = "L-BFGS-B", lower = object$lower_bound,
+        x, rss_fn, rss_gr, method = "L-BFGS-B", lower = object$lower_bound,
         upper = object$upper_bound, control = control
       )
-      mle_asy(object, y$par)
+      list(
+        par = mle_asy(object, y$par),
+        niter = y$counts["gradient"]
+      )
     }
   }
 
   best_par <- rep(NA_real_, length(start))
   best_rss <- Inf
+  best_iter <- 10000L
 
-  current_par <- tryCatch(
+  tmp <- tryCatch(
     suppressWarnings(f(start)),
     error = function(e) NULL
   )
 
-  if (!is.null(current_par)) {
-    current_rss <- fn(current_par)
+  if (!is.null(tmp)) {
+    current_rss <- rss_fn(tmp$par)
 
     if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      best_par <- current_par
+      best_par <- tmp$par
       best_rss <- current_rss
+      best_iter <- tmp$niter
     }
   }
 
-  list(theta = best_par, rss = best_rss)
+  list(theta = best_par, rss = best_rss, niter = best_iter)
 }
 
 # Fit a function to observed data
@@ -229,7 +248,7 @@ fit_optim <- function(object, fn, start) {
 #   }
 find_optimum <- function(object) {
   start <- if (!is.null(object$start)) {
-    object$start
+    list(theta = object$start, niter = 0)
   } else {
     init(object)
   }
@@ -241,19 +260,29 @@ find_optimum <- function(object) {
     mle_asy(object, theta)
   }
 
-  ntrm(rss_fn, rss_gh, start, object$max_iter, update_fn)
+  solution <- ntrm(rss_fn, rss_gh, start$theta, object$max_iter, update_fn)
+  solution$iterations <- solution$iterations + start$niter
+
+  solution
 }
 
 # @rdname find_optimum
 find_optimum_constrained <- function(object, constraint, known_param) {
   start <- if (!is.null(object$start)) {
     # equality constraints have the priority over the provided starting values
-    ifelse(is.na(known_param), object$start, known_param)
+    list(
+      theta = ifelse(is.na(known_param), object$start, known_param),
+      niter = 0
+    )
   } else {
-    ifelse(is.na(known_param), init(object), known_param)
+    tmp <- init(object)
+    list(
+      theta = ifelse(is.na(known_param), tmp$theta, known_param),
+      niter = tmp$niter
+    )
   }
 
-  if (any(constraint[, 2])) {
+  solution <- if (any(constraint[, 2])) {
     # there are equality constraints, so we must subset the gradient and Hessian
     idx <- which(!constraint[, 2])
 
@@ -263,11 +292,11 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     if (all(constraint[idx, 1])) {
       # we only have equality constraints, so after fixing the parameters what
       # remains is an unconstrained optimization
-      ntrm(rss_fn, rss_gh, start[idx], object$max_iter)
+      ntrm(rss_fn, rss_gh, start$theta[idx], object$max_iter)
     } else {
       ntrm_constrained(
-        rss_fn, rss_gh, start[idx], object$max_iter, object$lower_bound[idx],
-        object$upper_bound[idx]
+        rss_fn, rss_gh, start$theta[idx], object$max_iter,
+        object$lower_bound[idx], object$upper_bound[idx]
       )
     }
   } else {
@@ -275,8 +304,12 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     rss_gh <- rss_gradient_hessian(object)
 
     ntrm_constrained(
-      rss_fn, rss_gh, start, object$max_iter, object$lower_bound,
+      rss_fn, rss_gh, start$theta, object$max_iter, object$lower_bound,
       object$upper_bound
     )
   }
+
+  solution$iterations <- solution$iterations + start$niter
+
+  solution
 }

@@ -426,11 +426,12 @@ mle_asy.logistic5 <- function(object, theta) {
 #
 # @return Numeric vector of length 5 with a (hopefully) good starting point.
 #
-#' @importFrom stats coefficients lm median nls nls.control optim
+#' @importFrom stats lm
 init.logistic5 <- function(object) {
   m <- object$m
   stats <- object$stats
   rss_fn <- rss(object)
+  rss_gh <- rss_gradient_hessian(object)
 
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
@@ -444,17 +445,17 @@ init.logistic5 <- function(object) {
   )
 
   best_rss <- rss_fn(theta)
+  niter <- 1
 
   if (linear_coef[2, 4] > 0.2) {
     # we are in big problems as a flat horizontal line is likely the best model
     weighted_mean <- sum(object$w * object$y) / sum(object$w)
-    small <- 1.0e-3
 
     current_par <- c(
       weighted_mean,
-      weighted_mean + small,
-      if (linear_coef[2, 1] <= 0) -small else small,
-      object$stats[m, 1] + 100,
+      weighted_mean + 1.0e-3,
+      if (linear_coef[2, 1] <= 0) -100 else 100,
+      object$stats[m, 1],
       0
     )
 
@@ -468,14 +469,14 @@ init.logistic5 <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
-  v <- 5
+  v <- 10
   eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-2, -0.01, length.out = v)
+    seq(-10, -0.01, length.out = v)
   } else {
-    seq(0.01, 2, length.out = v)
+    seq(0.01, 10, length.out = v)
   }
   phi_set <- seq(
-    stats[1, 1] - 0.5 * delta, stats[m, 1] + 0.5 * delta, length.out = v
+    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v
   )
   log_nu_set <- seq(-1, 0.5, length.out = v)
 
@@ -507,28 +508,47 @@ init.logistic5 <- function(object) {
     "alpha", "beta", "eta", "phi", "psi"
   )
 
-  formula <- y ~ alpha + (beta - alpha) / (
-    1 + exp(psi - eta * (x - phi))
-  )^exp(-psi)
-  start <- cbind(theta, theta_1, theta_2, theta_3)
-
-  tmp <- fit_nls(object, rss_fn, formula, start)
-
-  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
-    theta <- tmp$theta
-    best_rss <- tmp$rss
+  if (object$constrained) {
+    theta <- pmax(
+      pmin(theta, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_1 <- pmax(
+      pmin(theta_1, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_2 <- pmax(
+      pmin(theta_2, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_3 <- pmax(
+      pmin(theta_3, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
   }
 
-  tmp <- fit_optim(object, rss_fn, theta)
+  start <- cbind(theta, theta_1, theta_2, theta_3)
+
+  tmp <- fit_nlminb(object, rss_fn, rss_gh, start)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
     best_rss <- tmp$rss
+    niter <- niter + tmp$niter
+  }
+
+  tmp <- fit_optim(object, rss_fn, rss_gh, theta)
+
+  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
+    theta <- tmp$theta
+    best_rss <- tmp$rss
+    niter <- niter + tmp$niter
   }
 
   names(theta) <- NULL
+  names(niter) <- NULL
 
-  theta
+  list(theta = theta, niter = niter)
 }
 
 # 5-parameter logistic fit
