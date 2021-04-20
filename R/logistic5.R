@@ -431,7 +431,6 @@ init.logistic5 <- function(object) {
   m <- object$m
   stats <- object$stats
   rss_fn <- rss(object)
-  rss_gh <- rss_gradient_hessian(object)
 
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
@@ -529,7 +528,7 @@ init.logistic5 <- function(object) {
 
   start <- cbind(theta, theta_1, theta_2, theta_3)
 
-  tmp <- fit_nlminb(object, rss_fn, rss_gh, start)
+  tmp <- fit_nlminb(object, rss_fn, start)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
@@ -537,7 +536,7 @@ init.logistic5 <- function(object) {
     niter <- niter + tmp$niter
   }
 
-  tmp <- fit_optim(object, rss_fn, rss_gh, theta)
+  tmp <- fit_optim(object, rss_fn, theta)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta

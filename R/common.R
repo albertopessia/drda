@@ -108,24 +108,15 @@ approx_vcov <- function(fim) {
 #
 # @param object object of some model class.
 # @param rss_fn residual sum of squares to be minimized.
-# @param rss_gh gradient and Hessian of the residual sum of squares.
 # @param start matrix of candidate starting points.
 #
 #' @importFrom stats nlminb
-fit_nlminb <- function(object, rss_fn, rss_gh, start) {
-  rss_gr <- function(x) {
-    rss_gh(x)$G
-  }
-
-  rss_he <- function(x) {
-    rss_gh(x)$H
-  }
-
+fit_nlminb <- function(object, rss_fn, start) {
   control <- list(eval.max = 1000L, iter.max = 1000L)
 
   f <- if (!object$constrained) {
     function(x) {
-      y <- nlminb(x, rss_fn, rss_gr, rss_he, control = control)
+      y <- nlminb(start = x, objective = rss_fn, control = control)
       list(
         par = mle_asy(object, y$par),
         niter = y$iterations
@@ -134,7 +125,7 @@ fit_nlminb <- function(object, rss_fn, rss_gh, start) {
   } else {
     function(x) {
       y <- nlminb(
-        x, rss_fn, rss_gr, rss_he, control = control,
+        start = x, objective = rss_fn, control = control,
         lower = object$lower_bound, upper = object$upper_bound
       )
       list(
@@ -174,20 +165,15 @@ fit_nlminb <- function(object, rss_fn, rss_gh, start) {
 #
 # @param object object of some model class.
 # @param rss_fn residual sum of squares to be minimized.
-# @param rss_gh gradient and Hessian of the residual sum of squares.
 # @param start matrix of candidate starting points.
 #
 #' @importFrom stats optim
-fit_optim <- function(object, rss_fn, rss_gh, start) {
-  rss_gr <- function(x) {
-    rss_gh(x)$G
-  }
-
-  control <- list(trace = 0, maxit = 10000L, reltol = 1.0e-10)
+fit_optim <- function(object, rss_fn, start) {
+  control <- list(trace = 0, maxit = 1000L, reltol = 1.0e-10)
 
   f <- if (!object$constrained) {
     function(x) {
-      y <- optim(x, rss_fn, rss_gr, method = "BFGS", control = control)
+      y <- optim(par = x, fn = rss_fn, method = "BFGS", control = control)
       list(
         par = mle_asy(object, y$par),
         niter = y$counts["gradient"]
@@ -196,7 +182,7 @@ fit_optim <- function(object, rss_fn, rss_gh, start) {
   } else {
     function(x) {
       y <- optim(
-        x, rss_fn, rss_gr, method = "L-BFGS-B", lower = object$lower_bound,
+        par = x, fn = rss_fn, method = "L-BFGS-B", lower = object$lower_bound,
         upper = object$upper_bound, control = control
       )
       list(
@@ -208,7 +194,7 @@ fit_optim <- function(object, rss_fn, rss_gh, start) {
 
   best_par <- rep(NA_real_, length(start))
   best_rss <- Inf
-  best_iter <- 10000L
+  best_iter <- 1000L
 
   tmp <- tryCatch(
     suppressWarnings(f(start)),
