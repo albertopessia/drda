@@ -332,14 +332,10 @@ init.logistic2 <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
-  v1 <- 10L
-  v2 <- 25L
+  v1 <- 30L
+  v2 <- 15L
   v <- v1 * v2
-  eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-5, -0.01, length.out = v1)
-  } else {
-    seq(0.01, 5, length.out = v1)
-  }
+  eta_set <- seq(-10, 10, length.out = v1)
   phi_set <- seq(
     stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )

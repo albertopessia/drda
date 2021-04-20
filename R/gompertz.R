@@ -415,8 +415,8 @@ init.gompertz <- function(object) {
     theta <- c(
       0.9 * weighted_mean + 0.1 * min(stats[, 3]),
       0.9 * weighted_mean + 0.1 * max(stats[, 3]),
-      if (linear_coef[2, 1] <= 0) -10 else 10,
-      object$stats[m, 1] + 10
+      if (linear_coef[2, 1] <= 0) -1.0e-3 else 1.0e-3,
+      object$stats[m, 1] + 100
     )
 
     best_rss <- rss_fn(theta)
@@ -424,14 +424,10 @@ init.gompertz <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
-  v1 <- 10L
-  v2 <- 25L
+  v1 <- 30L
+  v2 <- 15L
   v <- v1 * v2
-  eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-5, -0.01, length.out = v1)
-  } else {
-    seq(0.01, 5, length.out = v1)
-  }
+  eta_set <- seq(-10, 10, length.out = v1)
   phi_set <- seq(
     stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )
@@ -493,6 +489,17 @@ init.gompertz <- function(object) {
 
   names(theta) <- NULL
   names(niter) <- NULL
+
+  if (theta[2] < theta[1]) {
+    # this is the dual solution, not the one we want
+    # there is no easy formula to translate between the two, so we set the
+    # solution to a sub-optimal one and let `ntrm` do the rest
+    tmp <- theta[1]
+    theta[1] <- theta[2]
+    theta[2] <- tmp
+    theta[3] <- -theta[3]
+    theta[4] <- -theta[4]
+  }
 
   list(theta = theta, niter = niter)
 }

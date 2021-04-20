@@ -515,7 +515,7 @@ init.logistic6 <- function(object) {
       0.9 * weighted_mean + 0.1 * min(stats[, 3]),
       0.9 * weighted_mean + 0.1 * max(stats[, 3]),
       if (linear_coef[2, 1] <= 0) -10 else 10,
-      object$stats[m, 1] + 10,
+      object$stats[m, 1] + 100,
       0,
       0
     )
@@ -525,16 +525,12 @@ init.logistic6 <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
-  v1 <- 5L
-  v2 <- 25L
+  v1 <- 30L
+  v2 <- 15L
   v3 <- 3L
   v4 <- 3L
   v <- v1 * v2 * v3 * v4
-  eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-5, -0.01, length.out = v1)
-  } else {
-    seq(0.01, 5, length.out = v1)
-  }
+  eta_set <- seq(-10, 10, length.out = v1)
   phi_set <- seq(
     stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )

@@ -128,10 +128,7 @@ fit_nlminb <- function(object, rss_fn, start) {
         start = x, objective = rss_fn, control = control,
         lower = object$lower_bound, upper = object$upper_bound
       )
-      list(
-        par = mle_asy(object, y$par),
-        niter = y$iterations
-      )
+      list(par = y$par, niter = y$iterations)
     }
   }
 
