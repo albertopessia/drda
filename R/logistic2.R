@@ -332,18 +332,20 @@ init.logistic2 <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
-  v <- 20
+  v1 <- 10L
+  v2 <- 25L
+  v <- v1 * v2
   eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-10, -0.01, length.out = v)
+    seq(-5, -0.01, length.out = v1)
   } else {
-    seq(0.01, 10, length.out = v)
+    seq(0.01, 5, length.out = v1)
   }
   phi_set <- seq(
-    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v
+    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )
 
-  theta_tmp <- matrix(nrow = 2, ncol = v^2)
-  rss_tmp <- rep(10000, v^2)
+  theta_tmp <- matrix(nrow = 2, ncol = v)
+  rss_tmp <- rep(10000, v)
   i <- 0
 
   for (phi in phi_set) {
@@ -357,8 +359,8 @@ init.logistic2 <- function(object) {
   ord <- order(rss_tmp)
 
   theta_1 <- theta_tmp[, ord[1]]
-  theta_2 <- theta_tmp[, ord[128]]
-  theta_3 <- theta_tmp[, ord[225]]
+  theta_2 <- theta_tmp[, ord[round(v / 3)]]
+  theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
 
   names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
     "eta", "phi"
@@ -386,14 +388,6 @@ init.logistic2 <- function(object) {
   start <- cbind(theta, theta_1, theta_2, theta_3)
 
   tmp <- fit_nlminb(object, rss_fn, start)
-
-  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
-    theta <- tmp$theta
-    best_rss <- tmp$rss
-    niter <- niter + tmp$niter
-  }
-
-  tmp <- fit_optim(object, rss_fn, theta)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta

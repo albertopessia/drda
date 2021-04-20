@@ -347,7 +347,7 @@ mle_asy.logistic4 <- function(object, theta) {
   eta <- theta[3]
   phi <- theta[4]
 
-  g <- 1 / (1 + exp(- eta * (x - phi)))
+  g <- 1 / (1 + exp(-eta * (x - phi)))
 
   t1 <- 0
   t2 <- 0
@@ -396,11 +396,13 @@ init.logistic4 <- function(object) {
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
 
+  weighted_mean <- sum(object$w * object$y) / sum(object$w)
+
   theta <- c(
-    min(stats[, 3]),
-    max(stats[, 3]),
-    if (linear_coef[2, 1] < 0) -1 else 1,
-    stats[which.min(abs(stats[, 3] - mean(range(stats[, 3])))), 1]
+    0.6 * weighted_mean + 0.4 * min(stats[, 3]),
+    0.6 * weighted_mean + 0.4 * max(stats[, 3]),
+    if (linear_coef[2, 1] < 0) -10 else 10,
+    if (linear_coef[2, 1] < 0) stats[m, 1] else stats[1, 1]
   )
 
   best_rss <- rss_fn(theta)
@@ -408,37 +410,32 @@ init.logistic4 <- function(object) {
 
   if (linear_coef[2, 4] > 0.2) {
     # we are in big problems as a flat horizontal line is likely the best model
-    weighted_mean <- sum(object$w * object$y) / sum(object$w)
-
-    current_par <- c(
-      weighted_mean,
-      weighted_mean + 1.0e-3,
-      if (linear_coef[2, 1] <= 0) -100 else 100,
-      object$stats[m, 1]
+    theta <- c(
+      0.9 * weighted_mean + 0.1 * min(stats[, 3]),
+      0.9 * weighted_mean + 0.1 * max(stats[, 3]),
+      if (linear_coef[2, 1] <= 0) -10 else 10,
+      object$stats[m, 1] + 10
     )
 
-    current_rss <- rss_fn(current_par)
-
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      theta <- current_par
-      best_rss <- current_rss
-    }
+    best_rss <- rss_fn(theta)
   }
 
   delta <- mean(diff(stats[, 1]))
 
-  v <- 20
+  v1 <- 10L
+  v2 <- 25L
+  v <- v1 * v2
   eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-10, -0.01, length.out = v)
+    seq(-5, -0.01, length.out = v1)
   } else {
-    seq(0.01, 10, length.out = v)
+    seq(0.01, 5, length.out = v1)
   }
   phi_set <- seq(
-    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v
+    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )
 
-  theta_tmp <- matrix(nrow = 4, ncol = v^2)
-  rss_tmp <- rep(10000, v^2)
+  theta_tmp <- matrix(nrow = 4, ncol = v)
+  rss_tmp <- rep(10000, v)
   i <- 0
 
   for (phi in phi_set) {
@@ -456,8 +453,8 @@ init.logistic4 <- function(object) {
   ord <- order(rss_tmp)
 
   theta_1 <- theta_tmp[, ord[1]]
-  theta_2 <- theta_tmp[, ord[128]]
-  theta_3 <- theta_tmp[, ord[225]]
+  theta_2 <- theta_tmp[, ord[round(v / 3)]]
+  theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
 
   names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
     "alpha", "beta", "eta", "phi"
@@ -492,16 +489,15 @@ init.logistic4 <- function(object) {
     niter <- niter + tmp$niter
   }
 
-  tmp <- fit_optim(object, rss_fn, theta)
-
-  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
-    theta <- tmp$theta
-    best_rss <- tmp$rss
-    niter <- niter + tmp$niter
-  }
-
   names(theta) <- NULL
   names(niter) <- NULL
+
+  if (theta[2] < theta[1]) {
+    tmp <- theta[1]
+    theta[1] <- theta[2]
+    theta[2] <- tmp
+    theta[3] <- -theta[3]
+  }
 
   list(theta = theta, niter = niter)
 }

@@ -159,61 +159,6 @@ fit_nlminb <- function(object, rss_fn, start) {
   list(theta = best_par, rss = best_rss, niter = best_iter)
 }
 
-# Algorithm initialization
-#
-# Use `optim` to find a good initial value.
-#
-# @param object object of some model class.
-# @param rss_fn residual sum of squares to be minimized.
-# @param start matrix of candidate starting points.
-#
-#' @importFrom stats optim
-fit_optim <- function(object, rss_fn, start) {
-  control <- list(trace = 0, maxit = 1000L, reltol = 1.0e-10)
-
-  f <- if (!object$constrained) {
-    function(x) {
-      y <- optim(par = x, fn = rss_fn, method = "BFGS", control = control)
-      list(
-        par = mle_asy(object, y$par),
-        niter = y$counts["gradient"]
-      )
-    }
-  } else {
-    function(x) {
-      y <- optim(
-        par = x, fn = rss_fn, method = "L-BFGS-B", lower = object$lower_bound,
-        upper = object$upper_bound, control = control
-      )
-      list(
-        par = mle_asy(object, y$par),
-        niter = y$counts["gradient"]
-      )
-    }
-  }
-
-  best_par <- rep(NA_real_, length(start))
-  best_rss <- Inf
-  best_iter <- 1000L
-
-  tmp <- tryCatch(
-    suppressWarnings(f(start)),
-    error = function(e) NULL
-  )
-
-  if (!is.null(tmp)) {
-    current_rss <- rss_fn(tmp$par)
-
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      best_par <- tmp$par
-      best_rss <- current_rss
-      best_iter <- tmp$niter
-    }
-  }
-
-  list(theta = best_par, rss = best_rss, niter = best_iter)
-}
-
 # Fit a function to observed data
 #
 # Use a Newton trust-region method to fit a function to observed data.

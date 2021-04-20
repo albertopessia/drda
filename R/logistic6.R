@@ -495,11 +495,13 @@ init.logistic6 <- function(object) {
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
 
+  weighted_mean <- sum(object$w * object$y) / sum(object$w)
+
   theta <- c(
-    min(stats[, 3]),
-    max(stats[, 3]),
-    if (linear_coef[2, 1] < 0) -1 else 1,
-    stats[which.min(abs(stats[, 3] - mean(range(stats[, 3])))), 1],
+    0.6 * weighted_mean + 0.4 * min(stats[, 3]),
+    0.6 * weighted_mean + 0.4 * max(stats[, 3]),
+    if (linear_coef[2, 1] < 0) -10 else 10,
+    if (linear_coef[2, 1] < 0) stats[m, 1] else stats[1, 1],
     0,
     0
   )
@@ -509,41 +511,38 @@ init.logistic6 <- function(object) {
 
   if (linear_coef[2, 4] > 0.2) {
     # we are in big problems as a flat horizontal line is likely the best model
-    weighted_mean <- sum(object$w * object$y) / sum(object$w)
-
-    current_par <- c(
-      weighted_mean,
-      weighted_mean + 1.0e-3,
-      if (linear_coef[2, 1] <= 0) -100 else 100,
-      object$stats[m, 1],
+    theta <- c(
+      0.9 * weighted_mean + 0.1 * min(stats[, 3]),
+      0.9 * weighted_mean + 0.1 * max(stats[, 3]),
+      if (linear_coef[2, 1] <= 0) -10 else 10,
+      object$stats[m, 1] + 10,
       0,
       0
     )
 
-    current_rss <- rss_fn(current_par)
-
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      theta <- current_par
-      best_rss <- current_rss
-    }
+    best_rss <- rss_fn(theta)
   }
 
   delta <- mean(diff(stats[, 1]))
 
-  v <- 5
+  v1 <- 5L
+  v2 <- 25L
+  v3 <- 3L
+  v4 <- 3L
+  v <- v1 * v2 * v3 * v4
   eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-10, -0.01, length.out = v)
+    seq(-5, -0.01, length.out = v1)
   } else {
-    seq(0.01, 10, length.out = v)
+    seq(0.01, 5, length.out = v1)
   }
   phi_set <- seq(
-    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v
+    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )
-  log_nu_set <- seq(-1, 0.5, length.out = v)
-  log_xi_set <- seq(-1, 0.5, length.out = v)
+  log_nu_set <- seq(-1, 0.5, length.out = v3)
+  log_xi_set <- seq(-1, 0.5, length.out = v4)
 
-  theta_tmp <- matrix(nrow = 6, ncol = v^4)
-  rss_tmp <- rep(10000, v^4)
+  theta_tmp <- matrix(nrow = 6, ncol = v)
+  rss_tmp <- rep(10000, v)
   i <- 0
 
   for (eta in eta_set) {
@@ -567,8 +566,8 @@ init.logistic6 <- function(object) {
   ord <- order(rss_tmp)
 
   theta_1 <- theta_tmp[, ord[1]]
-  theta_2 <- theta_tmp[, ord[313]]
-  theta_3 <- theta_tmp[, ord[625]]
+  theta_2 <- theta_tmp[, ord[round(v / 3)]]
+  theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
 
   names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
     "alpha", "beta", "eta", "phi", "psi", "lambda"
@@ -596,14 +595,6 @@ init.logistic6 <- function(object) {
   start <- cbind(theta, theta_1, theta_2, theta_3)
 
   tmp <- fit_nlminb(object, rss_fn, start)
-
-  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
-    theta <- tmp$theta
-    best_rss <- tmp$rss
-    niter <- niter + tmp$niter
-  }
-
-  tmp <- fit_optim(object, rss_fn, theta)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
