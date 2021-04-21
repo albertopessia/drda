@@ -311,10 +311,26 @@ init.logistic2 <- function(object) {
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
 
-  theta <- c(
-    if (linear_coef[2, 1] < 0) -1 else 1,
-    stats[which.min(abs(stats[, 3] - mean(range(stats[, 3])))), 1]
-  )
+  min_value <- min(stats[, 3])
+  max_value <- max(stats[, 3])
+
+  # we cannot guarantee that all values are between zero and one, so we assume
+  # a 4-parameter logistic model as a starting point
+  #
+  # y = a + (b - a) / (1 + exp(-e * (x - p)))
+  # w = (y - a) / (b - a)
+  # z = log(w / (1 - w)) = e * (x - p) = - e * p + e * x
+  #
+  # fit a linear model `z ~ u0 + u1 x` and set `eta = u1` and `phi = -u0 / u1`
+  # we add a small number to avoid division by zero
+  zv <- (stats[, 3] - min_value + 1.0e-5) / (max_value - min_value + 2.0e-5)
+  zv <- log(zv) - log1p(-zv)
+  tmp <- lm(zv ~ stats[, 1])
+
+  eta <- tmp$coefficients[2]
+  phi <- -tmp$coefficients[1] / eta
+
+  theta <- c(eta, phi)
 
   best_rss <- rss_fn(theta)
   niter <- 1
@@ -332,10 +348,10 @@ init.logistic2 <- function(object) {
 
   delta <- mean(diff(stats[, 1]))
 
-  v1 <- 30L
-  v2 <- 15L
+  v1 <- 20L
+  v2 <- 10L
   v <- v1 * v2
-  eta_set <- seq(-10, 10, length.out = v1)
+  eta_set <- seq(-5, 5, length.out = v1)
   phi_set <- seq(
     stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )
@@ -358,9 +374,9 @@ init.logistic2 <- function(object) {
   theta_2 <- theta_tmp[, ord[round(v / 3)]]
   theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
 
-  names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
-    "eta", "phi"
-  )
+  # we check two extreme values in case of problematic data
+  theta_4 <- c(-10, theta[2])
+  theta_5 <- c(10, theta[2])
 
   if (object$constrained) {
     theta <- pmax(
@@ -379,9 +395,17 @@ init.logistic2 <- function(object) {
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
       object$lower_bound, na.rm = TRUE
     )
+    theta_4 <- pmax(
+      pmin(theta_4, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_5 <- pmax(
+      pmin(theta_5, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
   }
 
-  start <- cbind(theta, theta_1, theta_2, theta_3)
+  start <- cbind(theta, theta_1, theta_2, theta_3, theta_4, theta_5)
 
   tmp <- fit_nlminb(object, rss_fn, start)
 
