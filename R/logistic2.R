@@ -322,7 +322,7 @@ init.logistic2 <- function(object) {
   # z = log(w / (1 - w)) = e * (x - p) = - e * p + e * x
   #
   # fit a linear model `z ~ u0 + u1 x` and set `eta = u1` and `phi = -u0 / u1`
-  # we add a small number to avoid division by zero
+  # we add a small number to avoid the logarithm of zero
   zv <- (stats[, 3] - min_value + 1.0e-5) / (max_value - min_value + 2.0e-5)
   zv <- log(zv) - log1p(-zv)
   tmp <- lm(zv ~ stats[, 1])
@@ -349,7 +349,7 @@ init.logistic2 <- function(object) {
   delta <- mean(diff(stats[, 1]))
 
   v1 <- 20L
-  v2 <- 10L
+  v2 <- 20L
   v <- v1 * v2
   eta_set <- seq(-5, 5, length.out = v1)
   phi_set <- seq(
@@ -358,14 +358,30 @@ init.logistic2 <- function(object) {
 
   theta_tmp <- matrix(nrow = 2, ncol = v)
   rss_tmp <- rep(10000, v)
-  i <- 0
 
+  # we check extreme values in case of problematic data
+  theta_eta_1 <- matrix(nrow = 2, ncol = v2)
+  rss_eta_1 <- rep(10000, v2)
+
+  theta_eta_2 <- matrix(nrow = 2, ncol = v2)
+  rss_eta_2 <- rep(10000, v2)
+
+  i <- 0
+  j <- 0
   for (phi in phi_set) {
+    j <- j + 1
+
     for (eta in eta_set) {
       i <- i + 1
       theta_tmp[, i] <- c(eta, phi)
       rss_tmp[i] <- rss_fn(c(eta, phi))
     }
+
+    theta_eta_1[, j] <- c(-20, phi)
+    rss_eta_1[j] <- rss_fn(c(-20, phi))
+
+    theta_eta_2[, j] <- c(20, phi)
+    rss_eta_2[j] <- rss_fn(c(20, phi))
   }
 
   ord <- order(rss_tmp)
@@ -373,10 +389,8 @@ init.logistic2 <- function(object) {
   theta_1 <- theta_tmp[, ord[1]]
   theta_2 <- theta_tmp[, ord[round(v / 3)]]
   theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
-
-  # we check two extreme values in case of problematic data
-  theta_4 <- c(-10, theta[2])
-  theta_5 <- c(10, theta[2])
+  theta_4 <- theta_eta_1[, order(rss_eta_1)[1]]
+  theta_5 <- theta_eta_2[, order(rss_eta_2)[1]]
 
   if (object$constrained) {
     theta <- pmax(

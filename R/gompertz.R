@@ -406,7 +406,7 @@ init.gompertz <- function(object) {
   # z = log(-log(w)) = -e * (x - p) = e * p - e * x
   #
   # fit a linear model `z ~ u0 + u1 x` and set `eta = -u1` and `phi = -u0 / u1`
-  # we add a small number to avoid division by zero
+  # we add a small number to avoid the logarithm of zero
   zv <- (stats[, 3] - min_value + 1.0e-5) / (max_value - min_value + 2.0e-5)
   zv <- log(-log(zv))
   tmp <- lm(zv ~ stats[, 1])
@@ -436,7 +436,7 @@ init.gompertz <- function(object) {
   delta <- mean(diff(stats[, 1]))
 
   v1 <- 20L
-  v2 <- 10L
+  v2 <- 20L
   v <- v1 * v2
   eta_set <- seq(-5, 5, length.out = v1)
   phi_set <- seq(
@@ -445,18 +445,37 @@ init.gompertz <- function(object) {
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
   rss_tmp <- rep(10000, v)
-  i <- 0
 
+  # we check extreme values in case of problematic data
+  theta_eta_1 <- matrix(nrow = 4, ncol = v2)
+  rss_eta_1 <- rep(10000, v2)
+
+  theta_eta_2 <- matrix(nrow = 4, ncol = v2)
+  rss_eta_2 <- rep(10000, v2)
+
+  i <- 0
+  j <- 0
   for (phi in phi_set) {
+    j <- j + 1
+
     for (eta in eta_set) {
       i <- i + 1
 
       current_par <- mle_asy(object, c(theta[1], theta[2], eta, phi))
       current_rss <- rss_fn(current_par)
-
       theta_tmp[, i] <- current_par
       rss_tmp[i] <- current_rss
     }
+
+    current_par <- mle_asy(object, c(theta[1], theta[2], -20, phi))
+    current_rss <- rss_fn(current_par)
+    theta_eta_1[, j] <- current_par
+    rss_eta_1[j] <- current_rss
+
+    current_par <- mle_asy(object, c(theta[1], theta[2], 20, phi))
+    current_rss <- rss_fn(current_par)
+    theta_eta_2[, j] <- current_par
+    rss_eta_2[j] <- current_rss
   }
 
   ord <- order(rss_tmp)
@@ -464,10 +483,8 @@ init.gompertz <- function(object) {
   theta_1 <- theta_tmp[, ord[1]]
   theta_2 <- theta_tmp[, ord[round(v / 3)]]
   theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
-
-  # we check two extreme values in case of problematic data
-  theta_4 <- mle_asy(object, c(theta[1], theta[2], -10, theta[4]))
-  theta_5 <- mle_asy(object, c(theta[1], theta[2], 10, theta[4]))
+  theta_4 <- theta_eta_1[, order(rss_eta_1)[1]]
+  theta_5 <- theta_eta_2[, order(rss_eta_2)[1]]
 
   if (object$constrained) {
     theta <- pmax(
