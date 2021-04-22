@@ -426,7 +426,7 @@ mle_asy.logistic5 <- function(object, theta) {
 #
 # @return Numeric vector of length 5 with a (hopefully) good starting point.
 #
-#' @importFrom stats coefficients lm median nls nls.control optim
+#' @importFrom stats lm
 init.logistic5 <- function(object) {
   m <- object$m
   stats <- object$stats
@@ -435,100 +435,142 @@ init.logistic5 <- function(object) {
   linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
   linear_coef <- linear_fit$coefficients
 
-  theta <- c(
-    min(stats[, 3]),
-    max(stats[, 3]),
-    if (linear_coef[2, 1] < 0) -1 else 1,
-    stats[which.min(abs(stats[, 3] - mean(range(stats[, 3])))), 1],
-    0
-  )
+  min_value <- min(stats[, 3])
+  max_value <- max(stats[, 3])
+
+  # we initialize nu = 1, so that we start with a 4-parameter logistic function
+  #
+  # y = a + (b - a) / (1 + exp(-e * (x - p)))
+  # w = (y - a) / (b - a)
+  # z = log(w / (1 - w)) = e * (x - p) = - e * p + e * x
+  #
+  # fit a linear model `z ~ u0 + u1 x` and set `eta = u1` and `phi = -u0 / u1`
+  # we add a small number to avoid the logarithm of zero
+  zv <- (stats[, 3] - min_value + 1.0e-5) / (max_value - min_value + 2.0e-5)
+  zv <- log(zv) - log1p(-zv)
+  tmp <- lm(zv ~ stats[, 1])
+
+  eta <- tmp$coefficients[2]
+  phi <- -tmp$coefficients[1] / eta
+
+  theta <- mle_asy(object, c(min_value, max_value, eta, phi, 0))
 
   best_rss <- rss_fn(theta)
+  niter <- 1
 
   if (linear_coef[2, 4] > 0.2) {
     # we are in big problems as a flat horizontal line is likely the best model
     weighted_mean <- sum(object$w * object$y) / sum(object$w)
-    small <- 1.0e-3
 
-    current_par <- c(
-      weighted_mean,
-      weighted_mean + small,
-      if (linear_coef[2, 1] <= 0) -small else small,
+    theta <- c(
+      0.9 * weighted_mean + 0.1 * min_value,
+      0.9 * weighted_mean + 0.1 * max_value,
+      if (linear_coef[2, 1] <= 0) -1.0e-3 else 1.0e-3,
       object$stats[m, 1] + 100,
       0
     )
 
-    current_rss <- rss_fn(current_par)
-
-    if (!is.nan(current_rss) && (current_rss < best_rss)) {
-      theta <- current_par
-      best_rss <- current_rss
-    }
+    best_rss <- rss_fn(theta)
   }
 
   delta <- mean(diff(stats[, 1]))
 
-  v <- 5
-  eta_set <- if (linear_coef[2, 1] < 0) {
-    seq(-2, -0.01, length.out = v)
-  } else {
-    seq(0.01, 2, length.out = v)
-  }
+  v1 <- 20L
+  v2 <- 20L
+  v3 <- 5L
+  v <- v1 * v2 * v3
+  eta_set <- seq(-5, 5, length.out = v1)
   phi_set <- seq(
-    stats[1, 1] - 0.5 * delta, stats[m, 1] + 0.5 * delta, length.out = v
+    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
   )
-  log_nu_set <- seq(-1, 0.5, length.out = v)
+  log_nu_set <- seq(-1, 0.5, length.out = v3)
 
-  theta_tmp <- matrix(nrow = 5, ncol = v^3)
-  rss_tmp <- rep(10000, v^3)
+  theta_tmp <- matrix(nrow = 5, ncol = v)
+  rss_tmp <- rep(10000, v)
+
+  # we check extreme values in case of problematic data
+  theta_eta_1 <- matrix(nrow = 5, ncol = v2 * v3)
+  rss_eta_1 <- rep(10000, v2 * v3)
+
+  theta_eta_2 <- matrix(nrow = 5, ncol = v2 * v3)
+  rss_eta_2 <- rep(10000, v2 * v3)
+
   i <- 0
+  j <- 0
+  for (phi in phi_set) {
+    for (log_nu in log_nu_set) {
+      j <- j + 1
 
-  for (eta in eta_set) {
-    for (phi in phi_set) {
-      for (log_nu in log_nu_set) {
+      for (eta in eta_set) {
         i <- i + 1
 
         current_par <- mle_asy(object, c(theta[1], theta[2], eta, phi, log_nu))
         current_rss <- rss_fn(current_par)
-
         theta_tmp[, i] <- current_par
         rss_tmp[i] <- current_rss
       }
+
+      current_par <- mle_asy(object, c(theta[1], theta[2], -20, phi, log_nu))
+      current_rss <- rss_fn(current_par)
+      theta_eta_1[, j] <- current_par
+      rss_eta_1[j] <- current_rss
+
+      current_par <- mle_asy(object, c(theta[1], theta[2], 20, phi, log_nu))
+      current_rss <- rss_fn(current_par)
+      theta_eta_2[, j] <- current_par
+      rss_eta_2[j] <- current_rss
     }
   }
 
   ord <- order(rss_tmp)
 
   theta_1 <- theta_tmp[, ord[1]]
-  theta_2 <- theta_tmp[, ord[63]]
-  theta_3 <- theta_tmp[, ord[125]]
+  theta_2 <- theta_tmp[, ord[round(v / 3)]]
+  theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
+  theta_4 <- theta_eta_1[, order(rss_eta_1)[1]]
+  theta_5 <- theta_eta_2[, order(rss_eta_2)[1]]
 
-  names(theta) <- names(theta_1) <- names(theta_2) <- names(theta_3) <- c(
-    "alpha", "beta", "eta", "phi", "psi"
-  )
-
-  formula <- y ~ alpha + (beta - alpha) / (
-    1 + exp(psi - eta * (x - phi))
-  )^exp(-psi)
-  start <- cbind(theta, theta_1, theta_2, theta_3)
-
-  tmp <- fit_nls(object, rss_fn, formula, start)
-
-  if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
-    theta <- tmp$theta
-    best_rss <- tmp$rss
+  if (object$constrained) {
+    theta <- pmax(
+      pmin(theta, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_1 <- pmax(
+      pmin(theta_1, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_2 <- pmax(
+      pmin(theta_2, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_3 <- pmax(
+      pmin(theta_3, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_4 <- pmax(
+      pmin(theta_4, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
+    theta_5 <- pmax(
+      pmin(theta_5, object$upper_bound, na.rm = TRUE),
+      object$lower_bound, na.rm = TRUE
+    )
   }
 
-  tmp <- fit_optim(object, rss_fn, theta)
+  start <- cbind(theta, theta_1, theta_2, theta_3, theta_4, theta_5)
+
+  tmp <- fit_nlminb(object, rss_fn, start)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
     best_rss <- tmp$rss
+    niter <- niter + tmp$niter
   }
 
   names(theta) <- NULL
+  names(niter) <- NULL
 
-  theta
+  list(theta = theta, niter = niter)
 }
 
 # 5-parameter logistic fit
