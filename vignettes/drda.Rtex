@@ -10,7 +10,8 @@
 
 \usepackage[american]{babel}
 
-\usepackage{mathtools}
+\usepackage{amsfonts}
+\usepackage{amsmath}
 \usepackage{amssymb}
 
 \usepackage{booktabs}
