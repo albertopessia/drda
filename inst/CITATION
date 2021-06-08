@@ -1,0 +1,20 @@
+citEntry(
+  entry = "article",
+  title = "{drda: An R package for dose-response data analysis}",
+  author = personList(
+    as.person("Alina Malyutina"),
+    as.person("Jing Tang"),
+    as.person("Alberto Pessia")
+  ),
+  journal = "bioRxiv",
+  pages = "2021.06.07.447323",
+  year = "2021",
+  doi = "10.1101/2021.06.07.447323",
+  url = "https://doi.org/10.1101/2021.06.07.447323",
+  textVersion  = paste(
+    "Malyutina A, Tang J, Pessia A (2021).",
+    "drda: An R package for dose-response data analysis.",
+    "bioRxiv, 2021.06.07.447323.",
+    "doi: 10.1101/2021.06.07.447323"
+  )
+)
