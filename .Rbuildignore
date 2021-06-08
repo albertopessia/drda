@@ -1,2 +1,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.gitattributes$
+^\.gitignore$
+^\.Rprofile$
+^\.Rhistory$
+^\.travis\.yml$
+^cran-comments\.md$
+^LICENSE\.md$
+^README\.md$

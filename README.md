@@ -1,4 +1,5 @@
 # drda
+
 [![Build Status](https://travis-ci.com/albertopessia/drda.svg?branch=master)](https://travis-ci.com/albertopessia/drda) [![Coverage](https://codecov.io/gh/albertopessia/drda/branch/master/graph/badge.svg)](https://codecov.io/gh/albertopessia/drda)
 
 ## Overview
@@ -19,11 +20,10 @@ non-identifiable from data.
 
 ## Installation
 
-The package is currently available only in its development version.
+Install the package from CRAN:
 
 ```{r}
-# install.packages("devtools")
-devtools::install_github("albertopessia/drda")
+install.packages("drda")
 ```
 
 ## Usage
@@ -174,4 +174,5 @@ plot(fit)
 ```
 
 ## License
+
 This package is free and open source software licensed under [MIT](LICENSE).
