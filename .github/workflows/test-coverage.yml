@@ -17,7 +17,7 @@ name: test-coverage
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     env:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
@@ -30,6 +30,12 @@ jobs:
         uses: r-lib/actions/setup-r@master
         with:
           r-version: release
+
+      - name: Set up pandoc
+        uses: r-lib/actions/setup-pandoc@master
+
+      - name: Set up TinyTeX
+        uses: r-lib/actions/setup-tinytex@master
 
       - name: Query dependencies
         run: |
@@ -44,6 +50,13 @@ jobs:
           path: ${{ env.R_LIBS_USER }}
           key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
           restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+
+      - name: Install system dependencies
+        run: |
+          while read -r cmd
+          do
+            eval sudo $cmd
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
 
       - name: Install dependencies
         run: |
