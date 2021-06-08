@@ -510,24 +510,24 @@ anova.drdalist <- function(object, ...) {
     )
   }
 
-  Y <- unlist(sapply(object, function(z) z$model[, 1]))
+  Y <- vapply(object, function(z) z$model[, 1], numeric(n_residuals[1L]))
   y <- Y[, 1]
 
-  if (!all(Y[, 2:n_models] == y)) {
+  if (!all(Y[, -1] == y)) {
     stop("models were not all fitted on the same data", call. = FALSE)
   }
 
-  X <- unlist(sapply(object, function(z) z$model[, 2]))
+  X <- vapply(object, function(z) z$model[, 2], numeric(n_residuals[1L]))
   x <- X[, 1]
 
-  if (!all(X[, 2:n_models] == x)) {
+  if (!all(X[, -1] == x)) {
     stop("models were not all fitted on the same data", call. = FALSE)
   }
 
-  W <- unlist(sapply(object, function(x) x$weights))
+  W <- vapply(object, function(x) x$weights, numeric(n_residuals[1L]))
   w <- W[, 1]
 
-  if (!all(W[, 2:n_models] == w)) {
+  if (!all(W[, -1] == w)) {
     stop("models were not all fitted with the same weights", call. = FALSE)
   }
 

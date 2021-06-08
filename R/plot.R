@@ -189,12 +189,9 @@ plot.drda <- function(x, ...) {
 
     x_axis_ticks <- seq(x1, x2, by = ceiling((x2 - x1) / 6))
 
-    x_axis_labels <- if (base == "10") {
-      sapply(x_axis_ticks, function(i) as.expression(bquote(10^ .(i))))
-    } else if (base == "2") {
-      sapply(x_axis_ticks, function(i) as.expression(bquote(2^ .(i))))
-    } else {
-      FALSE
+    x_axis_labels <- FALSE
+    if (base == "10" || base == "2") {
+      x_axis_labels <- str2expression(paste(base, "^", x_axis_ticks, sep = ""))
     }
 
     # the following is based on https://stackoverflow.com/a/6956596/7073122
@@ -492,12 +489,9 @@ plot.drdalist <- function(x, ...) {
 
     x_axis_ticks <- seq(x1, x2, by = ceiling((x2 - x1) / 6))
 
-    x_axis_labels <- if (base == "10") {
-      sapply(x_axis_ticks, function(i) as.expression(bquote(10^ .(i))))
-    } else if (base == "2") {
-      sapply(x_axis_ticks, function(i) as.expression(bquote(2^ .(i))))
-    } else {
-      FALSE
+    x_axis_labels <- FALSE
+    if (base == "10" || base == "2") {
+      x_axis_labels <- str2expression(paste(base, "^", x_axis_ticks, sep = ""))
     }
 
     # the following is based on https://stackoverflow.com/a/6956596/7073122
