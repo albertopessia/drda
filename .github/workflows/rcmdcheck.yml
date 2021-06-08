@@ -1,0 +1,67 @@
+# GitHub Actions modified from
+# https://github.com/r-lib/actions/tree/master/examples#standard-ci-workflow
+
+name: test-coverage
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - devel
+  pull_request:
+    branches:
+      - main
+      - master
+      - devel
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    env:
+      R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    fail-fast: true
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up r-release
+        uses: r-lib/actions/setup-r@v1
+        with:
+          r-version: release
+
+      - name: Query dependencies
+        run: |
+          install.packages("remotes")
+          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
+          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
+        shell: Rscript {0}
+
+      - name: Restore R package cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
+          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+
+      - name: Install dependencies
+        run: |
+          remotes::install_deps(dependencies = TRUE)
+          remotes::install_cran(c("covr", "rcmdcheck"))
+        shell: Rscript {0}
+
+      - name: Check
+        env:
+          _R_CHECK_CRAN_INCOMING_REMOTE_: false
+        run: |
+          options(crayon.enabled = TRUE)
+          rcmdcheck::rcmdcheck(args = c("--no-manual", "--no-build-vignettes", "--as-cran"), error_on = "warning", check_dir = "check")
+        shell: Rscript {0}
+
+      - name: Test coverage
+        if: ${{ success() }}
+        run: covr::codecov()
+        shell: Rscript {0}
