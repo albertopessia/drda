@@ -47,9 +47,10 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          Rscript -e "remotes::install_github('r-hub/sysreqs')"
-          sysreqs=$(Rscript -e "cat(sysreqs::sysreq_commands('DESCRIPTION'))")
-          sudo -s eval "${sysreqs}"
+          while read -r cmd
+          do
+            eval sudo $cmd
+          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
 
       - name: Install dependencies
         run: |
