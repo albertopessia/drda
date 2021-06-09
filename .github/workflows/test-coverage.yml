@@ -31,12 +31,6 @@ jobs:
         with:
           r-version: release
 
-      - name: Set up pandoc
-        uses: r-lib/actions/setup-pandoc@master
-
-      - name: Set up TinyTeX
-        uses: r-lib/actions/setup-tinytex@master
-
       - name: Query dependencies
         run: |
           install.packages("remotes")
@@ -53,10 +47,9 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          while read -r cmd
-          do
-            eval sudo $cmd
-          done < <(Rscript -e 'writeLines(remotes::system_requirements("ubuntu", "20.04"))')
+          Rscript -e "remotes::install_github('r-hub/sysreqs')"
+          sysreqs=$(Rscript -e "cat(sysreqs::sysreq_commands('DESCRIPTION'))")
+          sudo -s eval "${sysreqs}"
 
       - name: Install dependencies
         run: |
@@ -69,8 +62,15 @@ jobs:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
         run: |
           options(crayon.enabled = TRUE)
-          rcmdcheck::rcmdcheck(args = c("--no-manual", "--ignore-vignettes", "--as-cran"), build_args = "--no-build-vignettes", error_on = "warning", check_dir = "check")
+          rcmdcheck::rcmdcheck(args = c("--no-manual", "--ignore-vignettes"), build_args = "--no-build-vignettes", error_on = "warning", check_dir = "check")
         shell: Rscript {0}
+
+      - name: Upload check results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@master
+        with:
+          name: results
+          path: check
 
       - name: Test coverage
         if: ${{ success() }}
