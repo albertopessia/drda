@@ -42,6 +42,7 @@ model fit.}
 }
 
 \references{
-Malyutina, A., Tang, J., Pessia, A. drda: An R package for
-dose-response data analysis. 2021.
+Malyutina A, Tang J, Pessia A (2021). drda: An R package for
+dose-response data analysis. bioRxiv, 2021.06.07.447323. doi:
+10.1101/2021.06.07.447323
 }

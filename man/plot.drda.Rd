@@ -12,6 +12,9 @@
 \item{...}{other \code{drda} objects or parameters to be passed to the plotting
 functions. See 'Details'.}
 }
+\value{
+No return value.
+}
 \description{
 Plot maximum likelihood curves fitted with \code{drda}.
 }

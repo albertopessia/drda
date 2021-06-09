@@ -175,7 +175,7 @@ fnl5 <- function(x, y) {
   a + (b - a) * (1 + n * exp(-e * (x - p)))^(-1 / n)
 }
 
-par(mfrow = c(2, 2))
+old_par <- par(mfrow = c(2, 2))
 
 curve(
   fnl5(x, c(0.1, 0.9, -1, 0, 1)), from = -10, to = 10, col = colpal[1],
@@ -240,6 +240,8 @@ legend(
   "bottomright", title = expression(eta), legend = c(0.25, 0.5, 1, 2, 5),
   col = colpal[c(2:3, 1, 4:5)], lty = 1, bg = "white"
 )
+
+par(old_par)
 @
 
 When \(\nu = 1\) we obtain the \textit{4-parameter logistic function}.
@@ -385,7 +387,7 @@ rss_val <- matrix(
   apply(expand.grid(eta_set, phi_set), 1, fig_rss), nrow = N, ncol = N
 )
 
-par(mfrow = c(1, 2))
+old_par <- par(mfrow = c(1, 2))
 
 plot(
   fig_x, fig_y, type = "p", xlab = "log(dose)", ylab = "Percent viability",
@@ -411,6 +413,8 @@ contour(
   xlab = expression(eta), ylab = expression(phi),
 )
 title("B)", adj = 0)
+
+par(old_par)
 @
 
 When the Hessian matrix is almost singular it is still possible to apply quasi-Newton methods \citep{luenberger_2008__linear} to (try) avoid convergence problems.

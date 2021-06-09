@@ -4,13 +4,24 @@
 
 This is a resubmission for a new package.
 
-- Added citation to our paper in `inst/CITATION` and `DESCRIPTION`.
-- Added the manuscript as a vignette.
-- Edited the `LICENSE` file to follow the CRAN template.
+### 2021-06-09
+
+- Added `\value` to `drda/man/plot.drda.Rd`
+- Reset `par` to default options in the vignette
+
+### 2021-06-08
+
+- Added citation to our paper in `inst/CITATION` and `DESCRIPTION`
+- Added the manuscript as a vignette
+- Edited the `LICENSE` file to follow CRAN template
+
+### 2021-06-01
+
+- Initiating submission process
 
 ## Test environments
 - local Windows 10 on R 4.1.0
-- Ubuntu 16.04.6 LTS on Travis CI (r-oldrel, r-release, r-devel)
+- Ubuntu 20.04 on GitHub Actions (r-release)
 - win-builder x86_64-w64-mingw32 (R unstable 2021-06-07 r80458)
 - R-hub fedora-clang-devel (r-devel)
 - R-hub ubuntu-gcc-release (r-release)

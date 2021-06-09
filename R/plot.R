@@ -27,6 +27,8 @@
 #'   \item{legend}{custom labels for the legend model names.}
 #' }
 #'
+#' @return No return value.
+#'
 #' @importFrom graphics axis box curve legend lines par polygon points
 #' @importFrom graphics plot.default
 #' @importFrom grDevices col2rgb dev.flush dev.hold extendrange rgb
