@@ -73,7 +73,8 @@ loglik_normal <- function(deviance, n, log_w = 0) {
 #
 # @return Approximate variance-covariance matrix.
 approx_vcov <- function(fim) {
-  vcov <- tryCatch({
+  vcov <- tryCatch(
+    {
       chol2inv(chol(fim))
     },
     error = function(e) {
@@ -82,8 +83,13 @@ approx_vcov <- function(fim) {
   )
 
   if (is.null(vcov)) {
-    vcov <- tryCatch({
-        chol2inv(chol(fim))
+    vcov <- tryCatch(
+      {
+        # sometimes `solve` succeeds where the previous one instead fails.
+        # However, if the Cholesky decomposition failed, it is most likely a
+        # sign that the solution is not admissible.
+        # We will check later if all variances are non-negative.
+        solve(fim)
       },
       error = function(e) {
         NULL
@@ -91,8 +97,35 @@ approx_vcov <- function(fim) {
     )
   }
 
+  # total number of parameters (last one is always the standard deviation)
+  p <- nrow(fim)
+
   if (is.null(vcov)) {
-    vcov <- matrix(NA, nrow = nrow(fim), ncol = nrow(fim))
+    vcov <- matrix(NA, nrow = p, ncol = p)
+  } else {
+    d <- diag(vcov)
+
+    # variances cannot be negative, but small values within tolerable numerical
+    # error can be considered zero
+    eps <- sqrt(.Machine$double.eps)
+    d[d > -eps & d < 0] <- 0
+
+    idx <- which(d < 0)
+
+    diag(vcov) <- d
+
+    if (length(idx) > 0) {
+      # is the negative variance only the one associated with sigma?
+      # In this case, we can be a bit more flexible in accepting the solution
+      # because the variance-covariance matrix of the core parameters is ok
+      if (length(idx) == 1 && idx[1] == p) {
+        vcov[p, ] <- NA_real_
+        vcov[, p] <- NA_real_
+      } else {
+        # some variances are negative, we cannot trust this approximation
+        vcov <- matrix(NA_real_, nrow = p, ncol = p)
+      }
+    }
   }
 
   lab <- rownames(fim)
