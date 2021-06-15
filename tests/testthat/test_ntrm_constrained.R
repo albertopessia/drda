@@ -27,32 +27,32 @@ test_that("ntrm_constrained: Rosenbrock function", {
   # feasible region contains the global minimum
 
   # initial point is within the feasible region
-  result <- ntrm_constrained(fn, gh, c(2.5, -0.8), max_iter, c(0, -1), c(3,  5))
+  result <- ntrm_constrained(fn, gh, c(2.5, -0.8), max_iter, c(0, -1), c(3, 5))
   expect_equal(result$optimum, c(1, 1))
 
   result <- ntrm_constrained(
-    fn, gh, c(2.5, -0.8), max_iter, c(-Inf, -3), c(3,  Inf)
+    fn, gh, c(2.5, -0.8), max_iter, c(-Inf, -3), c(3, Inf)
   )
   expect_equal(result$optimum, c(1, 1))
 
   # initial point is outside the feasible region
-  result <- ntrm_constrained(fn, gh, c(-5, 10), max_iter, c(0, -1), c(3,  5))
+  result <- ntrm_constrained(fn, gh, c(-5, 10), max_iter, c(0, -1), c(3, 5))
   expect_equal(result$optimum, c(1, 1))
 
   result <- ntrm_constrained(
-    fn, gh, c(10, -10), max_iter, c(-Inf, -3), c(3,  Inf)
+    fn, gh, c(10, -10), max_iter, c(-Inf, -3), c(3, Inf)
   )
   expect_equal(result$optimum, c(1, 1))
 
   # try different random starting points
   for (i in 1:5) {
     result <- ntrm_constrained(
-      fn, gh, rnorm(2, sd = 3), max_iter, c(0, -1), c(3,  5)
+      fn, gh, rnorm(2, sd = 3), max_iter, c(0, -1), c(3, 5)
     )
     expect_equal(result$optimum, c(1, 1))
 
     result <- ntrm_constrained(
-      fn, gh, rnorm(2, sd = 3), max_iter, c(-Inf, -3), c(3,  Inf)
+      fn, gh, rnorm(2, sd = 3), max_iter, c(-Inf, -3), c(3, Inf)
     )
     expect_equal(result$optimum, c(1, 1))
   }
@@ -66,7 +66,7 @@ test_that("ntrm_constrained: Rosenbrock function", {
   expect_equal(result$optimum, c(0.5, 0.25))
 
   result <- ntrm_constrained(
-    fn, gh, c(-10, 10), max_iter, c(-Inf, 2), c(0,  Inf)
+    fn, gh, c(-10, 10), max_iter, c(-Inf, 2), c(0, Inf)
   )
   expect_equal(result$optimum, c(-1.4111899, 2))
 
@@ -77,7 +77,7 @@ test_that("ntrm_constrained: Rosenbrock function", {
   expect_equal(result$optimum, c(0.5, 0.25))
 
   result <- ntrm_constrained(
-    fn, gh, c(10, -10), max_iter, c(-Inf, 2), c(0,  Inf)
+    fn, gh, c(10, -10), max_iter, c(-Inf, 2), c(0, Inf)
   )
   expect_equal(result$optimum, c(-1.4111899, 2))
 
@@ -89,7 +89,7 @@ test_that("ntrm_constrained: Rosenbrock function", {
     expect_equal(result$optimum, c(0.5, 0.25))
 
     result <- ntrm_constrained(
-      fn, gh, rnorm(2, sd = 3), max_iter, c(-Inf, 2), c(0,  Inf)
+      fn, gh, rnorm(2, sd = 3), max_iter, c(-Inf, 2), c(0, Inf)
     )
     expect_equal(result$optimum, c(-1.4111899, 2))
   }

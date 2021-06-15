@@ -14,7 +14,7 @@
 # New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_calc_p <- function(Q, X, L, lambda) {
   # Equation (4.38) at page 84 from Nocedal and Wright (2006)
-  - colSums((t(X) * Q) / (L + lambda))
+  -colSums((t(X) * Q) / (L + lambda))
 }
 
 # Safeguard parameter computation

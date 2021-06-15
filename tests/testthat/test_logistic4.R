@@ -1091,7 +1091,7 @@ test_that("fit_constrained (weighted): equalities", {
 
   # initial values with different equalities
   object <- logistic4_new(
-    x, y, w, c(1, 3, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf,Inf)
+    x, y, w, c(1, 3, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)

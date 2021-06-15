@@ -226,7 +226,7 @@ test_that("Gradient and Hessian", {
       4.9026998302172214e-08, 0.0, 0.0,
       # phi
       0.000034546429617326587, 0.0034477803395290860, 0.28260608849525154,
-      6.5369331069562953e-08, 0.0,0.0
+      6.5369331069562953e-08, 0.0, 0.0
     ),
     nrow = 6,
     ncol = 4
@@ -1091,7 +1091,7 @@ test_that("fit_constrained (weighted): equalities", {
 
   # initial values with different equalities
   object <- gompertz_new(
-    x, y, w, c(1, 3, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf,Inf)
+    x, y, w, c(1, 3, -1, 0), 10000, c(0, 1, -Inf, -Inf), c(0, 1, Inf, Inf)
   )
 
   result <- fit_constrained(object)

@@ -564,7 +564,7 @@ ntrm_step_normal <- function(Y, B, slack_residual, delta, tau, idx_s) {
   # See Section 4.1 (pages 73-76), Section 18.5 (pages 547-548), and
   # Section 19.5 (page 580) of Nocedal and Wright (2006)
   rho <- 0.8 * delta
-  omega <- - tau / 2
+  omega <- -tau / 2
 
   # f(v) = 0.5 v' B' B v + v' B' w + 0.5 w' w
   #
@@ -654,7 +654,7 @@ ntrm_step_shrink <- function(p, a, d, tau, idx_s) {
   } else {
     small_d <- d[idx_s][i]
 
-    a_shrink <- - (tau + p[idx_s][i]) / small_d
+    a_shrink <- -(tau + p[idx_s][i]) / small_d
 
     if (abs(a_shrink) > abs(a)) {
       # the direction is not shrunk but enlarged

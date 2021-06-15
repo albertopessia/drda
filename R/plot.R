@@ -541,7 +541,7 @@ plot.drdalist <- function(x, ...) {
     mean_fn <- x[[i]]$mean_function
     phi <- if (mean_fn == "logistic4") {
       x[[i]]$coefficients[4]
-    } else  if (mean_fn == "logistic2") {
+    } else if (mean_fn == "logistic2") {
       x[[i]]$coefficients[2]
     } else {
       NA_real_

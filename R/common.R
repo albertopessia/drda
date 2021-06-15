@@ -61,7 +61,7 @@ variance_normal <- function(rss, df) {
 #
 # @return Value of the log-likelihood function at the MLE.
 loglik_normal <- function(deviance, n, log_w = 0) {
-  - (n * (1 + log(2 * pi * deviance / n)) - log_w) / 2
+  -(n * (1 + log(2 * pi * deviance / n)) - log_w) / 2
 }
 
 # Approximate variance-covariance matrix

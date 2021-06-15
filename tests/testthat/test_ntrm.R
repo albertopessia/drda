@@ -101,10 +101,10 @@ test_that("ntrm_solve_tr_subproblem: various situations", {
 
   H <- U %*% diag(L) %*% t(U)
   H <- (t(H) + H) / 2
-  G <- U[ ,2]
+  G <- U[, 2]
 
   expect_true(isSymmetric(H))
-  expect_lt(abs(sum(G * U[ ,1])), 1.0e-12)
+  expect_lt(abs(sum(G * U[, 1])), 1.0e-12)
 
   true_p <- -solve(H, G)
   true_p_sn <- sum(true_p^2)
