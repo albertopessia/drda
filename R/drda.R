@@ -173,7 +173,7 @@
 drda <- function(
   formula, data, subset, weights, na.action, mean_function = "logistic4",
   is_log = TRUE, lower_bound = NULL, upper_bound = NULL, start = NULL,
-  max_iter = 10000
+  max_iter = 500
 ) {
   # first, we expand the call to this function
   model_frame <- match.call(expand.dots = FALSE)

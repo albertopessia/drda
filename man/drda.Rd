@@ -15,7 +15,7 @@ drda(
   lower_bound = NULL,
   upper_bound = NULL,
   start = NULL,
-  max_iter = 10000
+  max_iter = 500
 )
 }
 \arguments{
