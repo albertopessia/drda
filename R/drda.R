@@ -454,7 +454,7 @@ anova.drda <- function(object, ...) {
 
   loglik <- loglik_normal(deviance_value, n, log_w)
 
-  df <- n - deviance_df
+  df <- n - deviance_df + 1
 
   aic <- 2 * (df - loglik)
   bic <- log_n * df - 2 * loglik
@@ -558,9 +558,9 @@ anova.drdalist <- function(object, ...) {
   k <- max(n_params)
 
   df <- if (k >= 5) {
-    c(1, n_params)
+    c(1, n_params) + 1
   } else {
-    c(1, n_params, 5)
+    c(1, n_params, 5) + 1
   }
 
   deviance_df <- if (k >= 5) {
@@ -645,22 +645,30 @@ deviance.drda <- function(object, ...) {
 #'
 #' @export
 logLik.drda <- function(object, ...) {
-  object$loglik
+  structure(
+    object$loglik,
+    nobs = object$n,
+    df = sum(object$estimated) + 1,
+    class = "logLik"
+  )
 }
 
 #' @importFrom stats predict
 #'
 #' @export
-predict.drda <- function(object, x, ...) {
-  if (missing(x) || is.null(x)) {
+predict.drda <- function(object, newdata) {
+  if (missing(newdata) || is.null(newdata)) {
     return(object$fitted.values)
   }
 
-  if (!is.numeric(x) || !is.null(dim(x))) {
-    stop("variable `x` is not a numeric vector")
+  if (!is.numeric(newdata) || !is.null(dim(newdata))) {
+    stop("variable `newdata` is not a numeric vector")
   }
 
-  fn(object, x, object$coefficients)
+  res <- fn(object, newdata, object$coefficients)
+  names(res) <- names(newdata)
+
+  res
 }
 
 #' @export
@@ -823,14 +831,20 @@ summary.drda <- function(object, ...) {
     }
   }
 
-  k <- sum(object$estimated)
-
-  object$aic <- 2 * (k - object$loglik)
-  object$bic <- log(object$n) * k - 2 * object$loglik
+  object$aic <- AIC(object)
+  object$bic <- BIC(object)
 
   class(object) <- "summary.drda"
 
   object
+}
+
+#' @importFrom stats vcov
+#'
+#' @export
+vcov.drda <- function(object) {
+  p <- nrow(object$vcov)
+  object$vcov[-p, -p]
 }
 
 #' @importFrom stats naresid weights
