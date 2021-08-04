@@ -792,7 +792,11 @@ sigma.drda <- function(object, ...) {
 #' @importFrom stats qnorm
 #'
 #' @export
-summary.drda <- function(object, ...) {
+summary.drda <- function(object, level = 0.95, ...) {
+  if (level <= 0 || level >= 1) {
+    stop("Confidence level must be in the interval (0, 1)")
+  }
+
   std_err <- sqrt(diag(object$vcov))
 
   object$pearson_resid <- residuals(object, type = "pearson")
@@ -809,16 +813,24 @@ summary.drda <- function(object, ...) {
     )
   }
 
+  q <- qnorm((1 - level) / 2)
+  l <- round(level * 100)
+
   object$param <- matrix(
     c(
       object$param,
-      object$param + qnorm(0.025) * std_err,
-      object$param + qnorm(0.975) * std_err
+      std_err,
+      object$param + q * std_err,
+      object$param - q * std_err
     ),
-    ncol = 3,
+    ncol = 4,
     dimnames = list(
       names(object$param),
-      c("Estimate", "Lower .95", "Upper .95")
+      c(
+        "Estimate",
+        "Std. Error",
+        paste(c("Lower .", "Upper ."), c(l, l), sep = "")
+      )
     )
   )
 
