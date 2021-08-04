@@ -367,7 +367,7 @@ drda <- function(
   result$na.action <- attr(model_frame, "na.action")
   result$is_log <- is_log
 
-  class(result) <- c("drda", class(result))
+  class(result) <- c(class(result), "drda")
 
   result
 }
