@@ -376,7 +376,7 @@ drda <- function(
 #'
 #' @export
 anova.drda <- function(object, ...) {
-  ## check for multiple objects
+  # check for multiple objects
   dotargs <- list(...)
 
   named <- if (is.null(names(dotargs))) {
@@ -458,18 +458,20 @@ anova.drda <- function(object, ...) {
 
   aic <- 2 * (df - loglik)
   bic <- log_n * df - 2 * loglik
-  lrt <- -2 * (loglik - loglik[l])
-  lrt[l] <- NA_real_
+  lrt <- 2 * diff(loglik)
+  dvn <- c(NA_real_, diff(deviance_value))
 
-  table <- data.frame(deviance_df, deviance_value, df, aic, bic, lrt)
-  table$pvalue <- pchisq(lrt, -diff(deviance_df), lower.tail = FALSE)
+  table <- data.frame(
+    deviance_df, deviance_value, df - 1, aic, bic, dvn, c(NA_real_, lrt)
+  )
+  table$pvalue <- c(NA_real_, pchisq(lrt, diff(df), lower.tail = FALSE))
 
   rownames(table)[1:2] <- c("Constant model", "Estimated model")
   if (k < 5) {
     rownames(table)[3] <- "Full model (logistic5)"
   }
   colnames(table) <- c(
-    "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "LRT", "p-value"
+    "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
   )
 
   model <- switch(object$mean_function,
@@ -594,14 +596,20 @@ anova.drdalist <- function(object, ...) {
 
   aic <- 2 * (df - loglik)
   bic <- log_n * df - 2 * loglik
-  lrt <- -2 * (loglik - loglik[l])
-  lrt[l] <- NA_real_
 
-  table <- data.frame(deviance_df, deviance_value, df, aic, bic, lrt)
-  table$pvalue <- pchisq(lrt, -diff(deviance_df), lower.tail = FALSE)
+  df <- diff(df)
+  lrt <- 2 * diff(loglik)
+  dvn <- c(NA_real_, diff(deviance_value))
+
+  table <- data.frame(
+    deviance_df, deviance_value, c(NA_real_, df), aic, bic, dvn,
+    c(NA_real_, lrt)
+  )
+  table$pvalue <- c(NA_real_, pchisq(lrt, df, lower.tail = FALSE))
+  table$pvalue[df == 0] <- NA_real_
 
   colnames(table) <- c(
-    "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "LRT", "p-value"
+    "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
   )
   rownames(table) <- paste("Model", seq_len(l))
 
@@ -653,16 +661,48 @@ logLik.drda <- function(object, ...) {
   )
 }
 
+#' @export
+naac.drda <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  1 - nauc(object, xlim, ylim)
+}
+
 #' @importFrom stats predict
 #'
 #' @export
-predict.drda <- function(object, newdata) {
+predict.drda <- function(object, newdata, ...) {
   if (missing(newdata) || is.null(newdata)) {
-    return(object$fitted.values)
+    # did the user provide arguments?
+    dotargs <- list(...)
+
+    if (length(dotargs) == 0) {
+      return(object$fitted.values)
+    } else {
+      # we only consider the first argument
+      newdata <- dotargs[[1]]
+    }
   }
 
-  if (!is.numeric(newdata) || !is.null(dim(newdata))) {
-    stop("variable `newdata` is not a numeric vector")
+  if (is.data.frame(newdata) || is.matrix(newdata)) {
+    if (ncol(newdata) == 1) {
+      newdata <- newdata[, 1]
+    } else {
+      # in case of multiple columns, pick the one corresponding to our predictor
+      idx <- match(colnames(object$model)[2], colnames(newdata))
+
+      if (!is.na(idx)) {
+        newdata <- newdata[, idx]
+      } else {
+        stop(
+          "cannot find the predictor variable in 'newdata'",
+          call. = FALSE
+        )
+      }
+    }
+  } else if (!is.numeric(newdata) || !is.null(dim(newdata))) {
+    stop(
+      "variable `newdata` is not a data.frame nor a numeric vector",
+      call. = FALSE
+    )
   }
 
   res <- fn(object, newdata, object$coefficients)
@@ -789,7 +829,7 @@ sigma.drda <- function(object, ...) {
   object$sigma
 }
 
-#' @importFrom stats qnorm
+#' @importFrom stats AIC BIC qnorm
 #'
 #' @export
 summary.drda <- function(object, level = 0.95, ...) {
@@ -854,7 +894,7 @@ summary.drda <- function(object, level = 0.95, ...) {
 #' @importFrom stats vcov
 #'
 #' @export
-vcov.drda <- function(object) {
+vcov.drda <- function(object, ...) {
   p <- nrow(object$vcov)
   object$vcov[-p, -p]
 }
