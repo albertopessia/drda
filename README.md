@@ -1,6 +1,6 @@
 # drda
 
-[![Build Status](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml/badge.svg?branch=main)](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml) [![Coverage](https://codecov.io/gh/albertopessia/drda/branch/master/graph/badge.svg)](https://codecov.io/gh/albertopessia/drda)
+[![Build Status](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml/badge.svg?branch=master)](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml) [![Coverage](https://codecov.io/gh/albertopessia/drda/branch/master/graph/badge.svg)](https://codecov.io/gh/albertopessia/drda)
 
 ## Overview
 
@@ -20,10 +20,17 @@ non-identifiable from data.
 
 ## Installation
 
-Install the package from CRAN:
+You can install the latest stable release of the `drda` R package from CRAN with
 
 ```{r}
 install.packages("drda")
+```
+
+To instead install the latest development version of the package from GitHub use
+
+````{r}
+# install.packages("remotes")
+remotes::install_github("albertopessia/drda")
 ```
 
 ## Usage
