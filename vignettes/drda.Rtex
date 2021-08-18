@@ -41,11 +41,11 @@
 
 \Abstract{
 Analysis of dose-response data is an important step in many scientific disciplines, including but not limited to pharmacology, toxicology, and epidemiology.
-The R package drda is designed to facilitate the analysis of dose-response data by implementing efficient and accurate functions with a familiar interface.
-With drda, it is possible to fit models by the method of least squares, perform goodness of fit tests, and conduct model selection.
-Compared to other similar packages, drda provides, in general, more accurate estimates in the least-squares sense.
+The \proglang{R} package \pkg{drda} is designed to facilitate the analysis of dose-response data by implementing efficient and accurate functions with a familiar interface.
+With \pkg{drda} it is possible to fit models by the method of least squares, perform goodness of fit tests, and conduct model selection.
+Compared to other similar packages, \pkg{drda} provides in general more accurate estimates in the least-squares sense.
 This result is achieved by a smart choice of the starting point in the optimization algorithm and by implementing the Newton method with a trust region with analytical gradients and Hessian matrices.
-In this article, drda is presented through the description of its methodological components and examples of its user-friendly functions.
+In this article, \pkg{drda} is presented through the description of its methodological components and examples of its user-friendly functions.
 Performance is finally evaluated using a real, large-scale drug sensitivity screening dataset.
 }
 
@@ -60,7 +60,7 @@ Performance is finally evaluated using a real, large-scale drug sensitivity scre
   University of Helsinki\\
   Haartmaninkatu 8\\
   00290 Helsinki, Finland\\
-  E-mail: \\
+  E-mail:\\
   \email{alina.malyutina@helsinki.fi}\\
   \email{jing.tang@helsinki.fi}\\
   \email{academic@albertopessia.com}\\
@@ -70,7 +70,7 @@ Performance is finally evaluated using a real, large-scale drug sensitivity scre
 
 \begin{document}
 <<echo = FALSE, include = FALSE>>=
-options(prompt = "R> ", continue = "+ ", width = 70, useFancyQuotes = FALSE)
+options(prompt = "R> ", continue = "+ ", width = 77, useFancyQuotes = FALSE)
 
 knitr::render_sweave()
 knitr::opts_chunk$set(
@@ -88,7 +88,10 @@ set.seed(4336273)
 
 \section{Introduction}\label{sec:intro}
 Inferring dose-response relationships is indispensable in many scientific disciplines.
-In cancer research, for example, estimating the magnitude of a chemical compound effect on cancer cells holds substantial promise for clinical applications. The dose-response relationship is often modeled via a nonlinear parametric function expressed as a dose-response curve. The fitting of a curve to dose-response measurements is often achieved by choosing the parameter values that minimize the difference between the curve and the observations. Since conclusions about efficacy are based on the estimated dose-response curve, it is therefore of great importance to determine the curve parameters as accurately as possible.
+In cancer research, for example, estimating the magnitude of a chemical compound effect on cancer cells holds substantial promise for clinical applications.
+The dose-response relationship is often modeled via a nonlinear parametric function expressed as a dose-response curve.
+The fitting of such a curve is often achieved by choosing the parameter values that minimize the difference between the curve and the observations.
+Since conclusions about efficacy are based on the estimated dose-response curve, it is therefore of great importance to determine the curve parameters as accurately as possible.
 
 Currently, there are multiple \proglang{R} packages that provide tools for the dose-response fitting, such as \pkg{drc} \citep{ritz_2015_po_doseresponse}, \pkg{nplr} \citep{commo_2016__nplr}, and \pkg{DoseFinding} \citep{bornkamp_2019__dosefinding}.
 The \pkg{drc} package contains various functions for nonlinear regression analysis of biological assays.
@@ -119,9 +122,15 @@ For sigmoid and logistic models, which have two linear and two nonlinear functio
 At its core, \pkg{DoseFinding} applies the \proglang{R} \fct{nlminb} function, using a quasi-Newton algorithm similar to the BFGS method utilized by \pkg{drc}.
 
 While all packages have been extremely helpful with a wide range of real applications, we found that they often present inconsistent results when applied to the same data with the same logistic model.
-We introduce here the \proglang{R} package \pkg{drda}, which provides a novel and more accurate dose-response data analysis using logistic curves via: (i) applying a more advanced Newton method with a trust region; (ii) relying on analytical gradient and Hessian formulas instead of numerical approximations; (iii) establishing a smart initialization procedure to increase the chances of converging to the global solution; (iv) providing tools to compare the fitted curve against a linear model or other logistic models; (v) computing confidence intervals for the estimated parameters and for the whole dose-response curve; (vi) implementing plot functionality to compare multiple models in a user-friendly way.
+We introduce here the \proglang{R} package \pkg{drda}, which provides a novel and more accurate dose-response data analysis using logistic curves via:
+(i) applying a more advanced Newton method with a trust region;
+(ii) relying on analytical gradient and Hessian formulas instead of numerical approximations;
+(iii) establishing a smart initialization procedure to increase the chances of converging to the global solution;
+(iv) providing tools to compare the fitted curve against a linear model or other logistic models;
+(v) computing confidence intervals for the estimated parameters and for the whole dose-response curve;
+(vi) implementing plot functionality to compare multiple models in a user-friendly way.
 
-The most important feature of any optimization routine remains the closeness of its solution to the true least square estimates.
+The most important feature of any optimization routine remains the closeness of its solution to the true least-square estimates.
 In case of biological assays, it depends on the ability of the fitted curve to describe the dose-response data correctly.
 One of the main disadvantages when it comes to numerical optimization is the possibility of converging to a local optimum instead of the correct answer we seek.
 This situation can easily happen when either the function is not well approximated by a quadratic shape in a neighborhood of the current candidate solution, or when the starting point is far from the global optimum (either the algorithm is not able to converge in a reasonable number of steps or it simply converges to a wrong solution).
@@ -130,9 +139,9 @@ The method is more stable than other Newton-based methods, especially for cases 
 Additionally, \pkg{drda} uses a two-step initialization algorithm in order to ensure the right direction in the optimization routine.
 With our strategy, \pkg{drda} is able to find the true least squares estimate in problematic cases where the \pkg{drc}, \pkg{nplr}, and \pkg{DoseFinding} packages instead fail.
 
-Once the least squares estimate is found, \pkg{drda} provides the user with routines for assessing goodness of fit and reliability of the estimates.
+Once the least-squares estimate is found, \pkg{drda} provides the user with routines for assessing goodness of fit and reliability of the estimates.
 Assuming a Gaussian distribution with equal variance for the observed data, it is possible to compare the fitted model against, for example, a flat horizontal line or a logistic model with a different number of parameters.
-The \pkg{drda} package provides the likelihood ratio test (LRT), the Akaike information criterion (AIC) \citep{akaike_1974_itac_new}, and the Bayesian information criterion (BIC) \citep{schwarz_1978_as_estimating} as a way to compare the goodness of fit of competing models.
+The \pkg{drda} package provides the likelihood ratio test (LRT), the Akaike information criterion (AIC) \citep{akaike_1974_itac_new}, and the Bayesian information criterion (BIC) \citep{schwarz_1978_as_estimating} as a way to compare the goodness-of-fit of competing models.
 
 The paper is organized as follows: We first describe the methodological components of \pkg{drda} in Section \ref{sec:methods}; show how the package is implemented in Section \ref{sec:usage}; include practical examples in Section \ref{subsec:examples}; and provide a comparison of \pkg{drda} against packages \pkg{DoseFinding}, \pkg{drc}, and \pkg{nplr} using a high-throughput dose-response dataset in Section \ref{sec:benchmark}.
 We conclude the article with a summary and discussion in Section \ref{sec:summary}.
@@ -149,7 +158,7 @@ solution to the differential equation
 \begin{equation*}
   \frac{\partial}{\partial x} f(x; \boldsymbol{\psi}) = \frac{\eta}{\nu}\left(1 - \left(\frac{f(x; \boldsymbol{\psi}) - \alpha}{\beta - \alpha}\right)^{\nu}\right)\left(f(x; \boldsymbol{\psi}) - \alpha\right)
 \end{equation*}
-where \(\boldsymbol{\psi} = (\alpha, \beta, \eta, \phi, \nu)^{T}\).
+where \(\boldsymbol{\psi} = (\alpha, \beta, \eta, \phi, \nu)^{\top}\).
 
 Throughout this article, and in our package, we will use the convention \(\beta > \alpha\) to avoid identifiability issues.
 For example, when \(\beta < \alpha\), it is always possible to modify the remaining three parameters to obtain an equivalent function.
@@ -244,12 +253,12 @@ legend(
 par(old_par)
 @
 
-When \(\nu = 1\) we obtain the \textit{4-parameter logistic function}.
-If we also set \(\alpha = 0\) and \(\beta = 1\) we obtain the \textit{2-parameter logistic function}.
+When \(\nu = 1\) we obtain the 4-parameter logistic function.
+If we also set \(\alpha = 0\) and \(\beta = 1\) we obtain the 2-parameter logistic function.
 When \(\nu = 1\) the parameter \(\phi\) represents the value at which the function is equal to its midpoint, that is \((\alpha + \beta) / 2\).
-In such a case, as a measure of drug potency, \(\phi\) is also known as the \textit{half maximal effective log-concentration} or log-EC\({}_{50}\).
-As a a measure of antagonist drug potency, \(\phi\) is also known as the \textit{half maximal inhibitory log-concentration} (log-IC\({}_{50}\)).
-When \(\nu \rightarrow 0\) we obtain the \textit{Gompertz function}, i.e.
+In such a case, as a measure of drug potency, \(\phi\) is also known as the half maximal effective log-concentration or log-EC\({}_{50}\).
+As a a measure of antagonist drug potency, \(\phi\) is also known as the half maximal inhibitory log-concentration (log-IC\({}_{50}\)).
+When \(\nu \rightarrow 0\) we obtain the Gompertz function, i.e.,
 \begin{equation*}
   \lim_{\nu \rightarrow 0} f(x; \boldsymbol{\psi}) = \alpha + (\beta - \alpha) \exp\left\{- \exp\{-\eta (x - \phi)\}\right\}
 \end{equation*}
@@ -263,7 +272,7 @@ If the \(E_{max}\) model is defined as
 then the equivalent 4-parameter logistic function (\(\nu = 1\)) is obtained by the transformations \(D = e^{x}\), \(E_{0} = \alpha\), \(E_{max} = \beta - \alpha\), \(N = \eta\), \(ED_{50} = e^{\phi}\).
 
 \subsection{Normal nonlinear regression}\label{subsec:nlreg}
-For a particular dose \(d_{k}\) \((k = 1, \ldots, m)\) let \((y_{ki}, w_{ki})^{T}\) represent respectively the \(i\)-th observed outcome and its associated positive weight.
+For a particular dose \(d_{k}\) \((k = 1, \ldots, m)\) let \((y_{ki}, w_{ki})^{\top}\) represent respectively the \(i\)-th observed outcome and its associated positive weight.
 If observations have all the same importance, we simply set \(w_{ki} = 1\) for all \(k\) and \(i\).
 We assume that each unit has expected value and variance
 \begin{equation*}
@@ -274,7 +283,7 @@ We assume that each unit has expected value and variance
 \end{equation*}
 where \(\mu(d_{k}; \boldsymbol{\psi})\) is a nonlinear function of the dose \(d_{k}\) and a vector of unknown parameters \(\boldsymbol{\psi}\).
 Parameter \(\sigma > 0\) is instead the standard deviation common to all observations.
-In our package, \(\mu(d_{k}; \boldsymbol{\psi})\) is simply the generalized logistic function (\ref{eq:logistic5}) with the transformation \(x = \log(d_{k})\).
+In our package, \(\mu(d_{k}; \boldsymbol{\psi})\) is simply the generalized logistic function (Equation~\ref{eq:logistic5}) with the transformation \(x = \log(d_{k})\).
 
 By assuming the observations to be stochastically independent and Normally distributed, the joint log-likelihood function is
 \begin{multline*}
@@ -282,7 +291,7 @@ By assuming the observations to be stochastically independent and Normally distr
   + \frac{1}{\sigma^{2}} \sum_{k = 1}^{m} w_{k.} (\bar{y}_{k} - \mu(d_{k}; \boldsymbol{\psi}))^{2}\biggr)
 \end{multline*}
 where \(n_{k}\) is the sample size at dose \(k\), \(n = \sum_{k} n_{k}\) is the total sample size, \(\bar{y}_{k} = (\sum_{i} w_{ki} y_{ki}) / w_{k.}\) is the weighted average corresponding to dose \(d_{k}\) and \(w_{k.} = \sum_{i} w_{ki}\).
-Maximum likelihood estimate \(\hat{\boldsymbol{\psi}}\) is obtained by minimizing the residual sum of squares from the means, i.e.
+Maximum likelihood estimate \(\hat{\boldsymbol{\psi}}\) is obtained by minimizing the residual sum of squares from the means, i.e.,
 \begin{equation}\label{eq:mle}
   \hat{\boldsymbol{\psi}} = \argmin_{\psi \in \Psi} \frac{1}{2} \sum_{k = 1}^{m} w_{k.} (\bar{y}_{k} - \mu(d_{k}; \boldsymbol{\psi}))^{2} = \argmin_{\psi \in \Psi} g(\boldsymbol{\psi})
 \end{equation}
@@ -312,11 +321,11 @@ The gradient and Hessian of \(g(\boldsymbol{\psi})\) are therefore
   \nabla_{\boldsymbol{\psi}} g = \sum_{k = 1}^{m} w_{k.} (\mu_{k} - \bar{y}_{k}) \nabla_{\boldsymbol{\psi}} \mu_{k}
 \end{equation*}
 \begin{equation*}
-  \mathbf{H}_{\boldsymbol{\psi}} g = \sum_{k = 1}^{m} w_{k.} \left((\mu_{k} - \bar{y}_{k}) \mathbf{H}_{\boldsymbol{\psi}} \mu_{k} + \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right) \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right)^{T}\right)
+  \mathbf{H}_{\boldsymbol{\psi}} g = \sum_{k = 1}^{m} w_{k.} \left((\mu_{k} - \bar{y}_{k}) \mathbf{H}_{\boldsymbol{\psi}} \mu_{k} + \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right) \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right)^{\top}\right)
 \end{equation*}
 From the previous expressions we can easily retrieve the observed Fisher information matrix, which is the negative Hessian matrix of the log-likelihood evaluated at the maximum likelihood estimate, as
 \begin{equation}\label{eq:obsFisher}
-  \mathbf{I}(\boldsymbol{\psi}, \sigma) = \frac{1}{\sigma^{2}} \begin{pmatrix}\mathbf{H}_{\boldsymbol{\psi}} g & -2 \nabla_{\boldsymbol{\psi}} g / \sigma \\ -2 \left(\nabla_{\boldsymbol{\psi}} g\right)^{T} / \sigma & q\end{pmatrix}
+  \mathbf{I}(\boldsymbol{\psi}, \sigma) = \frac{1}{\sigma^{2}} \begin{pmatrix}\mathbf{H}_{\boldsymbol{\psi}} g & -2 \nabla_{\boldsymbol{\psi}} g / \sigma \\ -2 \left(\nabla_{\boldsymbol{\psi}} g\right)^{\top} / \sigma & q\end{pmatrix}
 \end{equation}
 where
 \begin{equation*}
@@ -324,11 +333,11 @@ where
 \end{equation*}
 It is also worth noting that the (expected) Fisher information matrix is
 \begin{equation}\label{eq:expFisher}
-  \mathcal{I}(\boldsymbol{\psi}, \sigma) = \frac{1}{\sigma^{2}} \begin{pmatrix} \sum_{k} w_{k.} \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right) \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right)^{T} & \mathbf{0} \\ \mathbf{0} & 3 \sum_{k} \sum_{i} w_{ki} - n\end{pmatrix}
+  \mathcal{I}(\boldsymbol{\psi}, \sigma) = \frac{1}{\sigma^{2}} \begin{pmatrix} \sum_{k} w_{k.} \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right) \left(\nabla_{\boldsymbol{\psi}} \mu_{k}\right)^{\top} & \mathbf{0} \\ \mathbf{0} & 3 \sum_{k} \sum_{i} w_{ki} - n\end{pmatrix}
 \end{equation}
 
 \subsection{Optimization by Newton method with a trust region}\label{subsec:ntrm}
-Closed-form formula of the maximum likelihood estimate \(\hat{\boldsymbol{\psi}}\), that is the solution of equation (\ref{eq:mle}), is in general not available for nonlinear regression models.
+Closed-form formula of the maximum likelihood estimate \(\hat{\boldsymbol{\psi}}\), that is the solution of equation (Equation~\ref{eq:mle}), is in general not available for nonlinear regression models.
 We can, however, try to minimize numerically the sum of squares \(g(\boldsymbol{\psi})\).
 
 Suppose that our algorithm is at iteration \(t\) with current solution \(\boldsymbol{\psi}_{t}\).
@@ -336,7 +345,7 @@ We want to find a new step \(u\) such that \(g(\boldsymbol{\psi}_{t} + u) < g(\b
 We start by illustrating the standard Newton method.
 We approximate our function by a second-order Taylor expansion, that is
 \begin{equation*}
-  g(\boldsymbol{\psi}_{t} + u) \approx g(\boldsymbol{\psi}_{t}) + \nabla_{\boldsymbol{\psi}_{t}}^{T} u + \frac{1}{2} u^{T} \mathbf{H}_{\boldsymbol{\psi}_{t}} u
+  g(\boldsymbol{\psi}_{t} + u) \approx g(\boldsymbol{\psi}_{t}) + \nabla_{\boldsymbol{\psi}_{t}}^{\top} u + \frac{1}{2} u^{\top} \mathbf{H}_{\boldsymbol{\psi}_{t}} u
 \end{equation*}
 
 The theoretical minimum is obviously attained when the gradient with respect to \(u\) is zero, that is \(\nabla_{\boldsymbol{\psi}_{t}} + \mathbf{H}_{\boldsymbol{\psi}_{t}} u = 0\) or \(u = - \mathbf{H}_{\boldsymbol{\psi}_{t}}^{-1} \nabla_{\boldsymbol{\psi}_{t}}\).
@@ -348,7 +357,7 @@ where \(0 < \gamma \le 1\) is a modifier of the step size for ensuring convergen
 
 When the method converges the algorithm is quadratically fast, or at least superlinear \citep{bonnans_2006__numerical}: the closer \(g(\boldsymbol{\psi})\) is to a quadratic function the better its Taylor approximation, the better the algorithm convergence properties.
 
-<<objfnproblem, echo = FALSE, fig.height = 6, fig.width = 10, fig.cap = "Problematic real data (cell line: BT-20, compound: BI-2536, dataset: CTRPv2) \\citep{rees_2016_ncb_correlating, seashore-ludlow_2015_cd_harnessing, basu_2013_cell_interactive}). A) 4-parameter logistic function as fitted by the BFGS algorithm. Starting point \\(\\boldsymbol{\\psi} = (\\alpha, \\beta, \\eta, \\phi)^{T} = (0, 1, -1, 0)^{T}\\). B) Contour plot of the residual sum of squares \\(g(\\boldsymbol{\\psi})\\) with respect to parameters \\(\\eta\\) and \\(\\phi\\). Fixed parameters \\(\\alpha = 0\\) and \\(\\beta = 1\\).">>=
+<<objfnproblem, echo = FALSE, fig.height = 6, fig.width = 10, fig.cap = "Problematic real data (cell line: BT-20, compound: BI-2536, dataset: CTRPv2) \\citep{rees_2016_ncb_correlating, seashore-ludlow_2015_cd_harnessing, basu_2013_cell_interactive}. A) 4-parameter logistic function as fitted by the BFGS algorithm. Starting point \\(\\boldsymbol{\\psi} = (\\alpha, \\beta, \\eta, \\phi)^{\top} = (0, 1, -1, 0)^{\top}\\). B) Contour plot of the residual sum of squares \\(g(\\boldsymbol{\\psi})\\) with respect to parameters \\(\\eta\\) and \\(\\phi\\). Fixed parameters \\(\\alpha = 0\\) and \\(\\beta = 1\\).">>=
 fig_x <- c(
   -6.90775527898214, -6.21460809842219, -5.49676830527187, -4.81589121730374,
   -4.13516655674236, -3.44201937618241, -2.7333680090865, -2.04022082852655,
@@ -425,7 +434,7 @@ For example, in Figure \ref{fig:objfnproblem} we show a problematic surface that
 We will try to overcome the issues in the optimization by focusing our search only in a neighborhood of the current estimate, that is using a trust-region around the current solution \(\boldsymbol{\psi}_{t}\).
 The problem to solve is now
 \begin{equation*}
-  \min_{u \in \mathbb{R}^{p}} g(\boldsymbol{\psi}_{t}) + \nabla_{\boldsymbol{\psi}_{t}}^{T} u + \frac{1}{2} u^{T} \mathbf{H}_{\boldsymbol{\psi}_{t}} u \qquad \text{s.t. } ||u|| \leq \Delta_{t}
+  \min_{u \in \mathbb{R}^{p}} g(\boldsymbol{\psi}_{t}) + \nabla_{\boldsymbol{\psi}_{t}}^{\top} u + \frac{1}{2} u^{\top} \mathbf{H}_{\boldsymbol{\psi}_{t}} u \qquad \text{s.t. } ||u|| \leq \Delta_{t}
 \end{equation*}
 where \(\Delta_{t} > 0\) is the trust-region radius.
 Our implementation is based on the exposition of \citet{nocedal_2006__numerical} and follows closely that of \citet{mogensen_2018_joss_optim}.
@@ -437,7 +446,7 @@ For more details, we refer the reader to the extensive discussion found in \cite
 
 \subsection{Algorithm initialization}\label{subsec:initialization}
 One of the major challenges in fitting nonlinear regression models is choosing a good starting point for initializing the optimization algorithm.
-Looking at the example in Figure \ref{fig:objfnproblem}, the choice of \(\boldsymbol{\psi}_{0} = (0, 1, -1, 0)^{T}\) made the BFGS algorithm converge to a local optimum while a global optimum might have been found if a better starting point was chosen.
+Looking at the example in Figure \ref{fig:objfnproblem}, the choice of \(\boldsymbol{\psi}_{0} = (0, 1, -1, 0)^{\top}\) made the BFGS algorithm converge to a local optimum while a global optimum might have been found if a better starting point was chosen.
 
 First of all, we present the closed-form maximum likelihood estimates \(\hat{\alpha}\) and \(\hat{\beta}\) when all other parameters have been fixed.
 Define \(h_{k} = (1 + \nu \exp(-\eta (x_{k} - \phi)))^{-1 / \nu}\), where \(x_{k} = \log(d_{k})\), and assume it to be known.
@@ -466,7 +475,7 @@ It is easy to prove that the gradient is equal to zero for
 
 Our initialization strategy is made of two steps.
 The first step is done by setting \(\nu_{0} = 1\) and obtaining an initial guess for \(\eta_{0}\) and \(\phi_{0}\), for example by choosing them at random or by evaluating the objective function on a small grid of values.
-We then evaluate the maximum likelihood estimates (\ref{eq:abmle}) and set \(\alpha_{0} = \hat{\alpha}\) and \(\beta_{0} = \hat{\beta}\).
+We then evaluate the maximum likelihood estimates (Equation~\ref{eq:abmle}) and set \(\alpha_{0} = \hat{\alpha}\) and \(\beta_{0} = \hat{\beta}\).
 The second step is running the standard Newton method starting from \(\boldsymbol{\psi}_{0}\).
 The solution just found is then passed to our trust region implementation for further refining.
 
@@ -478,9 +487,9 @@ When closed-form solutions of maximum likelihood estimates are missing, also clo
 Fortunately, we can still rely on asymptotic, large sample size considerations, to obtain approximate values of quantities of interest.
 Obviously, the larger the sample size the better the approximation.
 
-Using either versions (\ref{eq:obsFisher}) or (\ref{eq:expFisher}) of the Fisher information matrix we can calculate approximate confidence intervals.
+Using either versions (Equation~\ref{eq:obsFisher} or Equation~\ref{eq:expFisher}) of the Fisher information matrix we can calculate approximate confidence intervals.
 In fact, we can think of the Fisher information matrix as an approximate precision matrix, so that we only have to invert the matrix and take diagonal elements as approximate variance estimates.
-In our package we use the observed Fisher information matrix (\ref{eq:obsFisher}) because it is shown to perform better with finite sample sizes \citep{efron_1978_biometrika_assessing}.
+In our package we use the observed Fisher information matrix (Equation~\ref{eq:obsFisher}) because it is shown to perform better with finite sample sizes \citep{efron_1978_biometrika_assessing}.
 As an example, an approximate confidence interval for generic parameter \(\psi_{j}\) is
 \begin{equation*}
   \hat{\psi}_{j} \pm t_{n - p, \alpha} \sqrt{\left(I(\hat{\boldsymbol{\psi}}, \hat{\sigma})^{-1}\right)_{jj}}
@@ -488,15 +497,15 @@ As an example, an approximate confidence interval for generic parameter \(\psi_{
 where \(t_{n - p, \alpha}\) is the appropriate quantile of level \(\alpha\) of a Student's \(t\)-distribution with \(n - p\) degrees of freedom and \(\left(I(\hat{\boldsymbol{\psi}}, \hat{\sigma})^{-1}\right)_{jj}\) is the \(j\)-th element in the diagonal of the inverse observed Fisher information matrix.
 Using the Delta method we can compute approximate point-wise confidence intervals for the mean function
 \begin{equation*}
-  \mu(d_{k}; \hat{\boldsymbol{\psi}}) \pm t_{n - p, \alpha} \sqrt{s^{2} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu_{k}\right)^{T}\left(\mathbf{H}_{\hat{\boldsymbol{\psi}}} f\right)^{-1} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu_{k}\right)}
+  \mu(d_{k}; \hat{\boldsymbol{\psi}}) \pm t_{n - p, \alpha} \sqrt{s^{2} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu_{k}\right)^{\top}\left(\mathbf{H}_{\hat{\boldsymbol{\psi}}} f\right)^{-1} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu_{k}\right)}
 \end{equation*}
 or for a new, yet to be observed, value \(y(d)\)
 \begin{equation*}
-  \mu(d; \hat{\boldsymbol{\psi}}) \pm t_{n - p, \alpha} \sqrt{s^{2} \left(1 + \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)^{T}\left(\mathbf{H}_{\hat{\boldsymbol{\psi}}} f\right)^{-1} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)\right)}
+  \mu(d; \hat{\boldsymbol{\psi}}) \pm t_{n - p, \alpha} \sqrt{s^{2} \left(1 + \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)^{\top}\left(\mathbf{H}_{\hat{\boldsymbol{\psi}}} f\right)^{-1} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)\right)}
 \end{equation*}
 We can also construct a (conservative and approximate) confidence band over the whole mean function \(\mu(\cdot; \boldsymbol{\psi})\) with the correction proposed by \citet{gsteiger_2011_jbs_simultaneous}
 \begin{equation*}
-  \mu(d; \hat{\boldsymbol{\psi}}) \pm \sqrt{q_{p,\alpha} s^{2} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)^{T}\left(\mathbf{H}_{\hat{\boldsymbol{\psi}}} f\right)^{-1} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)}
+  \mu(d; \hat{\boldsymbol{\psi}}) \pm \sqrt{q_{p,\alpha} s^{2} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)^{\top}\left(\mathbf{H}_{\hat{\boldsymbol{\psi}}} f\right)^{-1} \left(\nabla_{\hat{\boldsymbol{\psi}}} \mu\right)}
 \end{equation*}
 where \(q_{p,\alpha}\) is the appropriate quantile of level \(\alpha\) of a \(\chi^{2}\)-distribution with \(p\) degrees of freedom.
 
@@ -521,11 +530,11 @@ When \code{data} is not specified, the variables are taken from the environment 
 \code{subset} is a logical vector, or a vector of indices, specifying the portion of \code{data} to be used for model fitting.
 
 \code{weights} is an optional argument that specifies the weights to be used for fitting.
-Usually weights are used in situations where observations are not equally informative, i.e. when it is known that some of the observations should have a smaller or larger impact on the fitting process.
+Usually weights are used in situations where observations are not equally informative, i.e., when it is known that some of the observations should have a smaller or larger impact on the fitting process.
 If the \code{weights} argument is not provided then the ordinary least squares method is applied.
 
 \code{na.action} defines a function for handling \code{NA}s found in \code{data}.
-The default option is to use \fct{na.omit}, i.e. to remove all data points associated with the missing values.
+The default option is to use \fct{na.omit}, i.e., to remove all data points associated with the missing values.
 
 \code{mean_function} argument specifies the model that should be estimated.
 In the current version of the package the argument can be any of \class{logistic5}, \class{logistic4}, \class{logistic2}, or \class{gompertz}.
@@ -562,20 +571,14 @@ The two-element vector \code{xlim} defines the interval of integration, on the l
 The two-element vector \code{ylim} defines the theoretical minimum and maximum values for the response variable \code{y}.
 Therefore, \code{xlim} and \code{ylim} together define a rectangle that is partitioned into two regions by the dose-response curve.
 The normalized area under the curve (NAUC) is defined as the area of the ``lower'' rectangle region divided by the total area of the rectangle.
-The normalized area above the curve (NAAC) is simply its complement, i.e. 1 - NAUC.
+The normalized area above the curve (NAAC) is simply its complement, i.e., 1 - NAUC.
 
 When \code{xlim} and \code{ylim} are not explicitly chosen, the default values are set respectively to \code{c(-10, 10)} and \code{c(0, 1)}.
 The \code{xlim} default value was chosen on the basis of dose ranges that are commonly found in the literature, and made symmetric around zero so that NAUC and NAAC values are equal to 0.5 in the standard logistic model.
 In the majority of real applications the response variable \code{y} is usually a relative measure against a control treatment, therefore the default value for \code{ylim} is chosen to be \code{c(0, 1)}.
 
 \subsection{Usage examples}\label{subsec:examples}
-First of all, we load the package.
-
-<<>>=
-library(drda)
-@
-
-We then define an example dataset to demonstrate how to use \pkg{drda}.
+To demonstrate how to use \pkg{drda}, we create the following example data:
 
 <<>>=
 dose <- rep(c(0.0001, 0.001, 0.01, 0.1, 1, 10, 100), each = 3)
@@ -591,18 +594,20 @@ Relative viability measures have been obtained for each dose-replicate pair and,
 Note that any finite real number is accepted as a possible valid outcome.
 
 \subsubsection{Default fitting}\label{subsubsec:default_fit}
-The \fct{drda} function can be applied directly to the two variables via setting \code{is_log} to \code{FALSE}.
+After loading the package, the \fct{drda} function can be applied directly to the two variables via setting \code{is_log} to \code{FALSE}.
 
 <<>>=
+library("drda")
 fit <- drda(relative_viability ~ dose, is_log = FALSE)
 @
 
 We can obtain exactly the same fitting using the log-doses and ignoring the \code{is_log} argument and storing the variables into a data frame.
+The following calls to \fct{drda} are equivalent.
 
 <<>>=
 log_dose <- log(dose)
 test_data <- data.frame(d = dose, x = log_dose, y = relative_viability)
-# the following calls are equivalent
+
 fit <- drda(relative_viability ~ log_dose)
 fit <- drda(y ~ d, data = test_data, is_log = FALSE)
 fit <- drda(y ~ x, data = test_data)
@@ -631,13 +636,16 @@ sigma(fit)
 fit$sigma
 @
 
-Since the model being fitted is (\ref{eq:logistic5}), it is important to note that the the \fct{coef} function always returns the parameter \(\phi\), in this case the log-EC50, regardless of the scale in which \code{x} was passed to the function.
+Since the model being fitted is (Equation~\ref{eq:logistic5}), it is important to note that the the \fct{coef} function always returns the parameter \(\phi\), in this case the log-EC50, regardless of the scale in which \code{x} was passed to the function.
 The \fct{summary} function, however, will always print the estimate on the same scale as the original \code{x} variable.
 
 Our \code{fit} object can be further explored with all the familiar functions expected for a model fit:
 
 <<>>=
 deviance(fit)
+@
+<<>>=
+vcov(fit)
 @
 <<>>=
 residuals(fit)
@@ -649,12 +657,12 @@ logLik(fit)
 predict(fit)
 @
 <<>>=
-predict(fit, x = log(c(0.002, 0.2, 2)))
+predict(fit, newdata = log(c(0.002, 0.2, 2)))
 @
 
 \subsubsection{Model comparison and selection}\label{subsubsec:comparison}
 The \fct{anova} function can be used to compare competing models within the same logistic family of models.
-The constant model, i.e. a flat horizontal line, is always included by default in the comparisons.
+The constant model, i.e., a flat horizontal line, is always included by default in the comparisons.
 When the model being fitted is not the 5-parameter logistic function, the latter is always included as the general reference model in the likelihood-ratio test.
 
 <<>>=
@@ -775,7 +783,7 @@ Since the \fct{fitMod} function requires the user to set constraints on the nonl
 
 For each cell line-drug-package triple we fitted the 4-parameter logistic function one hundred times with function \fct{benchmark} from \proglang{R} package \pkg{rbenchmark} \citep{kusnierczyk_2012__rbenchmark} and recorded the parameter estimates, the residual standard error, the residual sum of squares (RSS), convergence status, and the elapsed time of the function.
 
-Since all packages are solving the same optimization problem (\ref{eq:mle}), i.e. minimization of the residual sum of squares, we considered for each cell line-drug pair the global optimum to be the fit with the lowest RSS value among the four packages.
+Since all packages are solving the same optimization problem (Equation~\ref{eq:mle}), i.e., minimization of the residual sum of squares, we considered for each cell line-drug pair the global optimum to be the fit with the lowest RSS value among the four packages.
 We define the absolute relative error of package \(k\) as
 \begin{equation*}
 \rho_{k} = \left|1 - \frac{\text{RSS}_{k}}{\min\{\text{RSS}_{DoseFinding}, \text{RSS}_{drda}, \text{RSS}_{drc}, \text{RSS}_{nplr}\}}\right|
@@ -829,8 +837,10 @@ Using a large-scale drug screening dataset, we have shown that \pkg{drda} has cl
 Despite the fact that our package is on average slower than the other three packages, its gain in accuracy is a favorable compromise.
 For most, if not all, experimental applications, accuracy has a higher priority.
 The package is currently completely implemented in base \proglang{R}, therefore there are still many opportunities for improving its performance, by, for example, refactoring core critical functions in \proglang{C} or improving further the algorithm initialization.
-If a researcher is looking for a package providing improved accuracy at a relatively low speed-cost, \pkg{drda} might provide a viable option.
-The package can be downloaded from \url{https://github.com/albertopessia/drda}.
+If a researcher is looking for a package providing improved accuracy at a relatively low speed cost, \pkg{drda} might provide a viable option.
+
+\pkg{drda} is available on the Comprehensive R Archive Network (CRAN) at \url{https://CRAN.R-project.org/package=drda}.
+Users are encouraged to contribute to package development at \url{https://github.com/albertopessia/drda}.
 
 \section*{Acknowledgments}
 We thank CSC, the Finnish IT center for science, for the computational resources used to perform the simulations.
