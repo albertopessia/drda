@@ -605,8 +605,11 @@ anova.drdalist <- function(object, ...) {
     deviance_df, deviance_value, c(NA_real_, df), aic, bic, dvn,
     c(NA_real_, lrt)
   )
-  table$pvalue <- c(NA_real_, pchisq(lrt, df, lower.tail = FALSE))
-  table$pvalue[df == 0] <- NA_real_
+
+  pvalue <- pchisq(lrt, df, lower.tail = FALSE)
+  pvalue[pvalue == 0] <- NA_real_
+
+  table$pvalue <- c(NA_real_, pvalue)
 
   colnames(table) <- c(
     "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
