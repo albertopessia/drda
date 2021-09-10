@@ -732,23 +732,18 @@ summary(fit_cnstr)
 
 \subsubsection{Basic plot functionality}\label{subsubsec:plot}
 As basic plot functionality, \pkg{drda} allows to plot the data used for fitting, the maximum likelihood curve and the approximate confidence intervals for the curve.
-
-<<plot_logi5, fig.pos = "H", fig.height = 6, fig.width = 10, fig.cap = "">>=
-fit_logi5 <- drda(y ~ x, data = test_data, mean_function = "logistic5")
-plot(fit_logi5)
-@
-
 Alongside the common \fct{plot} arguments, it is possible to customize the plot by changing the scale of the x-axis with the argument \code{base} or the level of the confidence intervals with the \code{level} argument (default to 0.95).
 The available options for \code{base} are \class{e}, \class{2}, and \class{10}, with the default setting depending on the scale used for the \code{x} variable in the model \code{formula}.
 When the 2- or 4-parameter logistic functions are plotted, the \(\phi\) parameter is also shown in the plot.
 It is also possible to plot any number of models within the same figure.
-
-<<plot_multi, fig.pos = "H", fig.height = 6, fig.width = 10, fig.cap = "">>=
+<<plot_logi5, fig.pos = "H", fig.height = 4.2, fig.width = 9, fig.cap = "">>=
+fit_logi5 <- drda(y ~ x, data = test_data, mean_function = "logistic5")
+plot(fit_logi5)
+@
+<<plot_multi, fig.pos = "H", fig.height = 4.2, fig.width = 9, fig.cap = "">>=
 plot(
-  fit_logi2, fit_logi4, fit_gompe,
-  base = "10", level = 0.9,
-  xlim = c(-10, 5), ylim = c(-0.1, 1.1),
-  xlab = "Dose", ylab = "Relative viability",
+  fit_logi2, fit_logi4, fit_gompe, base = "10", level = 0.9, xlim = c(-10, 5),
+  ylim = c(-0.1, 1.1), xlab = "Dose", ylab = "Relative viability", cex = 0.8,
   legend = c("2-param logistic", "4-param logistic", "Gompertz")
 )
 @
