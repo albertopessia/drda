@@ -24,6 +24,9 @@
 #'   \item{xlim, ylim}{the range of x and y values with sensible defaults.}
 #'   \item{level}{level of confidence intervals. Set to zero or a negative value
 #'     to disable confidence intervals.}
+#'   \item{legend_show}{if `FALSE` do not show the legend.}
+#'   \item{legend_location}{character string with custom legend position. See
+#'     \code{link[graphics]{legend}} for possible keywords.}
 #'   \item{legend}{custom labels for the legend model names.}
 #' }
 #'
@@ -91,6 +94,11 @@ plot.drda <- function(x, ...) {
   ylab <- dotargs$ylab
   if (is.null(ylab)) {
     ylab <- "Response"
+  }
+
+  main <- dotargs$main
+  if (is.null(main)) {
+    main <- ""
   }
 
   theta <- x$coefficients
@@ -214,7 +222,7 @@ plot.drda <- function(x, ...) {
 
   plot.default(
     xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE
+    axes = FALSE, main = main
   )
 
   axis(1, at = x_axis_ticks, labels = x_axis_labels)
@@ -255,20 +263,28 @@ plot.drda <- function(x, ...) {
     }
   }
 
-  location <- if (eta <= 0) {
-    "bottomleft"
-  } else {
-    "topleft"
-  }
+  legend_show <- dotargs$legend_show
+  if (is.null(legend_show) || legend_show) {
+    legend_location <- dotargs$legend_location
+    if (is.null(legend_location)) {
+      v <- ((alpha <= beta) && (eta <= 0)) || ((alpha >= beta) && (eta >= 0))
+      legend_location <- if (v) {
+        "bottomleft"
+      } else {
+        "topleft"
+      }
+    }
 
-  legend_labels <- dotargs$legend
-  if (is.null(legend_labels)) {
-    legend_labels <- x$mean_function
-  }
+    legend_labels <- dotargs$legend
+    if (is.null(legend_labels)) {
+      legend_labels <- x$mean_function
+    }
 
-  legend(
-    location, col = col, lty = 2, lwd = 2, bg = "white", legend = legend_labels
-  )
+    legend(
+      legend_location, col = col, lty = 2, lwd = 2, bg = "white",
+      legend = legend_labels
+    )
+  }
 
   dev.flush()
 
@@ -566,21 +582,28 @@ plot.drdalist <- function(x, ...) {
     }
   }
 
-  location <- if (eta <= 0) {
-    "bottomleft"
-  } else {
-    "topleft"
-  }
+  legend_show <- dotargs$legend_show
+  if (is.null(legend_show) || legend_show) {
+    legend_location <- dotargs$legend_location
+    if (is.null(legend_location)) {
+      v <- ((alpha <= beta) && (eta <= 0)) || ((alpha >= beta) && (eta >= 0))
+      legend_location <- if (v) {
+        "bottomleft"
+      } else {
+        "topleft"
+      }
+    }
 
-  legend_labels <- dotargs$legend
-  if (is.null(legend_labels)) {
-    legend_labels <- vapply(x, function(y) y$mean_function, "a")
-  }
+    legend_labels <- dotargs$legend
+    if (is.null(legend_labels)) {
+      legend_labels <- vapply(x, function(y) y$mean_function, "a")
+    }
 
-  legend(
-    location, col = col[1:M], lty = 2, lwd = 2, bg = "white",
-    legend = legend_labels
-  )
+    legend(
+      legend_location, col = col[1:M], lty = 2, lwd = 2, bg = "white",
+      legend = legend_labels
+    )
+  }
 
   dev.flush()
 

@@ -35,6 +35,9 @@ colors are provided.}
 \item{xlim, ylim}{the range of x and y values with sensible defaults.}
 \item{level}{level of confidence intervals. Set to zero or a negative value
 to disable confidence intervals.}
+\item{legend_show}{if \code{FALSE} do not show the legend.}
+\item{legend_location}{character string with custom legend position. See
+\code{link[graphics]{legend}} for possible keywords.}
 \item{legend}{custom labels for the legend model names.}
 }
 }

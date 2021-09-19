@@ -165,19 +165,30 @@ summary(fit)
 ### Basic plot functionality
 
 ```{r}
-fit <- drda(y ~ x, data = test_data, mean_function = "logistic5")
+fit_logi5 <- drda(y ~ x, data = test_data, mean_function = "logistic5")
 
 # plot the data used for fitting, the maximum likelihood curve, and
 # *approximate* confidence intervals for the curve
-plot(fit)
+plot(fit_logi5)
 
 # when the model is a 4-parameter logistic function, or a 2-parameter logistic
 # function, the `phi` parameter is also shown
-fit <- drda(y ~ x, data = test_data, mean_function = "logistic4")
-plot(fit)
+fit_logi4 <- drda(y ~ x, data = test_data, mean_function = "logistic4")
+plot(fit_logi4)
 
-fit <- drda(y ~ x, data = test_data, mean_function = "logistic2")
-plot(fit)
+fit_logi2 <- drda(y ~ x, data = test_data, mean_function = "logistic2")
+plot(fit_logi2)
+
+# combine all curves in the same plot
+plot(fit_logi2, fit_logi4, fit_logi5)
+
+# modify default plotting options
+# use `legend_show = FALSE` to remove the legend altogether
+plot(
+  fit_logi4, base = "10", col = "magenta", xlab = "x", ylab = "y", level = 0.9,
+  legend_location = "topright", legend = "4-parameter logistic function",
+  main = "Example plot"
+)
 ```
 
 ## License
