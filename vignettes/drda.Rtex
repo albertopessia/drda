@@ -69,13 +69,17 @@ Performance is evaluated using both synthetic data and a real, large-scale drug 
 }
 
 \begin{document}
-<<echo = FALSE, include = FALSE>>=
-options(prompt = "R> ", continue = "+ ", width = 77, useFancyQuotes = FALSE)
 
+<<echo = FALSE, include = FALSE, purl = FALSE>>=
 knitr::render_sweave()
 knitr::opts_chunk$set(
   fig.pos = "ht!", comment = "", dev.args = list(pointsize = 14), cache = TRUE
 )
+@
+
+<<echo = FALSE, include = FALSE>>=
+library("drda")
+options(prompt = "R> ", continue = "+ ", width = 77, digits = 4, useFancyQuotes = FALSE)
 
 colpal <- c(
   "#000000", "#004949", "#009292", "#ff6db6", "#ffb6db",
@@ -473,7 +477,7 @@ It is easy to prove that the gradient is equal to zero for
 \end{equation}
 
 Our initialization strategy is made of two steps.
-The first step is done by setting \(\nu_{0} = 1\) and obtaining an initial guess for \(\eta_{0}\) and \(\phi_{0}\), for example by choosing them at random or by evaluating the objective function on a small grid of values.
+The first step is done by setting \(\nu_{0} = 1\) and obtaining an initial guess for \(\eta_{0}\) and \(\phi_{0}\), for example by evaluating the objective function on a small grid of values.
 We then evaluate the maximum likelihood estimates (Equation~\ref{eq:abmle}) and set \(\alpha_{0} = \hat{\alpha}\) and \(\beta_{0} = \hat{\beta}\).
 The second step is running the standard Newton method starting from \(\boldsymbol{\psi}_{0}\).
 The solution just found is then passed to our trust region implementation for further refining.
@@ -635,7 +639,7 @@ sigma(fit)
 fit$sigma
 @
 
-Since the model being fitted is (Equation~\ref{eq:logistic5}), it is important to note that the the \fct{coef} function always returns the parameter \(\phi\), in this case the log-EC50, regardless of the scale in which \code{x} was passed to the function.
+Since the model being fitted is Equation~\ref{eq:logistic5}, it is important to note that the the \fct{coef} function always returns the parameter \(\phi\), in this case the log-EC50, regardless of the scale in which \code{x} was passed to the function.
 The \fct{summary} function, however, will always print the estimate on the same scale as the original \code{x} variable.
 
 Our \code{fit} object can be further explored with all the familiar functions expected for a model fit:
@@ -736,14 +740,14 @@ Alongside the common \fct{plot} arguments, it is possible to customize the plot 
 The available options for \code{base} are \class{e}, \class{2}, and \class{10}, with the default setting depending on the scale used for the \code{x} variable in the model \code{formula}.
 When the 2- or 4-parameter logistic functions are plotted, the \(\phi\) parameter is also shown in the plot.
 It is also possible to plot any number of models within the same figure.
-<<plot_logi5, fig.pos = "H", fig.height = 4.2, fig.width = 9, fig.cap = "">>=
+<<plot_logi5, fig.pos = "H", fig.height = 4, fig.width = 9, fig.cap = "">>=
 fit_logi5 <- drda(y ~ x, data = test_data, mean_function = "logistic5")
 plot(fit_logi5)
 @
-<<plot_multi, fig.pos = "H", fig.height = 4.2, fig.width = 9, fig.cap = "">>=
+<<plot_multi, fig.pos = "H", fig.height = 4, fig.width = 9, fig.cap = "">>=
 plot(
   fit_logi2, fit_logi4, fit_gompe, base = "10", level = 0.9, xlim = c(-10, 5),
-  ylim = c(-0.1, 1.1), xlab = "Dose", ylab = "Relative viability", cex = 0.8,
+  ylim = c(-0.1, 1.1), xlab = "Dose", ylab = "Relative viability", cex = 0.9,
   legend = c("2-param logistic", "4-param logistic", "Gompertz")
 )
 @
@@ -769,12 +773,12 @@ We want to compare its performance against the other three packages, therefore o
 
 Define, for each parameter, the following possible values:
 \begin{equation*}
-  \sigma \in \{0.05, 0.1\}, \quad \alpha \in \{0, 0.15, 0.3, 0.45\}, \quad \beta \in \{0.55, 0.7, 0.85, 1\}
+  \sigma \in \{0.05, 0.1\}, \quad \alpha \in \{0, 0.2, 0.45\}, \quad \beta \in \{0.55, 0.8, 1\}
 \end{equation*}
 \begin{equation*}
-  \eta \in \{-5, -3.367, -1.733, -0.1\}, \quad \phi \in \{-5 \log(10), -\log(10), \log(10), 3 \log(10)\}
+  \eta \in \{-5, -2.55, -0.1\}, \quad \phi \in \{-4 \log(10), 0, 2 \log(10)\}
 \end{equation*}
-All the possible combinations of the previous values form a set of 512 vector parameters.
+All the possible combinations of the previous values form a set of 162 vector parameters.
 
 For each parameter vector we simulated 100 datasets, with 7 doses and 3 replicates per dose, from a Normal distribution centered on the corresponding logistic function.
 Finally, we applied on each dataset the fitting function of each package.
@@ -784,8 +788,6 @@ We fixed \code{npars} to four for the 4-parameter log-logistic model.
 For \fct{fitMod} from package \pkg{DoseFinding} we chose the 4-parameter log-logistic model by setting \code{model = "sigEmax"} (see Section \ref{subsec:logisticfn}).
 Since the \fct{fitMod} function requires the user to set constraints on the nonlinear parameters, we used the default value \code{bnds = defBnds(max(dose))\$sigEmax}.
 The log-logistic model is a simple reparametrization of the logistic model, therefore all results can be easily and safely compared.
-
-Every fitting process was bench-marked with function \fct{mark} from \proglang{R} package \pkg{bench} \citep{Hester_2020__bench}.
 For each dataset we stored the residual sum of squares (RSS), convergence status, and the elapsed time of the function.
 
 Since all packages are solving the same optimization problem, i.e., minimization of the residual sum of squares, we define the absolute relative error of package \(k\) as
@@ -800,33 +802,33 @@ For practical purposes small absolute relative errors can be considered equivale
     \begin{tabular}{@{}lllllll@{}}
       \toprule
       Package & Minimum & First quartile & Median & Mean & Third quartile & Maximum \\ \midrule
-      \pkg{DoseFinding} & 0.000 & \(5.55\,10^{-10}\) & 0.002 & 0.109 & 0.075 & 10.56 \\
-      \pkg{drc} & 0.000 & \(2.11\,10^{-5}\) & \(3.27\,10^{-4}\) & 0.028 & 0.03 & 1.56 \\
-      \pkg{drda} & 0.000 & 0.000 & 0.000 & \(7.26\,10^{-7}\) & 0.000 & 0.01 \\
-      \pkg{nplr} & 0.000 & \(2.21\,10^{-10}\) & \(1.69\,10^{-7}\) & 0.08 & 0.06 & 6.773 \\ \bottomrule
+      \pkg{DoseFinding} & 0.000 & \(2.13\,10^{-10}\) & 0.004 & 0.751 & 0.31 & 30.978 \\
+      \pkg{drc} & 0.000 & \(3.51\,10^{-5}\) & \(2.19\,10^{-4}\) & 0.023 & 0.004 & 2.566 \\
+      \pkg{drda} & 0.000 & 0.000 & 0.000 & \(9.29\,10^{-7}\) & 0.000 & 0.012 \\
+      \pkg{nplr} & 0.000 & \(1.76\,10^{-9}\) & 0.041 & 0.995 & 1.001 & 19.604 \\ \bottomrule
     \end{tabular}%
   }
-  \caption{Summary statistics of the RSS relative error for simulated models. A total of 512 vector parameters were analysed. For each parameter, 100 datasets with 7 doses and 3 replicates per dose were simulated.}\label{tab:l4sim}
+  \caption{Summary statistics of the RSS relative error for simulated models. A total of 162 vector parameters were analysed. For each parameter, 100 datasets with 7 doses and 3 replicates per dose were simulated.}\label{tab:l4sim}
 \end{table}
 
-According to our simulation results (Table~\ref{tab:l4sim}), \pkg{drda} provides the most accurate estimates: in its worst performance \pkg{drda} achieved a relative error of just 0.01.
-\pkg{DoseFinding} and \pkg{drda} always returned a result without errors.
-Instead, \pkg{drc} produced errors in 10.3\% of the times and \pkg{nplr} in 0.01\% of the times.
-Overall, \pkg{drda} converged to a solution 99.13\% of the times.
+According to our simulation results (Table~\ref{tab:l4sim}), \pkg{drda} provides the most accurate estimates: in its worst performance \pkg{drda} achieved a relative error of just 0.012.
+\pkg{DoseFinding}, \pkg{drda}, and \pkg{nplr} always returned a result without errors but \pkg{drc} produced errors in 13.9\% of the times.
+Overall, \pkg{drda} converged to a solution in 98.76\% of the times.
 We cannot provide an accurate convergence rate for the other three packages because the information is missing from the returned fit object.
 
 The higher accuracy comes obviously at a small computational cost as more steps are usually needed for exploring the parameter space.
-Our data analysis reveals that \fct{fitMOD} and \fct{nplr} are the fastest functions to complete the fit (mean elapsed time of 0.006s and 0.008s respectively).
-\pkg{drda} found the global optimum (or a very close solution) in 0.122 seconds on average.
-For completeness, \fct{drm} had an average of 0.024 seconds.
+Our data analysis reveals that \fct{fitMOD} and \fct{nplr} are the fastest functions to complete the fit (mean elapsed time of 0.009s and 0.013s respectively).
+\pkg{drda} found the global optimum (or a very close solution) in 0.166 seconds on average.
+For completeness, \fct{drm} had an average of 0.031 seconds.
 
 We further tested \pkg{drda} on a real large-scale drug sensitivity dataset downloaded from the Cancer Therapeutics Response Portal (CTRP) \citep{rees_2016_ncb_correlating, seashore-ludlow_2015_cd_harnessing, basu_2013_cell_interactive}.
 The data contains cell viability measures for 379533 cell line/drug pairs (887 unique cell lines, 545 unique drugs).
 The majority of experiments (59.13\%) were performed for sixteen drug doses and no replicates, which is only one observation per dose.
 The relative viability measures span the \((0.0019, 2.864)\) interval.
+To speed up the fitting process we sampled at random 15000 datasets from the full set.
 
 Similarly to our simulation study, we fitted the 4-parameter logistic model with each one of the four packages.
-For each cell line-drug-package triple we performed the bench-mark and summarized the results in Table~\ref{tab:ctrpv2}.
+For each cell line-drug-package triple we performed the benchmark and summarized the results in Table~\ref{tab:ctrpv2}.
 
 \begin{table}[!t]
   \centering
@@ -834,21 +836,21 @@ For each cell line-drug-package triple we performed the bench-mark and summarize
     \begin{tabular}{@{}lllllll@{}}
       \toprule
       Package & Minimum & First quartile & Median & Mean & Third quartile & Maximum \\ \midrule
-      \pkg{DoseFinding} & 0.000 & 0.000 & \(3.99\,10^{-4}\) & 0.733 & 0.02 & 12157.546 \\
-      \pkg{drc} & 0.000 & \(3.00\,10^{-7}\) & \(8.25\,10^{-4}\) & 0.076 & 0.036 & 133.274 \\
-      \pkg{drda} & 0.000 & 0.000 & 0.000 & \(1.25\,10^{-5}\) & 0.000 & 0.094 \\
-      \pkg{nplr} & 0.000 & 0.000 & \(1.24\,10^{-8}\) & 0.602 & 0.007 & 724.911 \\ \bottomrule
+      \pkg{DoseFinding} & 0.000 & 0.000 & \(3.94\,10^{-4}\) & 0.444 & 0.02 & 1348.299 \\
+      \pkg{drc} & 0.000 & \(3.08\,10^{-7}\) & \(8.52\,10^{-4}\) & 0.073 & 0.036 & 71.432 \\
+      \pkg{drda} & 0.000 & 0.000 & 0.000 & \(1.25\,10^{-5}\) & 0.000 & 0.027 \\
+      \pkg{nplr} & 0.000 & 0.000 & \(1.22\,10^{-8}\) & 0.585 & 0.008 & 218.21 \\ \bottomrule
     \end{tabular}%
   }
   \caption{Summary statistics of the RSS relative error as measured on the CTRPv2 data.}\label{tab:ctrpv2}
 \end{table}
 
-Overall, \pkg{drda} is flagged as the absolute best fit in 90.99\% of the cases.
-When we only consider the cases for which \(|\rho_{k}| \leq 0.01\), the percentage raises to 99.96\% (69.99\% for \pkg{DoseFinding}, 64.14\% for \pkg{drc}, and 76\% for \pkg{nplr}).
-When compared directly against the other packages, \pkg{drda} outperforms \pkg{DoseFinding} in 30\% of the cases (worse for 0.033\%), \pkg{drc} in 35.84\% of cases (worse for 0.003\%), and \pkg{nplr} in 23.98\% of the cases (worse for 0.012\%).
+Overall, \pkg{drda} converged to a solution in 99.8\% of the times and is flagged as the absolute best fit in 90.81\% of the cases.
+When we only consider the cases for which \(|\rho_{k}| \leq 0.01\), the percentage raises to 99.97\% (70.23\% for \pkg{DoseFinding}, 64.07\% for \pkg{drc}, and 75.57\% for \pkg{nplr}).
+When compared directly against the other packages, \pkg{drda} outperforms \pkg{DoseFinding} in 29.65\% of the cases (worse for 0.027\%), \pkg{drc} in 35.95\% of cases (never worse), and \pkg{nplr} in 24.44\% of the cases (worse for 0.013\%).
 
-Similarly to the simulation study results, \fct{fitMOD} and \fct{nplr} are again the fastest functions to complete the fit (mean elapsed time of 0.006s and 0.008s respectively).
-On average \pkg{drda} found the global optimum (or a very close solution) in 0.137 seconds while \fct{drm} had an average of 0.069 seconds.
+Similarly to the simulation study results, \fct{fitMOD} and \fct{nplr} are again the fastest functions to complete the fit (mean elapsed time of 0.009s and 0.013s respectively).
+On average \pkg{drda} found the global optimum (or a very close solution) in 0.148 seconds while \fct{drm} had an average of 0.092 seconds.
 
 \section{Summary and discussion}\label{sec:summary}
 In this paper, we have introduced the \pkg{drda} package, aimed at evaluating dose-response relationship to advance our understanding of biological processes or pharmacological safety.
