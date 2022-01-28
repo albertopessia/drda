@@ -1,5 +1,3 @@
-context("6-parameter logistic - core functions")
-
 test_that("Constructor", {
   x <- round(
     rep(
@@ -414,8 +412,6 @@ test_that("Gradient and Hessian", {
   expect_equal(gradient_hessian$H, true_hessian)
 })
 
-context("6-parameter logistic - RSS functions")
-
 test_that("Value of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
   n <- c(3, 3, 2, 4, 3)
@@ -534,8 +530,6 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$H, true_hessian[c(2, 3, 6), c(2, 3, 6)])
 })
 
-context("6-parameter logistic - support functions")
-
 test_that("mle_asy", {
   x <- round(
     rep(
@@ -572,8 +566,6 @@ test_that("mle_asy", {
   expect_length(result, 6)
   expect_equal(result, true_value)
 })
-
-context("6-parameter logistic - fit")
 
 test_that("fit", {
   x <- round(
@@ -931,8 +923,6 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_equal(result$weights, w)
 })
 
-context("6-parameter logistic - weighted fit")
-
 test_that("fit (weighted)", {
   x <- round(
     rep(
@@ -1288,8 +1278,6 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$weights, w)
 })
 
-context("6-parameter logistic - general functions")
-
 test_that("fisher_info", {
   x <- round(
     rep(
@@ -1366,8 +1354,6 @@ test_that("fisher_info", {
   expect_length(fim, 7 * 7)
   expect_equal(fim, true_value)
 })
-
-context("6-parameter logistic - drda fit")
 
 test_that("drda: 'lower_bound' argument errors", {
   x <- round(
@@ -1581,8 +1567,6 @@ test_that("drda: 'start' argument errors", {
     "parameter 'xi' cannot be negative nor zero"
   )
 })
-
-context("6-parameter logistic - Area under and above the curve")
 
 test_that("nauc: decreasing", {
   x <- round(

@@ -1,5 +1,3 @@
-context("2-parameter logistic - core functions")
-
 test_that("Constructor", {
   x <- round(
     rep(
@@ -241,8 +239,6 @@ test_that("Gradient and Hessian", {
   expect_equal(gradient_hessian$H, true_hessian)
 })
 
-context("2-parameter logistic - RSS functions")
-
 test_that("Value of the RSS", {
   x <- -log(c(1000, 100, 10, 1, 0.1))
   n <- c(3, 3, 2, 4, 3)
@@ -343,8 +339,6 @@ test_that("Gradient and Hessian of the RSS", {
   expect_equal(gradient_hessian$G, true_gradient[1])
   expect_equal(gradient_hessian$H, true_hessian[1, 1, drop = FALSE])
 })
-
-context("2-parameter logistic - fit")
 
 test_that("fit", {
   max_iter <- 10000
@@ -685,8 +679,6 @@ test_that("fit_constrained: equalities and inequalities", {
   expect_equal(result$residuals, residuals)
 })
 
-context("2-parameter logistic - weighted fit")
-
 test_that("fit (weighted)", {
   max_iter <- 10000
 
@@ -1025,8 +1017,6 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   expect_equal(result$weights, w)
 })
 
-context("2-parameter logistic - general functions")
-
 test_that("fisher_info", {
   x <- round(
     rep(
@@ -1073,8 +1063,6 @@ test_that("fisher_info", {
   expect_length(fim, 3 * 3)
   expect_equal(fim, true_value)
 })
-
-context("2-parameter logistic - drda fit")
 
 test_that("drda: 'lower_bound' argument errors", {
   x <- round(
@@ -1248,8 +1236,6 @@ test_that("drda: 'start' argument errors", {
     "parameter 'eta' cannot be initialized to zero"
   )
 })
-
-context("2-parameter logistic - Area under and above the curve")
 
 test_that("nauc: decreasing", {
   x <- round(

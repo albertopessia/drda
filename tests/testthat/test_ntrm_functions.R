@@ -1,5 +1,3 @@
-context("Basic auxiliary functions")
-
 test_that("ntrm_max_abs", {
   x <- c(
     -0.186298, -0.370595, -2.902886, -1.392832, -0.024334, 0.174643, -0.817747,
