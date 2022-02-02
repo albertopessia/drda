@@ -751,3 +751,8 @@ nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 
   nauc
 }
+
+#' @export
+naac.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  1 - nauc(object, xlim, ylim)
+}

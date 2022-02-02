@@ -4,13 +4,14 @@
 \alias{nauc}
 \title{Area under the curve}
 \usage{
-nauc(object, xlim = c(-10, 10), ylim = c(0, 1))
+nauc(object, xlim, ylim)
 }
 \arguments{
 \item{object}{fit object as returned by \code{\link[drda]{drda}}.}
 
 \item{xlim}{numeric vector of length 2 with the lower and upped bound of the
-integration interval. Default is \code{c(-10, 10)}.}
+integration interval. Default is \code{c(-10, 10)} for the logistic function or
+\code{c(0, 1000)} for the log-logistic function.}
 
 \item{ylim}{numeric vector of length 2 with the lower and upped bound of the
 allowed function values. Default is \code{c(0, 1)}.}
@@ -22,26 +23,31 @@ Numeric value representing the normalized area under the curve.
 Evaluate the normalized area under the curve (NAUC).
 }
 \details{
-The area under the curve (AUC) is simply the integral of the chosen model
+The area under the curve (AUC) is the integral of the chosen model
 \verb{y(x; theta)} with respect to \code{x}.
 
 In real applications the response variable is usually contained within a
 known interval. For example, if our response represents relative viability
-against a control compound, the curve is then expected to be between 0 and 1.
+against a control compound, the curve is expected to be between 0 and 1.
+Let \code{ylim = c(yl, yu)} represent the admissible range of our function
+\verb{y(x; theta)}, that is \code{yl} is its lower bound and \code{yu} its upper bound.
+Let \code{xlim = c(xl, xu)} represent the admissible range of the predictor
+variable \code{x}. For example, when \code{x} represent the dose, the boundaries
+are the minimum and maximum doses we can administer.
 
 To make the AUC value comparable between different compounds and/or studies,
-this function set a hard constraint on both the \code{x} variable and the function
-\code{y}. The intervals can always be changed if needed.
+this function sets a hard constraint on both the \code{x} variable and the
+function \code{y}. The intervals can always be changed if needed.
 
-The function \verb{f(x; theta)} that is integrated here is defined as
+The integral calculated by this function is of the piece-wise function
+\verb{f(x; theta)} defined as
 
-\verb{f(x; theta) = ylim[1], if y(x; theta) < ylim[1]}
+\verb{f(x; theta) = yl}, if \verb{y(x; theta) < yl}
 
-\verb{f(x; theta) = y(x; theta), if ylim[1] <= y(x; theta) <= ylim[2]}
+\verb{f(x; theta) = y(x; theta)}, if \verb{yl <= y(x; theta) <= yu}
 
-\verb{f(x; theta) = ylim[2], if y(x; theta) > ylim[2]}
+\verb{f(x; theta) = yu}, if \verb{y(x; theta) > yu}
 
-Finally, the AUC is normalized by its maximum possible value, that is the
-area of the rectangle with width \code{xlim[2] - xlim[1]} and height
-\code{ylim[2] - ylim[1]}.
+The AUC is finally normalized by its maximum possible value, that is the
+area of the rectangle with width \code{xu - xl} and height \code{yu - yl}.
 }
