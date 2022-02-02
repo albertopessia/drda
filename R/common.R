@@ -101,7 +101,7 @@ approx_vcov <- function(fim) {
   p <- nrow(fim)
 
   if (is.null(vcov)) {
-    vcov <- matrix(NA, nrow = p, ncol = p)
+    vcov <- matrix(NA_real_, nrow = p, ncol = p)
   } else {
     d <- diag(vcov)
 
@@ -140,53 +140,70 @@ approx_vcov <- function(fim) {
 # Use `nlminb` to find a good initial value.
 #
 # @param object object of some model class.
-# @param rss_fn residual sum of squares to be minimized.
 # @param start matrix of candidate starting points.
 #
 #' @importFrom stats nlminb
-fit_nlminb <- function(object, rss_fn, start) {
+fit_nlminb <- function(object, start) {
   control <- list(eval.max = 1000L, iter.max = 1000L)
 
-  f <- if (!object$constrained) {
+  # define the objective function
+  f <- rss(object)
+
+  # we give `nlminb` also the gradient and Hessian functions, however it wants
+  # them as separate functions
+  gh <- rss_gradient_hessian(object)
+
+  g <- function(x) {
+    gh(x)$G
+  }
+
+  h <- function(x) {
+    gh(x)$H
+  }
+
+  fit_fn <- if (!object$constrained) {
     function(x) {
-      y <- nlminb(start = x, objective = rss_fn, control = control)
+      y <- nlminb(
+        start = x, objective = f, gradient = g, hessian = h, control = control
+      )
+
       list(
-        par = mle_asy(object, y$par),
-        niter = y$iterations
+        par = mle_asy(object, y$par), niter = y$iterations
       )
     }
   } else {
     function(x) {
       y <- nlminb(
-        start = x, objective = rss_fn, control = control,
+        start = x, objective = f, gradient = g, hessian = h, control = control,
         lower = object$lower_bound, upper = object$upper_bound
       )
+
       list(par = y$par, niter = y$iterations)
     }
   }
 
   best_par <- rep(NA_real_, nrow(start))
   best_rss <- Inf
-  best_iter <- 1000L
 
+  niter <- 0
   for (i in seq_len(ncol(start))) {
     tmp <- tryCatch(
-      suppressWarnings(f(start[, i])),
+      suppressWarnings(fit_fn(start[, i])),
       error = function(e) NULL
     )
 
     if (!is.null(tmp)) {
-      current_rss <- rss_fn(tmp$par)
+      current_rss <- f(tmp$par)
+      niter <- niter + tmp$niter
 
       if (!is.nan(current_rss) && (current_rss < best_rss)) {
         best_par <- tmp$par
         best_rss <- current_rss
-        best_iter <- tmp$niter
       }
     }
   }
 
-  list(theta = best_par, rss = best_rss, niter = best_iter)
+  list(theta = best_par, rss = best_rss, niter = niter)
 }
 
 # Fit a function to observed data

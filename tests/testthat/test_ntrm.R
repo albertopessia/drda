@@ -1,5 +1,3 @@
-context("Newton trust region - auxiliary functions")
-
 test_that("ntrm_solve_tr_subproblem: random vector", {
   set.seed(4705968)
 
@@ -115,8 +113,6 @@ test_that("ntrm_solve_tr_subproblem: various situations", {
 
   expect_equal(sqrt(sum(result$p^2)), delta)
 })
-
-context("Newton trust region method")
 
 test_that("ntrm: Rosenbrock function", {
   set.seed(2823440)

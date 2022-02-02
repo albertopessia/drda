@@ -631,7 +631,7 @@ init.logistic6 <- function(object) {
 
   start <- cbind(theta, theta_1, theta_2, theta_3, theta_4, theta_5)
 
-  tmp <- fit_nlminb(object, rss_fn, start)
+  tmp <- fit_nlminb(object, start)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
@@ -1100,4 +1100,9 @@ nauc.logistic6_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   names(nauc) <- NULL
 
   nauc
+}
+
+#' @export
+naac.logistic6_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
+  1 - nauc(object, xlim, ylim)
 }

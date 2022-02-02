@@ -1,5 +1,3 @@
-context("Interior point Newton trust region method")
-
 test_that("ntrm_constrained: Rosenbrock function", {
   set.seed(3470830)
 
