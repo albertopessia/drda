@@ -43,9 +43,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v1
         with:
-          extra-packages:
-            - covr
-            - rcmdcheck
+          extra-packages: covr, rcmdcheck
 
       - uses: r-lib/actions/check-r-package@v1
 
