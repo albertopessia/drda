@@ -138,7 +138,7 @@ ntrm_line_search <- function(f, a, b) {
   # 1 - golden_ratio
   k <- 0.381966
 
-  tol_0 <- sqrt(.Machine$double.eps)
+  tol_0 <- 1.0e-10
   eps_zero <- 1.0e-10
 
   d <- 0
