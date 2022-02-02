@@ -158,7 +158,7 @@ ntrm_inertia_correction <- function(
 
   eigval <- eigen(X, symmetric = TRUE, only.values = TRUE)$values
 
-  some_zero <- any(abs(eigval) < eps)
+  some_zero <- any(abs(eigval) < 0.0001)
   some_negative <- any(eigval[idx] < -eps)
   some_positive <- any(eigval[-idx] > eps)
 
