@@ -228,7 +228,7 @@ gradient_hessian.logistic6 <- function(object, theta) {
   gradient[, 3] <- omega * t
   gradient[, 4] <- omega * u
   gradient[, 5] <- omega * v
-  gradient[, 6] <- - omega * xi * s / nu
+  gradient[, 6] <- -omega * xi * s / nu
 
   hessian[, 1, 1] <- 0
   hessian[, 2, 1] <- 0
@@ -242,28 +242,28 @@ gradient_hessian.logistic6 <- function(object, theta) {
   hessian[, 3, 2] <- t
   hessian[, 4, 2] <- u
   hessian[, 5, 2] <- v
-  hessian[, 6, 2] <- - xi * s / nu
+  hessian[, 6, 2] <- -xi * s / nu
 
   hessian[, 1, 3] <- hessian[, 3, 1]
   hessian[, 2, 3] <- hessian[, 3, 2]
   hessian[, 3, 3] <- omega * q * t * ((1 + nu) / f - 1 / b)
   hessian[, 4, 3] <- omega * (1 / eta + (1 + nu - f / b) * t / g) * u
   hessian[, 5, 3] <- omega * (nu * u / eta + v) * t / g
-  hessian[, 6, 3] <- - omega * xi * (1 + 1 / nu) * t / f
+  hessian[, 6, 3] <- -omega * xi * (1 + 1 / nu) * t / f
 
   hessian[, 1, 4] <- hessian[, 4, 1]
   hessian[, 2, 4] <- hessian[, 4, 2]
   hessian[, 3, 4] <- hessian[, 4, 3]
   hessian[, 4, 4] <- omega * ((1 + nu) / f - 1 / b) * r * u
   hessian[, 5, 4] <- omega * (nu * u / eta + v) * u / g
-  hessian[, 6, 4] <- - omega * xi * (1 + 1 / nu) * u / f
+  hessian[, 6, 4] <- -omega * xi * (1 + 1 / nu) * u / f
 
   hessian[, 1, 5] <- hessian[, 5, 1]
   hessian[, 2, 5] <- hessian[, 5, 2]
   hessian[, 3, 5] <- hessian[, 5, 3]
   hessian[, 4, 5] <- hessian[, 5, 4]
   hessian[, 5, 5] <- omega * (nu * (u / eta)^2 + v * (v - g)) / g
-  hessian[, 6, 5] <- - omega * xi * (nu * u / eta + v - g) / (nu * f)
+  hessian[, 6, 5] <- -omega * xi * (nu * u / eta + v - g) / (nu * f)
 
   hessian[, 1, 6] <- hessian[, 6, 1]
   hessian[, 2, 6] <- hessian[, 6, 2]
@@ -492,41 +492,68 @@ init.logistic6 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
 
-  linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
-  linear_coef <- linear_fit$coefficients
-
   min_value <- min(stats[, 3])
   max_value <- max(stats[, 3])
 
-  # we initialize nu = 1 and xi = 1, so that we start with a 4-parameter
-  # logistic function
-  #
-  # y = a + (b - a) / (1 + exp(-e * (x - p)))
-  # w = (y - a) / (b - a)
-  # z = log(w / (1 - w)) = e * (x - p) = - e * p + e * x
-  #
-  # fit a linear model `z ~ u0 + u1 x` and set `eta = u1` and `phi = -u0 / u1`
-  # we add a small number to avoid the logarithm of zero
-  zv <- (stats[, 3] - min_value + 1.0e-5) / (max_value - min_value + 2.0e-5)
-  zv <- log(zv) - log1p(-zv)
-  tmp <- lm(zv ~ stats[, 1])
+  theta <- if (is.null(object$start)) {
+    # we initialize `nu = 1` and `xi = 1`, so that we start with a 4-parameter
+    # logistic function
+    #
+    # y = a + (b - a) / (1 + exp(-e * (x - p)))
+    # w = (y - a) / (b - a) = 1 / (1 + exp(-e * (x - p)))
+    #
+    # by construction w is defined in (0, 1).
+    #
+    # z = log(w / (1 - w)) = - e * p + e * x
+    #
+    # fit a linear model `z ~ u0 + u1 x` and set `eta = u1` and `phi = -u0 / u1`
+    #
+    # we add a very small number to avoid the logarithm of zero.
+    zv <- (stats[, 3] - min_value + 1.0e-8) / (max_value - min_value + 2.0e-8)
+    zv <- log(zv) - log1p(-zv)
+    tmp <- lm(zv ~ stats[, 1])
 
-  eta <- tmp$coefficients[2]
-  phi <- -tmp$coefficients[1] / eta
+    eta <- tmp$coefficients[2]
+    phi <- -tmp$coefficients[1] / tmp$coefficients[2]
 
-  theta <- mle_asy(object, c(min_value, max_value, eta, phi, 0, 0))
+    # find the maximum likelihood estimates of the linear parameters
+    mle_asy(object, c(min_value, max_value, eta, phi, 0, 0))
+  } else {
+    mle_asy(object, object$start)
+  }
 
   best_rss <- rss_fn(theta)
-  niter <- 1
 
-  if (linear_coef[2, 4] > 0.2) {
+  # theta is so far a very crude estimation of our curve, but is the curve flat?
+  y <- object$y
+  x <- object$x
+  w <- object$w
+
+  idx <- !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
+
+  if (sum(idx) != length(object$y)) {
+    y <- y[idx]
+    x <- x[idx]
+    w <- w[idx]
+  }
+
+  weighted_mean <- sum(w * y) / sum(w)
+  linear_rss <- sum(w * (y - weighted_mean)^2)
+
+  complete_rss <- sum(stats[, 2] * stats[, 4]) + best_rss
+
+  loglik <- loglik_normal(c(linear_rss, complete_rss), m, sum(log(stats[, 2])))
+
+  # variance + intercept -> 2 parameters estimated
+  # variance + logistic4 -> 5 parameters estimated
+  bic <- log(m) * c(2, 5) - 2 * loglik
+
+  if (bic[1] <= bic[2]) {
     # we are in big problems as a flat horizontal line is likely the best model
-    weighted_mean <- sum(object$w * object$y) / sum(object$w)
-
     theta <- c(
       0.9 * weighted_mean + 0.1 * min_value,
       0.9 * weighted_mean + 0.1 * max_value,
-      if (linear_coef[2, 1] <= 0) -1.0e-3 else 1.0e-3,
+      if (theta[3] <= 0) -1.0e-3 else 1.0e-3,
       object$stats[m, 1] + 100,
       0,
       0
@@ -535,74 +562,54 @@ init.logistic6 <- function(object) {
     best_rss <- rss_fn(theta)
   }
 
-  delta <- mean(diff(stats[, 1]))
-
   v1 <- 20L
   v2 <- 20L
   v3 <- 3L
   v4 <- 3L
   v <- v1 * v2 * v3 * v4
-  eta_set <- seq(-5, 5, length.out = v1)
-  phi_set <- seq(
-    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
-  )
+
+  eta_set <- seq(-10, 10, length.out = v1)
+  phi_set <- seq(-20, 20, length.out = v2)
   log_nu_set <- seq(-1, 0.5, length.out = v3)
   log_xi_set <- seq(-1, 0.5, length.out = v4)
 
   theta_tmp <- matrix(nrow = 6, ncol = v)
   rss_tmp <- rep(10000, v)
 
-  # we check extreme values in case of problematic data
-  theta_eta_1 <- matrix(nrow = 6, ncol = v2 * v3 * v4)
-  rss_eta_1 <- rep(10000, v2 * v3 * v4)
-
-  theta_eta_2 <- matrix(nrow = 6, ncol = v2 * v3 * v4)
-  rss_eta_2 <- rep(10000, v2 * v3 * v4)
-
   i <- 0
-  j <- 0
-  for (phi in phi_set) {
-    for (log_nu in log_nu_set) {
-      for (log_xi in log_xi_set) {
-        j <- j + 1
-
-        for (eta in eta_set) {
+  for (eta in eta_set) {
+    for (phi in phi_set) {
+      for (log_nu in log_nu_set) {
+        for (log_xi in log_xi_set) {
           i <- i + 1
 
           current_par <- mle_asy(
             object, c(theta[1], theta[2], eta, phi, log_nu, log_xi)
           )
+
           current_rss <- rss_fn(current_par)
           theta_tmp[, i] <- current_par
           rss_tmp[i] <- current_rss
         }
-
-        current_par <- mle_asy(
-          object, c(theta[1], theta[2], -20, phi, log_nu, log_xi)
-        )
-        current_rss <- rss_fn(current_par)
-        theta_eta_1[, j] <- current_par
-        rss_eta_1[j] <- current_rss
-
-        current_par <- mle_asy(
-          object, c(theta[1], theta[2], 20, phi, log_nu, log_xi)
-        )
-        current_rss <- rss_fn(current_par)
-        theta_eta_2[, j] <- current_par
-        rss_eta_2[j] <- current_rss
       }
     }
   }
 
+  # update the total iteration count
+  # 1: initial crude estimation
+  # 2: flat line approximation
+  # v: total amount of grid points tested
+  niter <- 2 + v
+
   ord <- order(rss_tmp)
 
+  # select the best solution and other not so good solutions as starting points
   theta_1 <- theta_tmp[, ord[1]]
   theta_2 <- theta_tmp[, ord[round(v / 3)]]
   theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
-  theta_4 <- theta_eta_1[, order(rss_eta_1)[1]]
-  theta_5 <- theta_eta_2[, order(rss_eta_2)[1]]
 
   if (object$constrained) {
+    # fix the candidates to be within the constraints
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
       object$lower_bound, na.rm = TRUE
@@ -619,17 +626,9 @@ init.logistic6 <- function(object) {
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
       object$lower_bound, na.rm = TRUE
     )
-    theta_4 <- pmax(
-      pmin(theta_4, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
-    )
-    theta_5 <- pmax(
-      pmin(theta_5, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
-    )
   }
 
-  start <- cbind(theta, theta_1, theta_2, theta_3, theta_4, theta_5)
+  start <- cbind(theta, theta_1, theta_2, theta_3)
 
   tmp <- fit_nlminb(object, start)
 
