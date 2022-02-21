@@ -24,9 +24,6 @@
 #'   possible value is `NULL`, no action. Value \code{na.exclude} can be useful.
 #' @param mean_function the model to be fitted. See `details` for available
 #'   models.
-#' @param is_log a logical value indicating whether the predictor variable `x`
-#'   is already log-transformed. Default to `TRUE`. Set to `FALSE` if `x` is
-#'   on its natural scale, i.e. strictly positive.
 #' @param lower_bound numeric vector with the minimum admissible values of the
 #'   parameters. Use `-Inf` to specify an unbounded parameter.
 #' @param upper_bound numeric vector with the maximum admissible values of the
@@ -40,9 +37,9 @@
 #'
 #' ### Generalized logistic function
 #'
-#' The most general model in this package is the generalized logistic function
-#' selected by setting `mean_function = "logistic6"`. It is defined in this
-#' package as the 6-parameter function
+#' The generalized logistic function is selected by setting
+#' `mean_function = "logistic6"` or `mean_function = "l6"`. It is defined in
+#' this package as the 6-parameter function
 #'
 #' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
@@ -67,8 +64,8 @@
 #' ### 5-parameter logistic function
 #'
 #' The 5-parameter logistic function can be selected by choosing
-#' `mean_function = "logistic5"`. The function is obtained by setting `xi = 1`
-#' in the generalized logistic function, that is
+#' `mean_function = "logistic5"` or `mean_function = "l5"`. The function is
+#' obtained by setting `xi = 1` in the generalized logistic function, that is
 #'
 #' `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
@@ -81,9 +78,9 @@
 #' ### 4-parameter logistic function
 #'
 #' The 4-parameter logistic function is the default model of `drda`. It can be
-#' explicitly selected by choosing `mean_function = "logistic4"`. The function
-#' is obtained by setting `xi = 1` and `nu = 1` in the generalized logistic
-#' function, that is
+#' explicitly selected by choosing `mean_function = "logistic4"` or
+#' `mean_function = "l4"`. The function is obtained by setting `xi = 1` and
+#' `nu = 1` in the generalized logistic function, that is
 #'
 #' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
 #'
@@ -96,9 +93,9 @@
 #' ### 2-parameter logistic function
 #'
 #' The 2-parameter logistic function can be selected by choosing
-#' `mean_function = "logistic2"`. The function is obtained by setting `xi = 1`,
-#' `nu = 1`, `beta = 1`, and `alpha = 0` in the generalized logistic function,
-#' that is
+#' `mean_function = "logistic2"` or `mean_function = "l2"`. The function is
+#' obtained by setting `xi = 1`, `nu = 1`, `beta = 1`, and `alpha = 0` in the
+#' generalized logistic function, that is
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
@@ -109,8 +106,8 @@
 #' ### Gompertz function
 #'
 #' The Gompertz function is the limit for `nu -> 0` of the 5-parameter logistic
-#' function. It can be selected by choosing `mean_function = "gompertz"`. The
-#' function is defined in this package as
+#' function. It can be selected by choosing `mean_function = "gompertz"` or
+#' `mean_function = "gz"`. The function is defined in this package as
 #'
 #' `alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))`
 #'
@@ -120,6 +117,30 @@
 #' Parameter `beta` represents the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the value of the function at `x = 0`.
+#'
+#' ### Generalized log-logistic function
+#'
+#' The generalized log-logistic function is selected by setting
+#' `mean_function = "loglogistic6"` or `mean_function = "ll6"`. It is defined in
+#' this package as the 6-parameter function
+#'
+#' `alpha + delta * (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)`
+#'
+#' where `x > 0`, `eta > 0`, `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is
+#' positive (negative) the curve is monotonically increasing (decreasing). The
+#' function is defined only for positive values of the predictor variable `x`.
+#'
+#' Parameter `alpha` is the value of the function at `x = 0`.
+#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
+#' approaches infinity.
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` is related to the mid-value of the function.
+#' Parameter `nu` affects near which asymptote maximum growth occurs.
+#' Parameter `xi` affects the value of the horizontal asymptote.
+#'
+#' **Note**: the 6-parameter log-logistic function is non-identifiable from data
+#' and should not be used in real applications. It is available only for
+#' theoretical research convenience.
 #'
 #' ### Constrained optimization
 #'
@@ -163,8 +184,6 @@
 #'     \item{model}{the model frame used.}
 #'     \item{na.action}{(where relevant) information returned by
 #'       \code{\link[stats]{model.frame}} on the special handling of `NA`s.}
-#'     \item{is_log}{boolean value. It is `TRUE` if the predictor variable was
-#'       given on the log scale.}
 #'   }
 #'
 #' @importFrom stats model.frame model.matrix model.response model.weights terms
@@ -172,8 +191,7 @@
 #' @export
 drda <- function(
   formula, data, subset, weights, na.action, mean_function = "logistic4",
-  is_log = TRUE, lower_bound = NULL, upper_bound = NULL, start = NULL,
-  max_iter = 500
+  lower_bound = NULL, upper_bound = NULL, start = NULL, max_iter = 500
 ) {
   # first, we expand the call to this function
   model_frame <- match.call(expand.dots = FALSE)
@@ -247,20 +265,6 @@ drda <- function(
     }
   }
 
-  if (!is_log) {
-    if (any(x <= 0)) {
-      stop(
-        paste(
-          "predictor variable `x` is not strictly positive",
-          "and cannot be log-transformed"
-        ),
-        call. = FALSE
-      )
-    }
-
-    x <- log(x)
-  }
-
   max_iter <- ceiling(max_iter[1])
 
   if (max_iter <= 0) {
@@ -310,25 +314,26 @@ drda <- function(
     }
   }
 
-  object <- switch(mean_function,
-    logistic2 = logistic2_new(
-      x, y, w, start, max_iter, lower_bound, upper_bound
-    ),
-    logistic4 = logistic4_new(
-      x, y, w, start, max_iter, lower_bound, upper_bound
-    ),
-    logistic5 = logistic5_new(
-      x, y, w, start, max_iter, lower_bound, upper_bound
-    ),
-    logistic6 = logistic6_new(
-      x, y, w, start, max_iter, lower_bound, upper_bound
-    ),
-    gompertz = gompertz_new(
-      x, y, w, start, max_iter, lower_bound, upper_bound
-    )
-  )
+  object <- if (mean_function == "logistic4" || mean_function == "l4") {
+    logistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  } else if (mean_function == "logistic2" || mean_function == "l2") {
+    logistic2_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  } else if (mean_function == "logistic5" || mean_function == "l5") {
+    logistic5_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  } else if (mean_function == "gompertz" || mean_function == "gz") {
+    gompertz_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  } else if (mean_function == "logistic6" || mean_function == "l6") {
+    logistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  } else if (mean_function == "loglogistic6" || mean_function == "ll6") {
+    if (any(x < 0)) {
+      stop(
+        "predictor variable 'x' is not stricly positive",
+        call. = FALSE
+      )
+    }
 
-  if (is.null(object)) {
+    loglogistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+  } else {
     stop(
       "chosen 'mean_function' is wrongly typed or not yet available",
       call. = FALSE
@@ -365,7 +370,6 @@ drda <- function(
   result$terms <- model_terms
   result$model <- model_frame
   result$na.action <- attr(model_frame, "na.action")
-  result$is_log <- is_log
 
   class(result) <- c(class(result), "drda")
 
@@ -404,7 +408,10 @@ anova.drda <- function(object, ...) {
   if (object$constrained) {
     # solution to the constrained problem is unlikely the maximum likelihood
     # estimator, therefore the asymptotic approximation might not hold
-    stop("hypothesis testing is not available for constrained optimization")
+    stop(
+      "hypothesis testing is not available for constrained optimization",
+      call. = FALSE
+    )
   }
 
   y <- object$model[, 1]
@@ -447,7 +454,13 @@ anova.drda <- function(object, ...) {
 
   if (k < 5) {
     # at least a parameter was considered fixed, so we now fit the full model
-    fit <- drda(y ~ x, weights = w, mean_function = "logistic5")
+    s <- substr(x$mean_function, 1, 8)
+    fit <- if (s == "logistic" || s == "gompertz") {
+      drda(y ~ x, weights = w, mean_function = "logistic5")
+    } else {
+      drda(y ~ x, weights = w, mean_function = "loglogistic5")
+    }
+
     deviance_df[3] <- fit$df.residual
     deviance_value[3] <- fit$rss
   }
@@ -468,20 +481,26 @@ anova.drda <- function(object, ...) {
 
   rownames(table)[1:2] <- c("Constant model", "Estimated model")
   if (k < 5) {
-    rownames(table)[3] <- "Full model (logistic5)"
+    rownames(table)[3] <- "Full model (5-parameters)"
   }
   colnames(table) <- c(
     "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
   )
 
   model <- switch(object$mean_function,
-    logistic2 = "2-parameter logistic",
-    logistic4 = "4-parameter logistic",
-    logistic5 = "5-parameter logistic",
-    logistic6 = "6-parameter logistic"
+    logistic2 = "1 / (1 + exp(-e * (x - p)))",
+    logistic4 = "a + (b - a) / (1 + exp(-e * (x - p)))",
+    logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
+    logistic6 = "a + (b - a) / (w + n * exp(-e * (x - p)))^(1 / n)",
+    gompertz = "a + (b - a) * exp(-exp(-e * (x - p)))",
+    loglogistic2 = "(±1) * x^e / (x^e + p^e)",
+    loglogistic4 = "a + d * x^e / (x^e + p^e)",
+    loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
+    loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
+    loggompertz = "a + d * exp(-(p / x)^e)"
   )
 
-  title <- paste("Analysis of Deviance Table\n\nModel: ", model, "\n", sep = "")
+  title <- paste0("Analysis of Deviance Table\n\nModel: ", model, "\n")
 
   structure(table, heading = title, class = c("anova", "data.frame"))
 }
@@ -501,7 +520,31 @@ anova.drdalist <- function(object, ...) {
   if (any(is_constrained)) {
     # solution to the constrained problem is unlikely the maximum likelihood
     # estimator, therefore the asymptotic approximation might not hold
-    stop("hypothesis testing is not available for constrained optimization")
+    stop(
+      "hypothesis testing is not available for constrained optimization",
+      call. = FALSE
+    )
+  }
+
+  model_type <- NULL
+  for (i in seq_len(n_models)) {
+    s <- substr(object[[i]]$mean_function, 1, 8)
+
+    if (s == "logistic" || s == "gompertz") {
+      if (!is.null(model_type) && model_type != 1) {
+        stop("curves defined on different domains", call. = FALSE)
+      }
+
+      model_type <- 1
+    } else if (s == "loglogis" || s == "loggompe") {
+      if (!is.null(model_type) && model_type != 2) {
+        stop("curves defined on different domains", call. = FALSE)
+      }
+
+      model_type <- 2
+    } else {
+      stop("model not supported", call. = FALSE)
+    }
   }
 
   n_residuals <- vapply(object, function(x) length(x$residuals), 0)
@@ -587,7 +630,12 @@ anova.drdalist <- function(object, ...) {
   deviance_value[1] <- sum(w * (y - weighted_mean)^2)
 
   if (k < 5) {
-    fit <- drda(y ~ x, weights = w, mean_function = "logistic5")
+    fit <- if (model_type == 1) {
+      drda(y ~ x, weights = w, mean_function = "logistic5")
+    } else {
+      drda(y ~ x, weights = w, mean_function = "loglogistic5")
+    }
+
     deviance_df[l] <- fit$df.residual
     deviance_value[l] <- fit$rss
   }
@@ -596,7 +644,6 @@ anova.drdalist <- function(object, ...) {
 
   aic <- 2 * (df - loglik)
   bic <- log_n * df - 2 * loglik
-
   df <- diff(df)
   lrt <- 2 * diff(loglik)
   dvn <- c(NA_real_, diff(deviance_value))
@@ -618,18 +665,36 @@ anova.drdalist <- function(object, ...) {
 
   title <- "Analysis of Deviance Table\n"
 
-  str <- vapply(object, function(z) z$mean_function, "string")
-  str <- paste("Model ", 2:(n_models + 1), ": ", str, sep = "")
+  f <- function(w) {
+    switch(w$mean_function,
+      logistic2 = "1 / (1 + exp(-e * (x - p)))",
+      logistic4 = "a + (b - a) / (1 + exp(-e * (x - p)))",
+      logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
+      logistic6 = "a + (b - a) / (w + n * exp(-e * (x - p)))^(1 / n)",
+      gompertz = "a + (b - a) * exp(-exp(-e * (x - p)))",
+      loglogistic2 = "(±1) * x^e / (x^e + p^e)",
+      loglogistic4 = "a + d * x^e / (x^e + p^e)",
+      loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
+      loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
+      loggompertz = "a + d * exp(-(p / x)^e)"
+    )
+  }
+
+  str <- vapply(object, f, "a")
+  str <- paste0("Model ", 2:(n_models + 1), ": ", str)
 
   topnote <- if (k >= 5) {
     str[n_models] <- paste(str[n_models], "(Full)")
-    paste(c("Model 1: Constant", str, "\n"), collapse = "\n")
+    paste(c("Model 1: a", str, "\n"), collapse = "\n")
   } else {
+    tmp <- if (model_type == 1) {
+      "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)"
+    } else {
+      "a + d * (x^e / (x^e + n * p^e))^(1 / n)"
+    }
+
     paste(
-      c(
-        "Model 1: Constant", str,
-        paste("Model ", l, ": logistic5 (Full)\n", sep = "")
-      ),
+      c("Model 1: a", str, paste0("Model ", l, ": ", tmp, "(Full)\n")),
       collapse = "\n"
     )
   }
@@ -718,7 +783,7 @@ print.drda <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
     sep = ""
   )
 
-  if (length(x$coefficients)) {
+  if (length(x$coefficients) > 0) {
     cat("Coefficients:\n")
 
     print.default(
@@ -832,7 +897,7 @@ sigma.drda <- function(object, ...) {
 #' @export
 summary.drda <- function(object, level = 0.95, ...) {
   if (level <= 0 || level >= 1) {
-    stop("Confidence level must be in the interval (0, 1)")
+    stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
   }
 
   std_err <- sqrt(diag(object$vcov))
@@ -867,19 +932,10 @@ summary.drda <- function(object, level = 0.95, ...) {
       c(
         "Estimate",
         "Std. Error",
-        paste(c("Lower .", "Upper ."), c(l, l), sep = "")
+        paste0(c("Lower .", "Upper ."), c(l, l))
       )
     )
   )
-
-  if (!object$is_log) {
-    # give the user summaries on the same scale they provided
-    if (inherits(object, "logistic2_fit")) {
-      object$param[2, ] <- exp(object$param[2, ])
-    } else if (inherits(object, "logistic4_fit")) {
-      object$param[4, ] <- exp(object$param[4, ])
-    }
-  }
 
   object$aic <- AIC(object)
   object$bic <- BIC(object)
