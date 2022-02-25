@@ -39,7 +39,7 @@ least squares is used.}
 \item{na.action}{a function which indicates what should happen when the data
 contain \code{NA}s. The default is set by the \code{na.action} setting of
 \code{\link[base]{options}}, and is \code{\link[stats]{na.fail}} if that is
-unset. The ‘factory-fresh’ default is \code{na.omit}. Another
+unset. The 'factory-fresh' default is \code{na.omit}. Another
 possible value is \code{NULL}, no action. Value \code{na.exclude} can be useful.}
 
 \item{mean_function}{the model to be fitted. See \code{details} for available
@@ -181,7 +181,7 @@ where \code{eta != 0}.
 Parameter \code{alpha} represents the lower horizontal asymptote of the curve.
 Parameter \code{beta} represents the upper horizontal asymptote of the curve.
 Parameter \code{eta} represents the steepness (growth rate) of the curve.
-Parameter \code{phi} is related to the value of the function at \code{x = 0}.
+Parameter \code{phi} sets the displacement along the \code{x}-axis.
 }
 
 \subsection{Generalized log-logistic function}{
@@ -192,7 +192,7 @@ this package as the 6-parameter function
 
 \code{alpha + delta * (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)}
 
-where \code{x > 0}, \code{eta > 0}, \code{phi > 0}, \code{nu > 0}, and \code{xi > 0}. When \code{delta} is
+where \code{x >= 0}, \code{eta > 0}, \code{phi > 0}, \code{nu > 0}, and \code{xi > 0}. When \code{delta} is
 positive (negative) the curve is monotonically increasing (decreasing). The
 function is defined only for positive values of the predictor variable \code{x}.
 
@@ -203,10 +203,85 @@ Parameter \code{eta} represents the steepness (growth rate) of the curve.
 Parameter \code{phi} is related to the mid-value of the function.
 Parameter \code{nu} affects near which asymptote maximum growth occurs.
 Parameter \code{xi} affects the value of the horizontal asymptote.
+}
 
-\strong{Note}: the 6-parameter log-logistic function is non-identifiable from data
-and should not be used in real applications. It is available only for
-theoretical research convenience.
+\subsection{5-parameter log-logistic function}{
+
+The 5-parameter log-logistic function is selected by setting
+\code{mean_function = "loglogistic5"} or \code{mean_function = "ll5"}. It is defined in
+this package as the 5-parameter function
+
+\code{alpha + delta * (x^eta / (x^eta + nu * phi^eta))^(1 / nu)}
+
+where \code{x >= 0}, \code{eta > 0}, \code{phi > 0}, and \code{nu > 0}. When \code{delta} is
+positive (negative) the curve is monotonically increasing (decreasing). The
+function is defined only for positive values of the predictor variable \code{x}.
+
+Parameter \code{alpha} is the value of the function at \code{x = 0}.
+Parameter \code{delta} is related to the horizontal asymptote of the curve as \code{x}
+approaches infinity.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the mid-value of the function.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+}
+
+\subsection{4-parameter log-logistic function}{
+
+The 4-parameter log-logistic function is selected by setting
+\code{mean_function = "loglogistic4"} or \code{mean_function = "ll4"}. It is defined in
+this package as the 4-parameter function
+
+\code{alpha + delta * x^eta / (x^eta + phi^eta)}
+
+where \code{x >= 0}, \code{eta > 0}, and \code{phi > 0}. When \code{delta} is positive (negative)
+the curve is monotonically increasing (decreasing). The function is defined
+only for positive values of the predictor variable \code{x}.
+
+Parameter \code{alpha} is the value of the function at \code{x = 0}.
+Parameter \code{delta} is related to the horizontal asymptote of the curve as \code{x}
+approaches infinity.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
+mid-point, i.e. \verb{f(phi; alpha, delta, eta, phi) = alpha + delta / 2}.
+}
+
+\subsection{2-parameter log-logistic function}{
+
+The 2-parameter log-logistic function is selected by setting
+\code{mean_function = "loglogistic2"} or \code{mean_function = "ll2"}. It is defined in
+this package either as
+
+\code{x^eta / (x^eta + phi^eta)}
+
+if monotonically increasing, or
+
+\code{1 - x^eta / (x^eta + phi^eta)}
+
+if monotonically decreasing, where \code{x >= 0}, \code{eta > 0}, and \code{phi > 0}. The
+lower bound of the curve is zero while the upper bound of the curve is one.
+
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} represents the \code{x} value at which the curve is equal to its
+mid-point, i.e. \verb{f(phi; eta, phi) = 1 / 2}.
+}
+
+\subsection{log-Gompertz function}{
+
+The log-Gompertz function is the limit for \code{nu -> 0} of the 5-parameter
+log-logistic function. It can be selected by choosing
+\code{mean_function = "loggompertz"} or \code{mean_function = "lgz"}. The function is
+defined in this package as
+
+\code{alpha + delta * exp(-(phi / x)^eta)}
+
+where \code{x > 0}, \code{eta > 0}, and \code{phi > 0}. Note that the limit for \code{x -> 0} is
+\code{alpha}.
+
+Parameter \code{alpha} is the value of the function at \code{x = 0}.
+Parameter \code{delta} is related to the horizontal asymptote of the curve as \code{x}
+approaches infinity.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} sets the displacement along the \code{x}-axis.
 }
 
 \subsection{Constrained optimization}{
@@ -217,7 +292,7 @@ must be greater than the lower horizontal asymptote \code{alpha}, intervals are
 adjusted to satisfy this constraint.
 
 \emph{Note}: Hypothesis testing is not available for constrained estimates
-because asymptotic approximations might not be valid
+because asymptotic approximations might not be valid.
 }
 
 }

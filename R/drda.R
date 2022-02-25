@@ -20,7 +20,7 @@
 #' @param na.action a function which indicates what should happen when the data
 #'   contain `NA`s. The default is set by the `na.action` setting of
 #'   \code{\link[base]{options}}, and is \code{\link[stats]{na.fail}} if that is
-#'   unset. The ‘factory-fresh’ default is \code{na.omit}. Another
+#'   unset. The 'factory-fresh' default is \code{na.omit}. Another
 #'   possible value is `NULL`, no action. Value \code{na.exclude} can be useful.
 #' @param mean_function the model to be fitted. See `details` for available
 #'   models.
@@ -116,7 +116,7 @@
 #' Parameter `alpha` represents the lower horizontal asymptote of the curve.
 #' Parameter `beta` represents the upper horizontal asymptote of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
-#' Parameter `phi` is related to the value of the function at `x = 0`.
+#' Parameter `phi` sets the displacement along the `x`-axis.
 #'
 #' ### Generalized log-logistic function
 #'
@@ -126,7 +126,7 @@
 #'
 #' `alpha + delta * (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)`
 #'
-#' where `x > 0`, `eta > 0`, `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is
+#' where `x >= 0`, `eta > 0`, `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is
 #' positive (negative) the curve is monotonically increasing (decreasing). The
 #' function is defined only for positive values of the predictor variable `x`.
 #'
@@ -138,9 +138,80 @@
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
 #' Parameter `xi` affects the value of the horizontal asymptote.
 #'
-#' **Note**: the 6-parameter log-logistic function is non-identifiable from data
-#' and should not be used in real applications. It is available only for
-#' theoretical research convenience.
+#' ### 5-parameter log-logistic function
+#'
+#' The 5-parameter log-logistic function is selected by setting
+#' `mean_function = "loglogistic5"` or `mean_function = "ll5"`. It is defined in
+#' this package as the 5-parameter function
+#'
+#' `alpha + delta * (x^eta / (x^eta + nu * phi^eta))^(1 / nu)`
+#'
+#' where `x >= 0`, `eta > 0`, `phi > 0`, and `nu > 0`. When `delta` is
+#' positive (negative) the curve is monotonically increasing (decreasing). The
+#' function is defined only for positive values of the predictor variable `x`.
+#'
+#' Parameter `alpha` is the value of the function at `x = 0`.
+#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
+#' approaches infinity.
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` is related to the mid-value of the function.
+#' Parameter `nu` affects near which asymptote maximum growth occurs.
+#'
+#' ### 4-parameter log-logistic function
+#'
+#' The 4-parameter log-logistic function is selected by setting
+#' `mean_function = "loglogistic4"` or `mean_function = "ll4"`. It is defined in
+#' this package as the 4-parameter function
+#'
+#' `alpha + delta * x^eta / (x^eta + phi^eta)`
+#'
+#' where `x >= 0`, `eta > 0`, and `phi > 0`. When `delta` is positive (negative)
+#' the curve is monotonically increasing (decreasing). The function is defined
+#' only for positive values of the predictor variable `x`.
+#'
+#' Parameter `alpha` is the value of the function at `x = 0`.
+#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
+#' approaches infinity.
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` represents the `x` value at which the curve is equal to its
+#' mid-point, i.e. `f(phi; alpha, delta, eta, phi) = alpha + delta / 2`.
+#'
+#' ### 2-parameter log-logistic function
+#'
+#' The 2-parameter log-logistic function is selected by setting
+#' `mean_function = "loglogistic2"` or `mean_function = "ll2"`. It is defined in
+#' this package either as
+#'
+#' `x^eta / (x^eta + phi^eta)`
+#'
+#' if monotonically increasing, or
+#'
+#' `1 - x^eta / (x^eta + phi^eta)`
+#'
+#' if monotonically decreasing, where `x >= 0`, `eta > 0`, and `phi > 0`. The
+#' lower bound of the curve is zero while the upper bound of the curve is one.
+#'
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` represents the `x` value at which the curve is equal to its
+#' mid-point, i.e. `f(phi; eta, phi) = 1 / 2`.
+#'
+#' ### log-Gompertz function
+#'
+#' The log-Gompertz function is the limit for `nu -> 0` of the 5-parameter
+#' log-logistic function. It can be selected by choosing
+#' `mean_function = "loggompertz"` or `mean_function = "lgz"`. The function is
+#' defined in this package as
+#'
+#' `alpha + delta * exp(-(phi / x)^eta)`
+#'
+#' where `x > 0`, `eta > 0`, and `phi > 0`. Note that the limit for `x -> 0` is
+#' `alpha`.
+#'
+#' Parameter `alpha` is the value of the function at `x = 0`.
+#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
+#' approaches infinity.
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` sets the displacement along the `x`-axis.
 #'
 #' ### Constrained optimization
 #'
@@ -150,7 +221,7 @@
 #' adjusted to satisfy this constraint.
 #'
 #' *Note*: Hypothesis testing is not available for constrained estimates
-#' because asymptotic approximations might not be valid
+#' because asymptotic approximations might not be valid.
 #'
 #' @return An object of class `drda` and `model_fit`, where `model` is the
 #' chosen mean function. It is a list containing the following components:
@@ -315,29 +386,44 @@ drda <- function(
   }
 
   object <- if (mean_function == "logistic4" || mean_function == "l4") {
+    # we want to make sure it is the full name instead of the abbreviation
+    mean_function <- "logistic4"
     logistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
   } else if (mean_function == "logistic2" || mean_function == "l2") {
+    mean_function <- "logistic2"
     logistic2_new(x, y, w, start, max_iter, lower_bound, upper_bound)
   } else if (mean_function == "logistic5" || mean_function == "l5") {
+    mean_function <- "logistic5"
     logistic5_new(x, y, w, start, max_iter, lower_bound, upper_bound)
   } else if (mean_function == "gompertz" || mean_function == "gz") {
+    mean_function <- "gompertz"
     gompertz_new(x, y, w, start, max_iter, lower_bound, upper_bound)
   } else if (mean_function == "logistic6" || mean_function == "l6") {
+    mean_function <- "logistic6"
     logistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)
-  } else if (mean_function == "loglogistic6" || mean_function == "ll6") {
+  } else {
     if (any(x < 0)) {
+      stop("predictor variable 'x' is not stricly positive", call. = FALSE)
+    }
+
+    if (mean_function == "loglogistic4" || mean_function == "ll4") {
+      mean_function <- "loglogistic4"
+      loglogistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+    } else if (mean_function == "loglogistic2" || mean_function == "ll2") {
+      mean_function <- "loglogistic2"
+      loglogistic2_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+    } else if (mean_function == "loglogistic5" || mean_function == "ll5") {
+      mean_function <- "loglogistic5"
+      loglogistic5_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+    } else if (mean_function == "loglogistic6" || mean_function == "ll6") {
+      mean_function <- "loglogistic6"
+      loglogistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+    } else {
       stop(
-        "predictor variable 'x' is not stricly positive",
+        "chosen 'mean_function' is wrongly typed or not yet available",
         call. = FALSE
       )
     }
-
-    loglogistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)
-  } else {
-    stop(
-      "chosen 'mean_function' is wrongly typed or not yet available",
-      call. = FALSE
-    )
   }
 
   result <- if (!object$constrained) {
@@ -361,7 +447,7 @@ drda <- function(
   } else {
     k <- nrow(result$fisher.info)
     idx <- which(!result$estimated)
-    vcov <- matrix(NA, nrow = k, ncol = k)
+    vcov <- matrix(NA_real_, nrow = k, ncol = k)
     vcov[-idx, -idx] <- approx_vcov(result$fisher.info[-idx, -idx])
     vcov
   }
@@ -672,7 +758,7 @@ anova.drdalist <- function(object, ...) {
       logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
       logistic6 = "a + (b - a) / (w + n * exp(-e * (x - p)))^(1 / n)",
       gompertz = "a + (b - a) * exp(-exp(-e * (x - p)))",
-      loglogistic2 = "(±1) * x^e / (x^e + p^e)",
+      loglogistic2 = "c(0, 1) + c(1, -1) * x^e / (x^e + p^e)",
       loglogistic4 = "a + d * x^e / (x^e + p^e)",
       loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
       loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",

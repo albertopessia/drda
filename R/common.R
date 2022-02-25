@@ -8,9 +8,9 @@
 # @param w numeric vector of weights.
 #
 # @return Numeric matrix where the first column are the sorted unique values of
-#   input vector `x`, second column are the total weights (sample size if no
-#   weights), third column are the (weighted) sample means, and fourth column
-#   are the uncorrected (weighted) sample variances.
+#   input vector `x`, second column are the total weights (sample size if all
+#   weights are 1), third column are the (weighted) sample means, and fourth
+#   column are the uncorrected (weighted) sample variances.
 suff_stats <- function(x, y, w) {
   unique_x <- sort(unique(x))
   k <- length(unique_x)
@@ -39,8 +39,7 @@ suff_stats <- function(x, y, w) {
 
 # Variance estimator
 #
-# Compute the corrected variance estimate associated with a Normal
-# distribution.
+# Compute the corrected variance estimate associated with a Normal distribution.
 #
 # @param rss value of the residual sum of squares.
 # @param df residual degrees of freedom.
@@ -100,9 +99,7 @@ approx_vcov <- function(fim) {
   # total number of parameters (last one is always the standard deviation)
   p <- nrow(fim)
 
-  if (is.null(vcov)) {
-    vcov <- matrix(NA_real_, nrow = p, ncol = p)
-  } else {
+  if (!is.null(vcov)) {
     d <- diag(vcov)
 
     # variances cannot be negative, but small values within tolerable numerical
@@ -126,6 +123,8 @@ approx_vcov <- function(fim) {
         vcov <- matrix(NA_real_, nrow = p, ncol = p)
       }
     }
+  } else {
+    vcov <- matrix(NA_real_, nrow = p, ncol = p)
   }
 
   lab <- rownames(fim)

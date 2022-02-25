@@ -14,7 +14,7 @@ loglogistic6_fn(x, theta)
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
-logistic function.
+log-logistic function.
 }
 \description{
 Evaluate at a particular set of parameters the 6-parameter log-logistic
@@ -23,7 +23,7 @@ function.
 \details{
 The 6-parameter log-logistic function \verb{f(x; theta)} is defined here as
 
-\verb{g(x; theta) = x^(eta / nu) / (xi * x^eta + nu * phi^eta)^(1 / nu)}
+\verb{g(x; theta) = (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)}
 \verb{f(x; theta) = alpha + delta g(x; theta)}
 
 where \code{x >= 0}, \code{theta = c(alpha, delta, eta, phi, nu, xi)}, \code{eta > 0},
