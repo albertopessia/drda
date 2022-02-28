@@ -46,6 +46,10 @@ curve_variance <- function(object, x) {
   UseMethod("curve_variance", object)
 }
 
+plot_params <- function(object, base, xlim, ylim) {
+  UseMethod("plot_params", object)
+}
+
 #' Area under the curve
 #'
 #' Evaluate the normalized area under the curve (NAUC).

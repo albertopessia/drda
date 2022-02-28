@@ -89,15 +89,9 @@ plot.drda <- function(x, ...) {
     midpoint <- TRUE
   }
 
-  s <- substr(x$mean_function, 1, 8)
-
-  params <- if (s == "logistic" || s == "gompertz") {
-    plot_logistic(x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]])
-  } else if (s == "loglogis" || s == "loggompe") {
-    plot_loglogistic(x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]])
-  } else {
-    stop("model not supported", call. = FALSE)
-  }
+  params <- plot_params(
+    x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+  )
 
   dev.hold()
 
@@ -240,38 +234,33 @@ plot.drdalist <- function(x, ...) {
   }
 
   params <- vector("list", n_curves)
-  plot_type <- NULL
 
-  for (i in seq_len(n_curves)) {
-    s <- substr(x[[i]]$mean_function, 1, 8)
+  plot_type <- 1
+  if (inherits(x[[n_curves]], "loglogistic")) {
+    plot_type <- 2
+  }
 
-    if (s == "logistic" || s == "gompertz") {
-      if (!is.null(plot_type) && plot_type != 1) {
-        stop("curves defined on different domains", call. = FALSE)
-      }
+  params[[n_curves]] <- plot_params(
+    x[[n_curves]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+  )
 
-      plot_type <- 1
-
-      params[[i]] <- plot_logistic(
-        x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
-      )
-    } else if (s == "loglogis" || s == "loggompe") {
-      if (!is.null(plot_type) && plot_type != 2) {
-        stop("curves defined on different domains", call. = FALSE)
-      }
-
-      plot_type <- 2
-
-      params[[i]] <- plot_loglogistic(
-        x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
-      )
-    } else {
-      stop("model not supported", call. = FALSE)
+  for (i in seq_len(n_curves - 1)) {
+    if (
+      (inherits(x[[i]], "logistic") && plot_type != 1) ||
+      (inherits(x[[i]], "loglogistic") && plot_type != 2)
+    ) {
+      stop("curves defined on different domains", call. = FALSE)
     }
+
+    params[[i]] <- plot_params(
+      x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+    )
   }
 
   tmp <- vapply(params, function(w) w$xlim, numeric(2))
-  xlim <- c(min(tmp[1, ]), max(tmp[2, ]))
+
+  j <- which.max(tmp[2, ])
+  xlim <- c(min(tmp[1, ]), tmp[2, j])
 
   tmp <- vapply(params, function(w) w$ylim, numeric(2))
   ylim <- c(min(tmp[1, ]), max(tmp[2, ]))
@@ -284,35 +273,32 @@ plot.drdalist <- function(x, ...) {
   )
 
   if (plot_type == 1) {
-    axis(1, at = params[[1]]$x_axis_ticks, labels = params[[1]]$x_axis_labels)
+    axis(1, at = params[[j]]$x_axis_ticks, labels = params[[j]]$x_axis_labels)
   } else if (plot_type == 2) {
     axis(
-      1, at = params[[1]]$x_axis_ticks_1, labels = params[[1]]$x_axis_labels_1
+      1, at = params[[j]]$x_axis_ticks_1, labels = params[[j]]$x_axis_labels_1
     )
     axis(
-      1, at = params[[1]]$x_axis_ticks_2, labels = params[[1]]$x_axis_labels_2
-    )
-
-    axis(
-      1, at = params[[1]]$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl")
-    )
-    axis(
-      1, at = params[[1]]$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl")
+      1, at = params[[j]]$x_axis_ticks_2, labels = params[[j]]$x_axis_labels_2
     )
 
     axis(
-      1, at = params[[1]]$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5
+      1, at = params[[j]]$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl")
+    )
+    axis(
+      1, at = params[[j]]$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl")
     )
   }
 
+  axis(1, at = params[[j]]$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
   axis(2, at = pretty(ylim))
 
-  box_x <- par("usr")[params[[1]]$box$x]
-  box_y <- par("usr")[params[[2]]$box$y]
+  box_x <- par("usr")[params[[j]]$box$x]
+  box_y <- par("usr")[params[[j]]$box$y]
 
-  if (!is.null(params[[1]]$box$z)) {
-    box_x[1] <- params[[1]]$box$z[1]
-    box_x[10] <- params[[1]]$box$z[2]
+  if (!is.null(params[[j]]$box$z)) {
+    box_x[1] <- params[[j]]$box$z[1]
+    box_x[10] <- params[[j]]$box$z[2]
   }
 
   lines(x = box_x, y = box_y)
@@ -382,7 +368,7 @@ plot.drdalist <- function(x, ...) {
 # @param ylim the range of `y` values.
 #
 # @return List with processed graphical parameters.
-plot_logistic <- function(x, base, xlim, ylim) {
+plot_params.logistic <- function(x, base, xlim, ylim) {
   # these constants are used for proper scaling on the requested base
   k <- 1
 
@@ -481,7 +467,6 @@ plot_logistic <- function(x, base, xlim, ylim) {
   }
 
   xx <- seq(xlim[1], xlim[2], length.out = 500)
-  zz <-
   mu <- fn(x, xx, theta)
   cv <- curve_variance(x, xx)
 
@@ -596,7 +581,7 @@ plot_logistic <- function(x, base, xlim, ylim) {
 # @param ylim the range of `y` values.
 #
 # @return List with processed graphical parameters.
-plot_loglogistic <- function(x, base, xlim, ylim) {
+plot_params.loglogistic <- function(x, base, xlim, ylim) {
   # these constants are used for proper scaling on the requested base
   k <- 1
   h <- exp(3)
@@ -630,11 +615,9 @@ plot_loglogistic <- function(x, base, xlim, ylim) {
   }
 
   if (x$mean_function == "loglogistic4") {
-    mp <- theta[4]
+    mp <- log(theta[4])
   } else if (x$mean_function == "loglogistic2") {
-    lb <- 0
-    ub <- 1
-    mp <- theta[2]
+    mp <- log(theta[4])
   } else if (x$mean_function == "loglogistic5") {
     mp <- log(theta[4]) + (log(theta[5]) - log(2^theta[5] - 1)) / theta[3]
   } else if (x$mean_function == "loggompertz") {
@@ -683,9 +666,9 @@ plot_loglogistic <- function(x, base, xlim, ylim) {
     }
 
     if (xlim[1] > mp) {
-      xlim[1] <- mp - 50
+      xlim[1] <- mp - 3
     } else if (xlim[2] < mp) {
-      xlim[2] <- mp + 50
+      xlim[2] <- mp + 3
     }
   }
 

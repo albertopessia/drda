@@ -495,6 +495,7 @@ test_that("fit", {
   result <- fit(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -510,6 +511,7 @@ test_that("fit", {
   result <- fit(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -574,6 +576,7 @@ test_that("fit_constrained: inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -592,6 +595,7 @@ test_that("fit_constrained: inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -610,6 +614,7 @@ test_that("fit_constrained: inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -674,6 +679,7 @@ test_that("fit_constrained: equalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -692,6 +698,7 @@ test_that("fit_constrained: equalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -710,6 +717,7 @@ test_that("fit_constrained: equalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -774,6 +782,7 @@ test_that("fit_constrained: equalities and inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -792,6 +801,7 @@ test_that("fit_constrained: equalities and inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -810,6 +820,7 @@ test_that("fit_constrained: equalities and inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -872,6 +883,7 @@ test_that("fit (weighted)", {
   result <- fit(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -887,6 +899,7 @@ test_that("fit (weighted)", {
   result <- fit(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -951,6 +964,7 @@ test_that("fit_constrained (weighted): inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -969,6 +983,7 @@ test_that("fit_constrained (weighted): inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -987,6 +1002,7 @@ test_that("fit_constrained (weighted): inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1051,6 +1067,7 @@ test_that("fit_constrained (weighted): equalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1069,6 +1086,7 @@ test_that("fit_constrained (weighted): equalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1087,6 +1105,7 @@ test_that("fit_constrained (weighted): equalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_false(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1151,6 +1170,7 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1169,6 +1189,7 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)
@@ -1187,6 +1208,7 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
   result <- fit_constrained(object)
 
   expect_true(inherits(result, "gompertz_fit"))
+  expect_true(inherits(result, "logistic"))
   expect_true(result$converged)
   expect_true(result$constrained)
   expect_equal(result$estimated, estimated)

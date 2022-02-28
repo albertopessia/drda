@@ -638,7 +638,7 @@ fit.logistic5 <- function(object) {
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "logistic5_fit"
+  class(result) <- c("logistic5_fit", "logistic")
 
   result
 }
@@ -694,7 +694,7 @@ fit_constrained.logistic5 <- function(object) {
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "logistic5_fit"
+  class(result) <- c("logistic5_fit", "logistic")
 
   result
 }

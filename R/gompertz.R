@@ -607,7 +607,7 @@ fit.gompertz <- function(object) {
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "gompertz_fit"
+  class(result) <- c("gompertz_fit", "logistic")
 
   result
 }
@@ -662,7 +662,7 @@ fit_constrained.gompertz <- function(object) {
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "gompertz_fit"
+  class(result) <- c("gompertz_fit", "logistic")
 
   result
 }
