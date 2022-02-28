@@ -415,6 +415,9 @@ drda <- function(
     } else if (mean_function == "loglogistic5" || mean_function == "ll5") {
       mean_function <- "loglogistic5"
       loglogistic5_new(x, y, w, start, max_iter, lower_bound, upper_bound)
+    } else if (mean_function == "loggompertz" || mean_function == "lgz") {
+      mean_function <- "loggompertz"
+      loggompertz_new(x, y, w, start, max_iter, lower_bound, upper_bound)
     } else if (mean_function == "loglogistic6" || mean_function == "ll6") {
       mean_function <- "loglogistic6"
       loglogistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)

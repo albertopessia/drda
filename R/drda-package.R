@@ -19,6 +19,7 @@
 #'   \item{`loglogistic4_fn`: 4-parameter log-logistic function.}
 #'   \item{`loglogistic5_fn`: 5-parameter log-logistic function.}
 #'   \item{`loglogistic6_fn`: 6-parameter log-logistic function.}
+#'   \item{`loggompertz_fn`: log-Gompertz function.}
 #'   \item{`nauc`: normalized area under the curve.}
 #'   \item{`naac`: normalized area above the curve.}
 #' }
