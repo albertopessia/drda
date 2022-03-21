@@ -543,7 +543,7 @@ anova.drda <- function(object, ...) {
 
   if (k < 5) {
     # at least a parameter was considered fixed, so we now fit the full model
-    s <- substr(x$mean_function, 1, 8)
+    s <- substr(object$mean_function, 1, 8)
     fit <- if (s == "logistic" || s == "gompertz") {
       drda(y ~ x, weights = w, mean_function = "logistic5")
     } else {
@@ -582,7 +582,7 @@ anova.drda <- function(object, ...) {
     logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
     logistic6 = "a + (b - a) / (w + n * exp(-e * (x - p)))^(1 / n)",
     gompertz = "a + (b - a) * exp(-exp(-e * (x - p)))",
-    loglogistic2 = "(±1) * x^e / (x^e + p^e)",
+    loglogistic2 = "c(-1, 1) * x^e / (x^e + p^e)",
     loglogistic4 = "a + d * x^e / (x^e + p^e)",
     loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
     loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
@@ -754,8 +754,8 @@ anova.drdalist <- function(object, ...) {
 
   title <- "Analysis of Deviance Table\n"
 
-  f <- function(w) {
-    switch(w$mean_function,
+  f <- function(x) {
+    switch(x$mean_function,
       logistic2 = "1 / (1 + exp(-e * (x - p)))",
       logistic4 = "a + (b - a) / (1 + exp(-e * (x - p)))",
       logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
