@@ -601,7 +601,7 @@ After loading the package, the \fct{drda} function can be applied directly to th
 
 <<>>=
 library("drda")
-fit <- drda(relative_viability ~ dose, is_log = FALSE)
+fit <- drda(relative_viability ~ dose, mean_function = "loglogistic4")
 @
 
 We can obtain exactly the same fitting using the log-doses and ignoring the \code{is_log} argument and storing the variables into a data frame.
@@ -612,7 +612,7 @@ log_dose <- log(dose)
 test_data <- data.frame(d = dose, x = log_dose, y = relative_viability)
 
 fit <- drda(relative_viability ~ log_dose)
-fit <- drda(y ~ d, data = test_data, is_log = FALSE)
+fit <- drda(y ~ d, data = test_data, mean_function = "loglogistic4")
 fit <- drda(y ~ x, data = test_data)
 @
 
