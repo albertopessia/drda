@@ -41,21 +41,17 @@
 #' `mean_function = "logistic6"` or `mean_function = "l6"`. It is defined in
 #' this package as the 6-parameter function
 #'
-#' `alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + delta / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' where `eta != 0`, `nu > 0`, and `xi > 0`. Although `beta` can be any real
-#' value, we use the convention `beta > alpha` to avoid identifiability
-#' problems: when `beta < alpha` it is always possible to adjust the other
-#' parameters to obtain the same exact curve. When `beta > alpha` and `eta > 0`
-#' the curve is monotonically increasing. If `beta > alpha` and `eta < 0` the
-#' curve is monotonically decreasing.
+#' where `eta > 0`, `nu > 0`, and `xi > 0`. When `delta` is positive (negative)
+#' the curve is monotonically increasing (decreasing).
 #'
-#' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` is related to the upper horizontal asymptote of the curve.
+#' Parameter `alpha` is the value of the function when `x -> -Inf`.
+#' Parameter `delta` affects the value of the function when `x -> Inf`.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
-#' Parameter `phi` is related to the value of the function at `x = 0`.
+#' Parameter `phi` is related to the mid-value of the function.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
-#' Parameter `xi` affects the value of the upper asymptote.
+#' Parameter `xi` affects the value of the function when `x -> Inf`.
 #'
 #' **Note**: the 6-parameter logistic function is non-identifiable from data and
 #' should not be used in real applications. It is available only for theoretical
@@ -67,13 +63,20 @@
 #' `mean_function = "logistic5"` or `mean_function = "l5"`. The function is
 #' obtained by setting `xi = 1` in the generalized logistic function, that is
 #'
-#' `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `alpha + delta / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
-#' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` represents the upper horizontal asymptote of the curve.
+#' where `eta > 0` and `nu > 0`. When `delta` is positive (negative) the curve
+#' is monotonically increasing (decreasing).
+#'
+#' Parameter `alpha` is the value of the function when `x -> -Inf`.
+#' Parameter `delta` is the (signed) height of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
-#' Parameter `phi` is related to the value of the function at `x = 0`.
+#' Parameter `phi` is related to the mid-value of the function.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
+#'
+#' The value of the function when `x -> Inf` is `alpha + delta`. In
+#' dose-response studies `delta` can be interpreted as the maximum theoretical
+#' achievable effect.
 #'
 #' ### 4-parameter logistic function
 #'
@@ -82,22 +85,36 @@
 #' `mean_function = "l4"`. The function is obtained by setting `xi = 1` and
 #' `nu = 1` in the generalized logistic function, that is
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `alpha + delta / (1 + exp(-eta * (x - phi)))`
 #'
-#' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` represents the upper horizontal asymptote of the curve.
+#' where `eta > 0`. When `delta` is positive (negative) the curve is
+#' monotonically increasing (decreasing).
+#'
+#' Parameter `alpha` is the value of the function when `x -> -Inf`.
+#' Parameter `delta` is the (signed) height of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
-#' mid-point, i.e. `f(phi; alpha, beta, eta, phi) = (alpha + beta) / 2`.
+#' mid-point, i.e. `f(phi; alpha, delta, eta, phi) = alpha + delta / 2`.
+#'
+#' The value of the function when `x -> Inf` is `alpha + delta`. In
+#' dose-response studies `delta` can be interpreted as the maximum theoretical
+#' achievable effect.
 #'
 #' ### 2-parameter logistic function
 #'
 #' The 2-parameter logistic function can be selected by choosing
-#' `mean_function = "logistic2"` or `mean_function = "l2"`. The function is
-#' obtained by setting `xi = 1`, `nu = 1`, `beta = 1`, and `alpha = 0` in the
-#' generalized logistic function, that is
+#' `mean_function = "logistic2"` or `mean_function = "l2"`. For a monotonically
+#' increasing curve set `xi = 1`, `nu = 1`, `alpha = 0`, and `delta = 1`:
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
+#'
+#' For a monotonically decreasing curve set `xi = 1`, `nu = 1`, `alpha = 1`, and
+#' `delta = -1`:
+#'
+#' `1 - 1 / (1 + exp(-eta * (x - phi)))`
+#'
+#' where `eta > 0`. The lower bound of the curve is zero while the upper bound
+#' of the curve is one.
 #'
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
@@ -109,14 +126,21 @@
 #' function. It can be selected by choosing `mean_function = "gompertz"` or
 #' `mean_function = "gz"`. The function is defined in this package as
 #'
-#' `alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))`
+#' `alpha + delta * exp(-exp(-eta * (x - phi)))`
 #'
-#' where `eta != 0`.
+#' where `eta > 0`.
 #'
-#' Parameter `alpha` represents the lower horizontal asymptote of the curve.
-#' Parameter `beta` represents the upper horizontal asymptote of the curve.
+#' Parameter `alpha` is the value of the function when `x -> -Inf`.
+#' Parameter `delta` is the (signed) height of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` sets the displacement along the `x`-axis.
+#'
+#' The value of the function when `x -> Inf` is `alpha + delta`. In
+#' dose-response studies `delta` can be interpreted as the maximum theoretical
+#' achievable effect.
+#'
+#' The mid-point of the function, that is `alpha + delta / 2`, is achieved at
+#' `x = phi - log(log(2)) / eta`.
 #'
 #' ### Generalized log-logistic function
 #'
@@ -131,18 +155,18 @@
 #' function is defined only for positive values of the predictor variable `x`.
 #'
 #' Parameter `alpha` is the value of the function at `x = 0`.
-#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
-#' approaches infinity.
+#' Parameter `delta` affects the value of the function when `x -> Inf`.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the mid-value of the function.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
-#' Parameter `xi` affects the value of the horizontal asymptote.
+#' Parameter `xi` affects the value of the function when `x -> Inf`.
 #'
 #' ### 5-parameter log-logistic function
 #'
 #' The 5-parameter log-logistic function is selected by setting
-#' `mean_function = "loglogistic5"` or `mean_function = "ll5"`. It is defined in
-#' this package as the 5-parameter function
+#' `mean_function = "loglogistic5"` or `mean_function = "ll5"`. The function is
+#' obtained by setting `xi = 1` in the generalized log-logistic function, that
+#' is
 #'
 #' `alpha + delta * (x^eta / (x^eta + nu * phi^eta))^(1 / nu)`
 #'
@@ -151,45 +175,54 @@
 #' function is defined only for positive values of the predictor variable `x`.
 #'
 #' Parameter `alpha` is the value of the function at `x = 0`.
-#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
-#' approaches infinity.
+#' Parameter `delta` is the (signed) height of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` is related to the mid-value of the function.
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
 #'
+#' The value of the function when `x -> Inf` is `alpha + delta`. In
+#' dose-response studies `delta` can be interpreted as the maximum theoretical
+#' achievable effect.
+#'
 #' ### 4-parameter log-logistic function
 #'
 #' The 4-parameter log-logistic function is selected by setting
-#' `mean_function = "loglogistic4"` or `mean_function = "ll4"`. It is defined in
-#' this package as the 4-parameter function
+#' `mean_function = "loglogistic4"` or `mean_function = "ll4"`. The function is
+#' obtained by setting `xi = 1` and `nu = 1` in the generalized log-logistic
+#' function, that is
 #'
 #' `alpha + delta * x^eta / (x^eta + phi^eta)`
 #'
-#' where `x >= 0`, `eta > 0`, and `phi > 0`. When `delta` is positive (negative)
-#' the curve is monotonically increasing (decreasing). The function is defined
-#' only for positive values of the predictor variable `x`.
+#' where `x >= 0` and `eta > 0`. When `delta` is positive (negative) the curve
+#' is monotonically increasing (decreasing). The function is defined only for
+#' positive values of the predictor variable `x`.
 #'
 #' Parameter `alpha` is the value of the function at `x = 0`.
-#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
-#' approaches infinity.
+#' Parameter `delta` is the (signed) height of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
 #' mid-point, i.e. `f(phi; alpha, delta, eta, phi) = alpha + delta / 2`.
 #'
+#' The value of the function when `x -> Inf` is `alpha + delta`. In
+#' dose-response studies `delta` can be interpreted as the maximum theoretical
+#' achievable effect.
+#'
 #' ### 2-parameter log-logistic function
 #'
 #' The 2-parameter log-logistic function is selected by setting
-#' `mean_function = "loglogistic2"` or `mean_function = "ll2"`. It is defined in
-#' this package either as
+#' `mean_function = "loglogistic2"` or `mean_function = "ll2"`. For a
+#' monotonically increasing curve set `xi = 1`, `nu = 1`, `alpha = 0`, and
+#' `delta = 1`:
 #'
 #' `x^eta / (x^eta + phi^eta)`
 #'
-#' if monotonically increasing, or
+#' For a monotonically decreasing curve set `xi = 1`, `nu = 1`, `alpha = 1`, and
+#' `delta = -1`:
 #'
 #' `1 - x^eta / (x^eta + phi^eta)`
 #'
-#' if monotonically decreasing, where `x >= 0`, `eta > 0`, and `phi > 0`. The
-#' lower bound of the curve is zero while the upper bound of the curve is one.
+#' where `x >= 0`, `eta > 0`, and `phi > 0`. The lower bound of the curve is
+#' zero while the upper bound of the curve is one.
 #'
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` represents the `x` value at which the curve is equal to its
@@ -205,20 +238,23 @@
 #' `alpha + delta * exp(-(phi / x)^eta)`
 #'
 #' where `x > 0`, `eta > 0`, and `phi > 0`. Note that the limit for `x -> 0` is
-#' `alpha`.
+#' `alpha`. When `delta` is positive (negative) the curve is monotonically
+#' increasing (decreasing). The function is defined only for positive values of
+#' the predictor variable `x`.
 #'
 #' Parameter `alpha` is the value of the function at `x = 0`.
-#' Parameter `delta` is related to the horizontal asymptote of the curve as `x`
-#' approaches infinity.
+#' Parameter `delta` is the (signed) height of the curve.
 #' Parameter `eta` represents the steepness (growth rate) of the curve.
 #' Parameter `phi` sets the displacement along the `x`-axis.
+#'
+#' The value of the function when `x -> Inf` is `alpha + delta`. In
+#' dose-response studies `delta` can be interpreted as the maximum theoretical
+#' achievable effect.
 #'
 #' ### Constrained optimization
 #'
 #' It is possible to search for the maximum likelihood estimates within
-#' pre-specified interval regions. Since the upper horizontal asymptote `beta`
-#' must be greater than the lower horizontal asymptote `alpha`, intervals are
-#' adjusted to satisfy this constraint.
+#' pre-specified interval regions.
 #'
 #' *Note*: Hypothesis testing is not available for constrained estimates
 #' because asymptotic approximations might not be valid.
@@ -403,7 +439,7 @@ drda <- function(
     logistic6_new(x, y, w, start, max_iter, lower_bound, upper_bound)
   } else {
     if (any(x < 0)) {
-      stop("predictor variable 'x' is not stricly positive", call. = FALSE)
+      stop("predictor variable 'x' is negative", call. = FALSE)
     }
 
     if (mean_function == "loglogistic4" || mean_function == "ll4") {
@@ -577,12 +613,20 @@ anova.drda <- function(object, ...) {
   )
 
   model <- switch(object$mean_function,
-    logistic2 = "1 / (1 + exp(-e * (x - p)))",
-    logistic4 = "a + (b - a) / (1 + exp(-e * (x - p)))",
-    logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
-    logistic6 = "a + (b - a) / (w + n * exp(-e * (x - p)))^(1 / n)",
-    gompertz = "a + (b - a) * exp(-exp(-e * (x - p)))",
-    loglogistic2 = "c(-1, 1) * x^e / (x^e + p^e)",
+    logistic2 = if (object$coefficients[2] >= 0) {
+      "1 / (1 + exp(-e * (x - p)))"
+    } else {
+      "1 - 1 / (1 + exp(-e * (x - p)))"
+    },
+    logistic4 = "a + d / (1 + exp(-e * (x - p)))",
+    logistic5 = "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)",
+    logistic6 = "a + d / (w + n * exp(-e * (x - p)))^(1 / n)",
+    gompertz = "a + d * exp(-exp(-e * (x - p)))",
+    loglogistic2 = if (object$coefficients[2] >= 0) {
+      "x^e / (x^e + p^e)"
+    } else {
+      "1 - x^e / (x^e + p^e)"
+    },
     loglogistic4 = "a + d * x^e / (x^e + p^e)",
     loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
     loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
@@ -756,12 +800,20 @@ anova.drdalist <- function(object, ...) {
 
   f <- function(x) {
     switch(x$mean_function,
-      logistic2 = "1 / (1 + exp(-e * (x - p)))",
-      logistic4 = "a + (b - a) / (1 + exp(-e * (x - p)))",
-      logistic5 = "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)",
-      logistic6 = "a + (b - a) / (w + n * exp(-e * (x - p)))^(1 / n)",
-      gompertz = "a + (b - a) * exp(-exp(-e * (x - p)))",
-      loglogistic2 = "c(0, 1) + c(1, -1) * x^e / (x^e + p^e)",
+      logistic2 = if (x$coefficients[2] >= 0) {
+        "1 / (1 + exp(-e * (x - p)))"
+      } else {
+        "1 - 1 / (1 + exp(-e * (x - p)))"
+      },
+      logistic4 = "a + d / (1 + exp(-e * (x - p)))",
+      logistic5 = "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)",
+      logistic6 = "a + d / (w + n * exp(-e * (x - p)))^(1 / n)",
+      gompertz = "a + d * exp(-exp(-e * (x - p)))",
+      loglogistic2 = if (x$coefficients[2] >= 0) {
+        "x^e / (x^e + p^e)"
+      } else {
+        "1 - x^e / (x^e + p^e)"
+      },
       loglogistic4 = "a + d * x^e / (x^e + p^e)",
       loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
       loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
@@ -777,7 +829,7 @@ anova.drdalist <- function(object, ...) {
     paste(c("Model 1: a", str, "\n"), collapse = "\n")
   } else {
     tmp <- if (model_type == 1) {
-      "a + (b - a) / (1 + n * exp(-e * (x - p)))^(1 / n)"
+      "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)"
     } else {
       "a + d * (x^e / (x^e + n * p^e))^(1 / n)"
     }
