@@ -143,7 +143,7 @@ approx_vcov <- function(fim) {
 #
 #' @importFrom stats nlminb
 fit_nlminb <- function(object, start) {
-  control <- list(eval.max = 1000L, iter.max = 1000L)
+  control <- list(eval.max = 10000L, iter.max = 10000L)
 
   # define the objective function
   f <- rss(object)

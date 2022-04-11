@@ -473,11 +473,10 @@ mle_asy.loglogistic6 <- function(object, theta) {
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  s1 <- x^exp(theta[3] - theta[5])
-  s2 <- x^exp(theta[3])
-  s3 <- exp(theta[4] * exp(theta[3]))
+  s1 <- x^exp(theta[3])
+  s2 <- exp(theta[4] * exp(theta[3]))
 
-  g <- s1 / (exp(theta[6]) * s2 + exp(theta[5]) * s3)^exp(-theta[5])
+  g <- (s1 / (exp(theta[6]) * s1 + exp(theta[5]) * s2))^exp(theta[5])
 
   # when parameters are extremely large the denominator might converge to zero
   # when `x` is also zero this results in a 0 / 0 operation
