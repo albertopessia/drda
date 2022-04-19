@@ -665,10 +665,10 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
       c(xv[1], xv[len] * 1.08)
     }
 
-    if (xlim[1] > mp) {
-      xlim[1] <- mp - 3
-    } else if (xlim[2] < mp) {
-      xlim[2] <- mp + 3
+    if (xlim[1] > exp(mp)) {
+      xlim[1] <- exp(mp - 3)
+    } else if (xlim[2] < exp(mp)) {
+      xlim[2] <- exp(mp + 3)
     }
   }
 
