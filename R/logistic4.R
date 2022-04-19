@@ -7,13 +7,11 @@ logistic4_new <-  function(
       stop("'start' must be of length 4", call. = FALSE)
     }
 
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' cannot be smaller than 'alpha'", call. = FALSE)
+    if (start[3] <= 0) {
+      stop("parameter 'eta' cannot be negative nor zero", call. = FALSE)
     }
 
-    if (start[3] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
-    }
+    start[3] <- log(start[3])
   }
 
   object <- structure(
@@ -42,9 +40,10 @@ logistic4_new <-  function(
         stop("'lower_bound' must be of length 4", call. = FALSE)
       }
 
-      if (!is.infinite(lower_bound[2]) && (lower_bound[2] < lower_bound[1])) {
-        # lower bound on alpha is a stronger constraint because beta > alpha
-        lower_bound[2] <- lower_bound[1]
+      lower_bound[3] <- if (lower_bound[3] > 0) {
+        log(lower_bound[3])
+      } else {
+        -Inf
       }
     }
 
@@ -55,10 +54,11 @@ logistic4_new <-  function(
         stop("'upper_bound' must be of length 4", call. = FALSE)
       }
 
-      if (!is.infinite(upper_bound[1]) && (upper_bound[1] > upper_bound[2])) {
-        # upper bound on beta is a stronger constraint because alpha < beta
-        upper_bound[1] <- upper_bound[2]
+      if (upper_bound[3] <= 0) {
+        stop("'upper_bound[3]' cannot be negative nor zero.", call. = FALSE)
       }
+
+      upper_bound[3] <- log(upper_bound[3])
     }
 
     object$lower_bound <- lower_bound
@@ -75,16 +75,24 @@ logistic4_new <-  function(
 #' @details
 #' The 4-parameter logistic function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+#' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
 #'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate (also known as the Hill coefficient),
-#' and `phi` is the value of `x` at which the curve is equal to its mid-point.
+#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the value of the
+#' function when `x -> -Inf`, `delta` is the (signed) height of the curve,
+#' `eta > 0` is the steepness of the curve or growth rate (also known as the
+#' Hill coefficient), and `phi` is the value of `x` at which the curve is equal
+#' to its mid-point.
+#'
+#' When `delta < 0` the curve is monotonically decreasing while it is
+#' monotonically increasing for `delta > 0`.
+#'
+#' The mid-point `f(phi; theta)` is equal to `alpha + delta / 2` while the value
+#' of the function for `x -> Inf` is `alpha + delta`.
 #'
 #' @param x numeric vector at which the logistic function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
-#'   `c(alpha, beta, eta, phi)`.
+#'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
@@ -92,38 +100,19 @@ logistic4_new <-  function(
 #' @export
 logistic4_fn <- function(x, theta) {
   alpha <- theta[1]
-  beta <- theta[2]
+  delta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
 
-  alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))
+  alpha + delta / (1 + exp(-eta * (x - phi)))
 }
 
-# 4-parameter logistic function
-#
-# Evaluate at a particular set of parameters the 4-parameter logistic function.
-#
-# @details
-# The 4-parameter logistic function `f(x; theta)` is defined here as
-#
-# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
-#
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate (also known as the Hill coefficient),
-# and `phi` is the value of `x` at which the curve is equal to its mid-point.
-#
-# @param object object of class `logistic4`.
-# @param x numeric vector at which the logistic function is to be evaluated.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, beta, eta, phi)`.
-#
-# @return Numeric vector with the values of the logistic function.
+# @rdname logistic4_fn
 fn.logistic4 <- function(object, x, theta) {
   logistic4_fn(x, theta)
 }
 
-# @rdname fn.logistic4
+# @rdname logistic4_fn
 fn.logistic4_fit <- function(object, x, theta) {
   logistic4_fn(x, theta)
 }
@@ -136,33 +125,30 @@ fn.logistic4_fit <- function(object, x, theta) {
 # @details
 # The 4-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate (also known as the Hill coefficient),
-# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`.
 #
 # @param object object of class `logistic4`.
 # @param theta numeric vector with the four parameters in the form
-#   `c(alpha, beta, eta, phi)`.
+#   `c(alpha, delta, eta, phi)`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic4 <- function(object, theta) {
   x <- object$stats[, 1]
 
-  alpha <- theta[1]
-  beta <- theta[2]
+  delta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
 
-  omega <- beta - alpha
+  y <- x - phi
 
-  b <- exp(-eta * (x - phi))
+  b <- exp(-eta * y)
 
   f <- 1 + b
 
-  q <- (x - phi) * b
+  q <- y * b
   r <- -eta * b
 
   s <- 1 / f^2
@@ -172,30 +158,21 @@ gradient_hessian.logistic4 <- function(object, theta) {
   gradient <- matrix(0, nrow = length(x), ncol = 4)
   hessian <- array(0, dim = c(length(x), 4, 4))
 
-  gradient[, 1] <- b / f
+  gradient[, 1] <- 1
   gradient[, 2] <- 1 / f
-  gradient[, 3] <- omega * t
-  gradient[, 4] <- omega * u
+  gradient[, 3] <- delta * eta * t
+  gradient[, 4] <- delta * u
 
-  hessian[, 1, 1] <- 0
-  hessian[, 2, 1] <- 0
-  hessian[, 3, 1] <- -t
-  hessian[, 4, 1] <- -u
-
-  hessian[, 1, 2] <- 0
-  hessian[, 2, 2] <- 0
-  hessian[, 3, 2] <- t
+  hessian[, 3, 2] <- eta * t
   hessian[, 4, 2] <- u
 
-  hessian[, 1, 3] <- hessian[, 3, 1]
   hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- omega * q * t * (2 / f - 1 / b)
-  hessian[, 4, 3] <- omega * (1 / eta + (2 - f / b) * t * f) * u
+  hessian[, 3, 3] <- -delta * y * (1 + eta * (2 / f - 1 / b) * q) * u
+  hessian[, 4, 3] <- delta * (1 + eta * (2 / f - 1 / b) * q) * u
 
-  hessian[, 1, 4] <- hessian[, 4, 1]
   hessian[, 2, 4] <- hessian[, 4, 2]
   hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- omega * (2 / f - 1 / b) * r * u
+  hessian[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # When `b` is infinite, gradient and Hessian show NaNs
   # these are the limits for b -> Inf
@@ -219,12 +196,10 @@ gradient_hessian.logistic4 <- function(object, theta) {
 # @details
 # The 4-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate (also known as the Hill coefficient),
-# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`.
 #
 # @param object object of class `logistic4`.
 # @param known_param numeric vector with the known fixed values of the model
@@ -234,6 +209,8 @@ gradient_hessian.logistic4 <- function(object, theta) {
 #   particular parameter choice `theta`.
 rss.logistic4 <- function(object) {
   function(theta) {
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
@@ -248,6 +225,8 @@ rss_fixed.logistic4 <- function(object, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
@@ -261,12 +240,13 @@ rss_fixed.logistic4 <- function(object, known_param) {
 # @details
 # The 4-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate (also known as the Hill coefficient),
-# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`.
+#
+# In our optimization algorithm, however, we consider the alternative
+# parameterization and `z = log(eta)`.
 #
 # @param object object of class `logistic4`.
 # @param known_param numeric vector with the known fixed values of the model
@@ -276,6 +256,8 @@ rss_fixed.logistic4 <- function(object, known_param) {
 #   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.logistic4 <- function(object) {
   function(theta) {
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
 
@@ -304,6 +286,8 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
     theta <- rep(0, 4)
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[3] <- exp(theta[3])
 
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
@@ -344,7 +328,7 @@ mle_asy.logistic4 <- function(object, theta) {
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  eta <- theta[3]
+  eta <- exp(theta[3])
   phi <- theta[4]
 
   g <- 1 / (1 + exp(-eta * (x - phi)))
@@ -356,23 +340,18 @@ mle_asy.logistic4 <- function(object, theta) {
   t5 <- 0
 
   for (i in seq_len(m)) {
-    t1 <- t1 + w[i] * g[i] * (g[i] - 1)
-    t2 <- t2 + w[i] * (g[i] - 1)^2
+    t1 <- t1 + w[i]
+    t2 <- t2 + w[i] * g[i]
     t3 <- t3 + w[i] * g[i]^2
-    t4 <- t4 + w[i] * y[i] * (g[i] - 1)
-    t5 <- t5 + w[i] * y[i] * g[i]
+    t4 <- t4 + w[i] * y[i]
+    t5 <- t5 + w[i] * g[i] * y[i]
   }
 
-  denom <- t1^2 - t2 * t3
+  denom <- t2^2 - t1 * t3
 
   if (denom != 0) {
-    alpha <- -(t1 * t5 - t3 * t4) / denom
-    beta <- (t1 * t4 - t2 * t5) / denom
-
-    if (beta > alpha) {
-      theta[1] <- alpha
-      theta[2] <- beta
-    }
+    theta[1] <- (t2 * t5 - t3 * t4) / denom
+    theta[2] <- (t2 * t4 - t1 * t5) / denom
   }
 
   theta
@@ -411,11 +390,11 @@ init.logistic4 <- function(object) {
     zv <- log(zv) - log1p(-zv)
     tmp <- lm(zv ~ stats[, 1])
 
-    eta <- tmp$coefficients[2]
+    log_eta <- log(abs(tmp$coefficients[2]))
     phi <- -tmp$coefficients[1] / tmp$coefficients[2]
 
     # find the maximum likelihood estimates of the linear parameters
-    mle_asy(object, c(min_value, max_value, eta, phi))
+    mle_asy(object, c(min_value, max_value, log_eta, phi))
   } else {
     mle_asy(object, object$start)
   }
@@ -448,12 +427,21 @@ init.logistic4 <- function(object) {
 
   if (bic[1] <= bic[2]) {
     # we are in big problems as a flat horizontal line is likely the best model
-    theta <- c(
-      0.9 * weighted_mean + 0.1 * min_value,
-      0.9 * weighted_mean + 0.1 * max_value,
-      if (theta[3] <= 0) -1.0e-3 else 1.0e-3,
-      object$stats[m, 1] + 100
-    )
+    theta <- if (theta[2] >= 0) {
+      c(
+        0.9 * weighted_mean + 0.1 * min_value,
+        1.0e-3,
+        -5,
+        object$stats[m, 1] + 100
+      )
+    } else {
+      c(
+        0.9 * weighted_mean + 0.1 * max_value,
+        -1.0e-3,
+        -5,
+        object$stats[m, 1] + 100
+      )
+    }
 
     best_rss <- rss_fn(theta)
   }
@@ -462,17 +450,19 @@ init.logistic4 <- function(object) {
   v2 <- 20L
   v <- v1 * v2
 
-  eta_set <- seq(-10, 10, length.out = v1)
+  log_eta_set <- seq(-10, 10, length.out = v1)
   phi_set <- seq(-20, 20, length.out = v2)
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
   rss_tmp <- rep(10000, v)
 
   i <- 0
-  for (eta in eta_set) {
+  for (log_eta in log_eta_set) {
     for (phi in phi_set) {
       i <- i + 1
-      current_par <- mle_asy(object, c(theta[1], theta[2], eta, phi))
+
+      current_par <- mle_asy(object, c(theta[1], theta[2], log_eta, phi))
+
       current_rss <- rss_fn(current_par)
       theta_tmp[, i] <- current_par
       rss_tmp[i] <- current_rss
@@ -519,8 +509,9 @@ init.logistic4 <- function(object) {
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
     best_rss <- tmp$rss
-    niter <- niter + tmp$niter
   }
+
+  niter <- niter + tmp$niter
 
   names(theta) <- NULL
   names(niter) <- NULL
@@ -536,12 +527,10 @@ init.logistic4 <- function(object) {
 # @details
 # The 4-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate (also known as the Hill coefficient),
-# and `phi` is the value of `x` at which the curve is equal to its mid-point.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`.
 #
 # @param object object of class `logistic4`.
 #
@@ -566,15 +555,9 @@ init.logistic4 <- function(object) {
 fit.logistic4 <- function(object) {
   solution <- find_optimum(object)
 
+  # bring the parameters back to their natural scale
   theta <- solution$optimum
-
-  if (theta[1] > theta[2]) {
-    # we might have converged to the dual solution
-    tmp <- theta[1]
-    theta[1] <- theta[2]
-    theta[2] <- tmp
-    theta[3] <- -theta[3]
-  }
+  theta[3] <- exp(theta[3])
 
   result <- list(
     converged = solution$converged,
@@ -590,7 +573,7 @@ fit.logistic4 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi")
+  param_names <- c("alpha", "delta", "eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -628,14 +611,7 @@ fit_constrained.logistic4 <- function(object) {
   # bring the parameters back to their natural scale
   theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
-
-  if (theta[1] > theta[2]) {
-    # we might have converged to the dual solution
-    tmp <- theta[1]
-    theta[1] <- theta[2]
-    theta[2] <- tmp
-    theta[3] <- -theta[3]
-  }
+  theta[3] <- exp(theta[3])
 
   estimated <- !constraint[, 2]
 
@@ -653,7 +629,7 @@ fit_constrained.logistic4 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi")
+  param_names <- c("alpha", "delta", "eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -737,18 +713,17 @@ curve_variance.logistic4_fit <- function(object, x) {
     return(rep(NA_real_, m))
   }
 
-  alpha <- object$coefficients[1]
-  beta <- object$coefficients[2]
+  delta <- object$coefficients[2]
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  omega <- beta - alpha
+  y <- x - phi
 
-  b <- exp(-eta * (x - phi))
+  b <- exp(-eta * y)
 
   f <- 1 + b
 
-  q <- (x - phi) * b
+  q <- y * b
   r <- -eta * b
 
   s <- 1 / f^2
@@ -757,14 +732,12 @@ curve_variance.logistic4_fit <- function(object, x) {
 
   G <- matrix(0, nrow = m, ncol = 4)
 
-  G[, 1] <- b / f
+  G[, 1] <- 1
   G[, 2] <- 1 / f
-  G[, 3] <- omega * t
-  G[, 4] <- omega * u
+  G[, 3] <- delta * t
+  G[, 4] <- delta * u
 
-  # When `b` is infinite, gradient shows NaNs
   if (any(is.nan(G))) {
-    # these are the limits for b -> Inf
     G[, 1][is.nan(G[, 1])] <- 1
     G[, 2:4][is.nan(G[, 2:4])] <- 0
   }
@@ -803,7 +776,7 @@ nauc.logistic4_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   }
 
   if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
+    stop("'xlim' must be a numeric vector", call. = FALSE)
   }
 
   if (xlim[1] >= xlim[2]) {
@@ -827,52 +800,62 @@ nauc.logistic4_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   }
 
   alpha <- object$coefficients[1]
-  beta <- object$coefficients[2]
+  delta <- object$coefficients[2]
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
+
+  asymptote <- alpha + delta
 
   I <- 0
   xlim_new <- xlim
 
-  if (alpha < ylim[1]) {
-    tmp <- phi + log((ylim[1] - alpha) / (beta - ylim[1])) / eta
+  if (delta < 0) {
+    # curve is decreasing: upper bound is alpha and lower bound is asymptote
+    if (ylim[1] > asymptote) {
+      # the curve intersect `ylim[1]` at this point
+      x_i <- phi - log(delta / (ylim[1] - alpha) - 1) / eta
 
-    # if the curve is decreasing we change the upper bound of integration,
-    # otherwise the lower bound
-    if (eta < 0) {
-      if (tmp < xlim[2]) {
-        xlim_new[2] <- tmp
+      if (x_i < xlim[2]) {
+        xlim_new[2] <- x_i
       }
-    } else {
-      if (tmp > xlim[1]) {
-        xlim_new[1] <- tmp
+    }
+
+    if (ylim[2] < alpha) {
+      # the curve intersect `ylim[2]` at this point
+      x_i <- phi - log(delta / (ylim[2] - alpha) - 1) / eta
+
+      if (x_i > xlim[1]) {
+        I <- I + (x_i - xlim[1]) * (ylim[2] - ylim[1])
+        xlim_new[1] <- x_i
+      }
+    }
+  } else {
+    # curve is increasing: upper bound is asymptote and lower bound is alpha
+    if (ylim[1] > alpha) {
+      # the curve intersect `ylim[1]` at this point
+      x_i <- phi - log(delta / (ylim[1] - alpha) - 1) / eta
+
+      if (x_i > xlim[1]) {
+        xlim_new[1] <- x_i
+      }
+    }
+
+    if (ylim[2] < asymptote) {
+      # the curve intersect `ylim[2]` at this point
+      x_i <- phi - log(delta / (ylim[2] - alpha) - 1) / eta
+
+      if (x_i < xlim[2]) {
+        I <- I + (xlim[2] - x_i) * (ylim[2] - ylim[1])
+        xlim_new[2] <- x_i
       }
     }
   }
 
-  if (beta > ylim[2]) {
-    tmp <- phi + log((ylim[2] - alpha) / (beta - ylim[2])) / eta
-
-    # if the curve is decreasing we change the lower bound of integration,
-    # otherwise the upper bound
-    # in any case, we must now consider the area of the rectangle
-    if (eta < 0) {
-      if (tmp > xlim[1]) {
-        I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
-        xlim_new[1] <- tmp
-      }
-    } else {
-      if (tmp < xlim[2]) {
-        I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
-        xlim_new[2] <- tmp
-      }
-    }
-  }
-
-  t1 <- 1 + exp(-eta * (xlim_new[2] - phi))
-  t2 <- 1 + exp(-eta * (xlim_new[1] - phi))
-  I <- I + (xlim_new[2] - xlim_new[1]) * (beta - ylim[1]) +
-       (beta - alpha) * log(t1 / t2) / eta
+  I <- I +
+    (xlim[2] - xlim[1]) * (ylim[1] - asymptote) +
+    delta * (
+      log1p(exp(-eta * (xlim[2] - phi))) - log1p(exp(-eta * (xlim[1] - phi)))
+    )
 
   nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
   names(nauc) <- NULL

@@ -10,7 +10,7 @@ logistic5_fn(x, theta)
 \item{x}{numeric vector at which the logistic function is to be evaluated.}
 
 \item{theta}{numeric vector with the five parameters in the form
-\code{c(alpha, beta, eta, phi, nu)}.}
+\code{c(alpha, delta, eta, phi, nu)}.}
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
@@ -22,7 +22,18 @@ Evaluate at a particular set of parameters the 5-parameter logistic function.
 \details{
 The 5-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\verb{g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\verb{f(x; theta) = alpha + delta g(x; theta)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu)}, \code{beta > alpha}, and \code{nu > 0}.
+where \code{theta = c(alpha, delta, eta, phi, nu)}, \code{eta > 0}, and \code{nu > 0}.
+
+When \code{delta} is positive (negative) the curve is monotonically increasing
+(decreasing). When \code{x -> -Inf} the value of the function is \code{alpha} while the
+value of the function for \code{x -> Inf} is \code{alpha + delta }.
+
+Parameter \code{alpha} is the value of the function when \code{x -> -Inf}.
+Parameter \code{delta} is the (signed) height of the curve.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the mid-value of the function.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
 }

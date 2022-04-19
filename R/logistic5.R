@@ -7,19 +7,15 @@ logistic5_new <-  function(
       stop("'start' must be of length 5", call. = FALSE)
     }
 
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' cannot be smaller than 'alpha'", call. = FALSE)
-    }
-
-    if (start[3] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
+    if (start[3] <= 0) {
+      stop("parameter 'eta' cannot be negative nor zero", call. = FALSE)
     }
 
     if (start[5] <= 0) {
       stop("parameter 'nu' cannot be negative nor zero", call. = FALSE)
     }
 
-    start[5] <- log(start[5])
+    start[c(3, 5)] <- log(start[c(3, 5)])
   }
 
   object <- structure(
@@ -48,9 +44,10 @@ logistic5_new <-  function(
         stop("'lower_bound' must be of length 5", call. = FALSE)
       }
 
-      if (!is.infinite(lower_bound[2]) && (lower_bound[2] < lower_bound[1])) {
-        # lower bound on alpha is a stronger constraint because beta > alpha
-        lower_bound[2] <- lower_bound[1]
+      lower_bound[3] <- if (lower_bound[3] > 0) {
+        log(lower_bound[3])
+      } else {
+        -Inf
       }
 
       lower_bound[5] <- if (lower_bound[5] > 0) {
@@ -67,16 +64,15 @@ logistic5_new <-  function(
         stop("'upper_bound' must be of length 5", call. = FALSE)
       }
 
-      if (!is.infinite(upper_bound[1]) && (upper_bound[1] > upper_bound[2])) {
-        # upper bound on beta is a stronger constraint because alpha < beta
-        upper_bound[1] <- upper_bound[2]
+      if (upper_bound[3] <= 0) {
+        stop("'upper_bound[3]' cannot be negative nor zero.", call. = FALSE)
       }
 
       if (upper_bound[5] <= 0) {
         stop("'upper_bound[5]' cannot be negative nor zero.", call. = FALSE)
       }
 
-      upper_bound[5] <- log(upper_bound[5])
+      upper_bound[c(3, 5)] <- log(upper_bound[c(3, 5)])
     }
 
     object$lower_bound <- lower_bound
@@ -93,13 +89,24 @@ logistic5_new <-  function(
 #' @details
 #' The 5-parameter logistic function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `f(x; theta) = alpha + delta g(x; theta)`
 #'
-#' where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
+#' where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
+#'
+#' When `delta` is positive (negative) the curve is monotonically increasing
+#' (decreasing). When `x -> -Inf` the value of the function is `alpha` while the
+#' value of the function for `x -> Inf` is `alpha + delta `.
+#'
+#' Parameter `alpha` is the value of the function when `x -> -Inf`.
+#' Parameter `delta` is the (signed) height of the curve.
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` is related to the mid-value of the function.
+#' Parameter `nu` affects near which asymptote maximum growth occurs.
 #'
 #' @param x numeric vector at which the logistic function is to be evaluated.
 #' @param theta numeric vector with the five parameters in the form
-#'   `c(alpha, beta, eta, phi, nu)`.
+#'   `c(alpha, delta, eta, phi, nu)`.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
@@ -107,36 +114,20 @@ logistic5_new <-  function(
 #' @export
 logistic5_fn <- function(x, theta) {
   alpha <- theta[1]
-  beta <- theta[2]
+  delta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
 
-  alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)
+  alpha + delta / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)
 }
 
-# 5-parameter logistic function
-#
-# Evaluate at a particular set of parameters the 5-parameter logistic function.
-#
-# @details
-# The 5-parameter logistic function `f(x; theta)` is defined here as
-#
-# `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#
-# where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
-#
-# @param object object of class `logistic5`.
-# @param x numeric vector at which the logistic function is to be evaluated.
-# @param theta numeric vector with the five parameters in the form
-#   `c(alpha, beta, eta, phi, nu)`.
-#
-# @return Numeric vector with the values of the logistic function.
+# @rdname logistic5_fn
 fn.logistic5 <- function(object, x, theta) {
   logistic5_fn(x, theta)
 }
 
-# @rdname fn.logistic5
+# @rdname logistic5_fn
 fn.logistic5_fit <- function(object, x, theta) {
   logistic5_fn(x, theta)
 }
@@ -149,32 +140,32 @@ fn.logistic5_fit <- function(object, x, theta) {
 # @details
 # The 5-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
 #
 # @param object object of class `logistic5`.
 # @param theta numeric vector with the five parameters in the form
-#   `c(alpha, beta, eta, phi, nu)`.
+#   `c(alpha, delta, eta, phi, nu)`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic5 <- function(object, theta) {
   x <- object$stats[, 1]
 
-  alpha <- theta[1]
-  beta <- theta[2]
+  delta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
 
-  omega <- beta - alpha
+  y <- x - phi
 
-  b <- exp(-eta * (x - phi))
+  b <- exp(-eta * y)
 
   f <- 1 + nu * b
   g <- f^(-1 / nu)
 
-  q <- (x - phi) * b
+  q <- y * b
   r <- -eta * b
 
   s <- g / f
@@ -185,41 +176,30 @@ gradient_hessian.logistic5 <- function(object, theta) {
   gradient <- matrix(0, nrow = length(x), ncol = 5)
   hessian <- array(0, dim = c(length(x), 5, 5))
 
-  gradient[, 1] <- 1 - g
+  gradient[, 1] <- 1
   gradient[, 2] <- g
-  gradient[, 3] <- omega * t
-  gradient[, 4] <- omega * u
-  gradient[, 5] <- omega * v
+  gradient[, 3] <- delta * eta * t
+  gradient[, 4] <- delta * u
+  gradient[, 5] <- delta * v
 
-  hessian[, 1, 1] <- 0
-  hessian[, 2, 1] <- 0
-  hessian[, 3, 1] <- -t
-  hessian[, 4, 1] <- -u
-  hessian[, 5, 1] <- -v
-
-  hessian[, 1, 2] <- 0
-  hessian[, 2, 2] <- 0
-  hessian[, 3, 2] <- t
+  hessian[, 3, 2] <- eta * t
   hessian[, 4, 2] <- u
   hessian[, 5, 2] <- v
 
-  hessian[, 1, 3] <- hessian[, 3, 1]
   hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- omega * q * t * ((1 + nu) / f - 1 / b)
-  hessian[, 4, 3] <- omega * (1 / eta + (1 + nu - f / b) * t / g) * u
-  hessian[, 5, 3] <- omega * (nu * u / eta + v) * t / g
+  hessian[, 3, 3] <- -delta * y * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
+  hessian[, 4, 3] <- delta * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
+  hessian[, 5, 3] <- -delta * y * (nu * u / eta + v) * u / g
 
-  hessian[, 1, 4] <- hessian[, 4, 1]
   hessian[, 2, 4] <- hessian[, 4, 2]
   hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- omega * ((1 + nu) / f - 1 / b) * r * u
-  hessian[, 5, 4] <- omega * (nu * u / eta + v) * u / g
+  hessian[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
+  hessian[, 5, 4] <- delta * (nu * u / eta + v) * u / g
 
-  hessian[, 1, 5] <- hessian[, 5, 1]
   hessian[, 2, 5] <- hessian[, 5, 2]
   hessian[, 3, 5] <- hessian[, 5, 3]
   hessian[, 4, 5] <- hessian[, 5, 4]
-  hessian[, 5, 5] <- omega * (nu * (u / eta)^2 + v * (v - g)) / g
+  hessian[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - g)) / g
 
   # When `b` is infinite, gradient and Hessian show NaNs
   # these are the limits for b -> Inf
@@ -243,14 +223,13 @@ gradient_hessian.logistic5 <- function(object, theta) {
 # @details
 # The 5-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
 #
-# In our optimization algorithm, however, we consider instead the equivalent
-# function `f(x; theta')`
-#
-# `alpha + (beta - alpha) / (1 + exp(v - eta * (x - phi)))^(-exp(-v))`
+# In our optimization algorithm, however, we consider the alternative
+# parameterization `v = log(nu)` and `z = log(eta)`.
 #
 # @param object object of class `logistic5`.
 # @param known_param numeric vector with the known fixed values of the model
@@ -260,7 +239,7 @@ gradient_hessian.logistic5 <- function(object, theta) {
 #   particular parameter choice `theta`.
 rss.logistic5 <- function(object) {
   function(theta) {
-    theta[5] <- exp(theta[5])
+    theta[c(3, 5)] <- exp(theta[c(3, 5)])
 
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
@@ -276,7 +255,7 @@ rss_fixed.logistic5 <- function(object, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
-    theta[5] <- exp(theta[5])
+    theta[c(3, 5)] <- exp(theta[c(3, 5)])
 
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
@@ -291,14 +270,13 @@ rss_fixed.logistic5 <- function(object, known_param) {
 # @details
 # The 5-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
 #
-# In our optimization algorithm, however, we consider instead the equivalent
-# function `f(x; theta')`
-#
-# `alpha + (beta - alpha) / (1 + exp(v - eta * (x - phi)))^(-exp(-v))`
+# In our optimization algorithm, however, we consider the alternative
+# parameterization `v = log(nu)` and `z = log(eta)`.
 #
 # @param object object of class `logistic5`.
 # @param known_param numeric vector with the known fixed values of the model
@@ -308,7 +286,7 @@ rss_fixed.logistic5 <- function(object, known_param) {
 #   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.logistic5 <- function(object) {
   function(theta) {
-    theta[5] <- exp(theta[5])
+    theta[c(3, 5)] <- exp(theta[c(3, 5)])
 
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
@@ -340,7 +318,7 @@ rss_gradient_hessian_fixed.logistic5 <- function(object, known_param) {
     theta[ idx] <- z
     theta[!idx] <- known_param[!idx]
 
-    theta[5] <- exp(theta[5])
+    theta[c(3, 5)] <- exp(theta[c(3, 5)])
 
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
@@ -382,11 +360,11 @@ mle_asy.logistic5 <- function(object, theta) {
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  eta <- theta[3]
+  eta <- exp(theta[3])
   phi <- theta[4]
-  log_nu <- theta[5]
+  nu <- exp(theta[5])
 
-  g <- 1 / (1 + exp(log_nu - eta * (x - phi)))^exp(-log_nu)
+  g <- (1 + nu * exp(-eta * (x - phi)))^(-1 / nu)
 
   t1 <- 0
   t2 <- 0
@@ -395,23 +373,18 @@ mle_asy.logistic5 <- function(object, theta) {
   t5 <- 0
 
   for (i in seq_len(m)) {
-    t1 <- t1 + w[i] * g[i] * (g[i] - 1)
-    t2 <- t2 + w[i] * (g[i] - 1)^2
+    t1 <- t1 + w[i]
+    t2 <- t2 + w[i] * g[i]
     t3 <- t3 + w[i] * g[i]^2
-    t4 <- t4 + w[i] * y[i] * (g[i] - 1)
-    t5 <- t5 + w[i] * y[i] * g[i]
+    t4 <- t4 + w[i] * y[i]
+    t5 <- t5 + w[i] * g[i] * y[i]
   }
 
-  denom <- t1^2 - t2 * t3
+  denom <- t2^2 - t1 * t3
 
   if (denom != 0) {
-    alpha <- -(t1 * t5 - t3 * t4) / denom
-    beta <- (t1 * t4 - t2 * t5) / denom
-
-    if (beta > alpha) {
-      theta[1] <- alpha
-      theta[2] <- beta
-    }
+    theta[1] <- (t2 * t5 - t3 * t4) / denom
+    theta[2] <- (t2 * t4 - t1 * t5) / denom
   }
 
   theta
@@ -436,7 +409,7 @@ init.logistic5 <- function(object) {
   max_value <- max(stats[, 3])
 
   theta <- if (is.null(object$start)) {
-    # we initialize `nu = 1`, so that we start with a 4-parameter logistic
+    # we initialize `xi = 1` so that we start with a 4-parameter logistic
     # function
     #
     # y = a + (b - a) / (1 + exp(-e * (x - p)))
@@ -453,11 +426,11 @@ init.logistic5 <- function(object) {
     zv <- log(zv) - log1p(-zv)
     tmp <- lm(zv ~ stats[, 1])
 
-    eta <- tmp$coefficients[2]
+    log_eta <- log(abs(tmp$coefficients[2]))
     phi <- -tmp$coefficients[1] / tmp$coefficients[2]
 
     # find the maximum likelihood estimates of the linear parameters
-    mle_asy(object, c(min_value, max_value, eta, phi, 0))
+    mle_asy(object, c(min_value, max_value, log_eta, phi, 0))
   } else {
     mle_asy(object, object$start)
   }
@@ -490,23 +463,33 @@ init.logistic5 <- function(object) {
 
   if (bic[1] <= bic[2]) {
     # we are in big problems as a flat horizontal line is likely the best model
-    theta <- c(
-      0.9 * weighted_mean + 0.1 * min_value,
-      0.9 * weighted_mean + 0.1 * max_value,
-      if (theta[3] <= 0) -1.0e-3 else 1.0e-3,
-      object$stats[m, 1] + 100,
-      0
-    )
+    theta <- if (theta[2] >= 0) {
+      c(
+        0.9 * weighted_mean + 0.1 * min_value,
+        1.0e-3,
+        -5,
+        object$stats[m, 1] + 100,
+        0
+      )
+    } else {
+      c(
+        0.9 * weighted_mean + 0.1 * max_value,
+        -1.0e-3,
+        -5,
+        object$stats[m, 1] + 100,
+        0
+      )
+    }
 
     best_rss <- rss_fn(theta)
   }
 
   v1 <- 20L
   v2 <- 20L
-  v3 <- 5L
+  v3 <- 3L
   v <- v1 * v2 * v3
 
-  eta_set <- seq(-10, 10, length.out = v1)
+  log_eta_set <- seq(-10, 10, length.out = v1)
   phi_set <- seq(-20, 20, length.out = v2)
   log_nu_set <- seq(-1, 0.5, length.out = v3)
 
@@ -514,11 +497,15 @@ init.logistic5 <- function(object) {
   rss_tmp <- rep(10000, v)
 
   i <- 0
-  for (eta in eta_set) {
+  for (log_eta in log_eta_set) {
     for (phi in phi_set) {
       for (log_nu in log_nu_set) {
         i <- i + 1
-        current_par <- mle_asy(object, c(theta[1], theta[2], eta, phi, log_nu))
+
+        current_par <- mle_asy(
+          object, c(theta[1], theta[2], log_eta, phi, log_nu)
+        )
+
         current_rss <- rss_fn(current_par)
         theta_tmp[, i] <- current_par
         rss_tmp[i] <- current_rss
@@ -566,8 +553,9 @@ init.logistic5 <- function(object) {
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
     best_rss <- tmp$rss
-    niter <- niter + tmp$niter
   }
+
+  niter <- niter + tmp$niter
 
   names(theta) <- NULL
   names(niter) <- NULL
@@ -583,14 +571,13 @@ init.logistic5 <- function(object) {
 # @details
 # The 5-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
 #
-# In our optimization algorithm, however, we consider instead the equivalent
-# function `f(x; theta')`
-#
-# `alpha + (beta - alpha) / (1 + exp(v - eta * (x - phi)))^(-exp(-v))`
+# In our optimization algorithm, however, we consider the alternative
+# parameterization `v = log(nu)` and `z = log(eta)`.
 #
 # @param object object of class `logistic5`.
 #
@@ -617,7 +604,7 @@ fit.logistic5 <- function(object) {
 
   # bring the parameters back to their natural scale
   theta <- solution$optimum
-  theta[5] <- exp(theta[5])
+  theta[c(3, 5)] <- exp(theta[c(3, 5)])
 
   result <- list(
     converged = solution$converged,
@@ -633,7 +620,7 @@ fit.logistic5 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi", "nu")
+  param_names <- c("alpha", "delta", "eta", "phi", "nu")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -671,7 +658,7 @@ fit_constrained.logistic5 <- function(object) {
   # bring the parameters back to their natural scale
   theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
-  theta[5] <- exp(theta[5])
+  theta[c(3, 5)] <- exp(theta[c(3, 5)])
 
   estimated <- !constraint[, 2]
 
@@ -689,7 +676,7 @@ fit_constrained.logistic5 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi", "nu")
+  param_names <- c("alpha", "delta", "eta", "phi", "nu")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -724,13 +711,10 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  alpha <- theta[1]
-  beta <- theta[2]
+  delta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
-
-  omega <- beta - alpha
 
   b <- exp(-eta * (x - phi))
 
@@ -749,15 +733,15 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
 
   gradient <- matrix(0, nrow = object$m, ncol = 5)
 
-  gradient[, 1] <- 1 - g
+  gradient[, 1] <- 1
   gradient[, 2] <- g
-  gradient[, 3] <- omega * t
-  gradient[, 4] <- omega * u
-  gradient[, 5] <- omega * v / nu
+  gradient[, 3] <- delta * t
+  gradient[, 4] <- delta * u
+  gradient[, 5] <- delta * v / nu
 
-  # When `b` is infinite, gradient shows NaNs
+  # When `b` is infinite, gradient and Hessian show NaNs
+  # these are the limits for b -> Inf
   if (any(is.nan(gradient))) {
-    # these are the limits for b -> Inf
     gradient[, 1][is.nan(gradient[, 1])] <- 1
     gradient[, 2:5][is.nan(gradient[, 2:5])] <- 0
   }
@@ -765,7 +749,7 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
-  G <- matrix(0, nrow = object$m, ncol = 5)
+  G <- matrix(0, nrow = object$m, ncol = 6)
   G[, 1] <- w * d * gradient[, 1]
   G[, 2] <- w * d * gradient[, 2]
   G[, 3] <- w * d * gradient[, 3]
@@ -776,39 +760,26 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
 
   hessian <- array(0, dim = c(object$m, 5, 5))
 
-  hessian[, 1, 1] <- 0
-  hessian[, 2, 1] <- 0
-  hessian[, 3, 1] <- -t
-  hessian[, 4, 1] <- -u
-  hessian[, 5, 1] <- -v / nu
-
-  hessian[, 1, 2] <- 0
-  hessian[, 2, 2] <- 0
   hessian[, 3, 2] <- t
   hessian[, 4, 2] <- u
   hessian[, 5, 2] <- v / nu
 
-  hessian[, 1, 3] <- hessian[, 3, 1]
   hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- omega * q * t * ((1 + nu) / f - 1 / b)
-  hessian[, 4, 3] <- omega * (1 / eta + (1 + nu - f / b) * t / g) * u
-  hessian[, 5, 3] <- omega * (nu * u / eta + v) * t / (nu * g)
+  hessian[, 3, 3] <- delta * q * t * ((1 + nu) / f - 1 / b)
+  hessian[, 4, 3] <- delta * (1 / eta + (1 + nu - f / b) * t / g) * u
+  hessian[, 5, 3] <- delta * (nu * u / eta + v) * t / (nu * g)
 
-  hessian[, 1, 4] <- hessian[, 4, 1]
   hessian[, 2, 4] <- hessian[, 4, 2]
   hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- omega * ((1 + nu) / f - 1 / b) * r * u
-  hessian[, 5, 4] <- omega * (nu * u / eta + v) * u / (nu * g)
+  hessian[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
+  hessian[, 5, 4] <- delta * (nu * u / eta + v) * u / (nu * g)
 
-  hessian[, 1, 5] <- hessian[, 5, 1]
   hessian[, 2, 5] <- hessian[, 5, 2]
   hessian[, 3, 5] <- hessian[, 5, 3]
   hessian[, 4, 5] <- hessian[, 5, 4]
-  hessian[, 5, 5] <- omega * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
+  hessian[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
 
-  # When `b` is infinite, gradient shows NaNs
   if (any(is.nan(hessian))) {
-    # these are the limits for b -> Inf
     hessian[is.nan(hessian)] <- 0
   }
 
@@ -823,7 +794,7 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
   H <- apply(H, 2:3, sum)
 
   mu <- fn(object, object$x, theta)
-  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
 
@@ -853,12 +824,10 @@ curve_variance.logistic5_fit <- function(object, x) {
   }
 
   alpha <- object$coefficients[1]
-  beta <- object$coefficients[2]
+  delta <- object$coefficients[2]
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
   nu <- object$coefficients[5]
-
-  omega <- beta - alpha
 
   b <- exp(-eta * (x - phi))
 
@@ -876,9 +845,9 @@ curve_variance.logistic5_fit <- function(object, x) {
   G <- matrix(0, nrow = m, ncol = 5)
   G[, 1] <- 1 - g
   G[, 2] <- g
-  G[, 3] <- omega * t
-  G[, 4] <- omega * u
-  G[, 5] <- omega * v / nu
+  G[, 3] <- delta * t
+  G[, 4] <- delta * u
+  G[, 5] <- delta * v / nu
 
   # When `b` is infinite, gradient shows NaNs
   if (any(is.nan(G))) {
@@ -904,9 +873,10 @@ curve_variance.logistic5_fit <- function(object, x) {
 # @details
 # The 5-parameter logistic function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi, nu)`, `beta > alpha`, and `nu > 0`.
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
 #
 # The area under the curve (AUC) is simply the integral of `f(x; theta)` with
 # respect to `x`.
@@ -919,7 +889,7 @@ nauc.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   }
 
   if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
+    stop("'xlim' must be a numeric vector", call. = FALSE)
   }
 
   if (xlim[1] >= xlim[2]) {
@@ -943,60 +913,66 @@ nauc.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   }
 
   alpha <- object$coefficients[1]
-  beta <- object$coefficients[2]
+  delta <- object$coefficients[2]
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
   nu <- object$coefficients[5]
 
+  asymptote <- alpha + delta
+
   I <- 0
   xlim_new <- xlim
 
-  if (alpha < ylim[1]) {
-    tmp <- phi - log((((beta - alpha) / (ylim[1] - alpha))^nu - 1) / nu) / eta
+  if (delta < 0) {
+    # curve is decreasing: upper bound is alpha and lower bound is asymptote
+    if (ylim[1] > asymptote) {
+      # the curve intersect `ylim[1]` at this point
+      x_i <- phi - log(((delta / (ylim[1] - alpha))^nu - 1) / nu) / eta
 
-    # if the curve is decreasing we change the upper bound of integration,
-    # otherwise the lower bound
-    if (eta < 0) {
-      if (tmp < xlim[2]) {
-        xlim_new[2] <- tmp
-      }
-    } else {
-      if (tmp > xlim[1]) {
-        xlim_new[1] <- tmp
+      if (x_i < xlim[2]) {
+        xlim_new[2] <- x_i
       }
     }
-  }
 
-  if (beta > ylim[2]) {
-    tmp <- phi - log((((beta - alpha) / (ylim[2] - alpha))^nu - 1) / nu) / eta
+    if (ylim[2] < alpha) {
+      # the curve intersect `ylim[2]` at this point
+      x_i <- phi - log(((delta / (ylim[2] - alpha))^nu - 1) / nu) / eta
 
-    # if the curve is decreasing we change the lower bound of integration,
-    # otherwise the upper bound
-    # in any case, we must now consider the area of the rectangle
-    if (eta < 0) {
-      if (tmp > xlim[1]) {
-        I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
-        xlim_new[1] <- tmp
+      if (x_i > xlim[1]) {
+        I <- I + (x_i - xlim[1]) * (ylim[2] - ylim[1])
+        xlim_new[1] <- x_i
       }
-    } else {
-      if (tmp < xlim[2]) {
-        I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
-        xlim_new[2] <- tmp
-      }
-    }
-  }
-
-  f <- if (ylim[1] == 0) {
-    function(x) {
-      fn(object, x, object$coefficients)
     }
   } else {
-    function(x) {
-      fn(object, x, object$coefficients) - ylim[1]
+    # curve is increasing: upper bound is asymptote and lower bound is alpha
+    if (ylim[1] > alpha) {
+      # the curve intersect `ylim[1]` at this point
+      x_i <- phi - log(((delta / (ylim[1] - alpha))^nu - 1) / nu) / eta
+
+      if (x_i > xlim[1]) {
+        xlim_new[1] <- x_i
+      }
+    }
+
+    if (ylim[2] < asymptote) {
+      # the curve intersect `ylim[2]` at this point
+      x_i <- phi - log(((delta / (ylim[2] - alpha))^nu - 1) / nu) / eta
+
+      if (x_i < xlim[2]) {
+        I <- I + (xlim[2] - x_i) * (ylim[2] - ylim[1])
+        xlim_new[2] <- x_i
+      }
     }
   }
 
-  I <- I + integrate(f, lower = xlim_new[1], upper = xlim_new[2])$value
+  f <- function(x) {
+    fn(object, x, object$coefficients) - ylim[1]
+  }
+
+  I <- I + integrate(
+    f, lower = xlim_new[1], upper = xlim_new[2],
+    rel.tol = sqrt(.Machine$double.eps)
+  )$value
 
   nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
   names(nauc) <- NULL

@@ -10,7 +10,7 @@ logistic6_fn(x, theta)
 \item{x}{numeric vector at which the logistic function is to be evaluated.}
 
 \item{theta}{numeric vector with the six parameters in the form
-\code{c(alpha, beta, eta, phi, nu, xi)}.}
+\code{c(alpha, delta, eta, phi, nu, xi)}.}
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
@@ -22,8 +22,17 @@ Evaluate at a particular set of parameters the 6-parameter logistic function.
 \details{
 The 6-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + (beta - alpha) / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\verb{g(x; theta) = 1 / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
+\verb{f(x; theta) = alpha + delta g(x; theta)}
 
-where \code{theta = c(alpha, beta, eta, phi, nu, xi)}, \code{beta > alpha}, \code{xi > 0},
-and \code{nu > 0}.
+where \code{theta = c(alpha, delta, eta, phi, nu, xi)}, \code{eta > 0}, \code{nu > 0}, and
+\code{xi > 0}. When \code{delta} is positive (negative) the curve is monotonically
+increasing (decreasing).
+
+Parameter \code{alpha} is the value of the function when \code{x -> -Inf}.
+Parameter \code{delta} affects the value of the function when \code{x -> Inf}.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the mid-value of the function.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+Parameter \code{xi} affects the value of the function when \code{x -> Inf}.
 }
