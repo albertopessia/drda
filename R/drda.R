@@ -1041,20 +1041,30 @@ summary.drda <- function(object, level = 0.95, ...) {
     stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
   }
 
-  std_err <- sqrt(diag(object$vcov))
+  is_2 <- inherits(object, "logistic2_fit") ||
+    inherits(object, "loglogistic2_fit")
+
+  is_4 <- inherits(object, "logistic4_fit") ||
+    inherits(object, "loglogistic4_fit")
+
+  std_err <- if (is_2) {
+    c(alpha = NA_real_, delta = NA_real_, sqrt(diag(object$vcov)))
+  } else {
+    sqrt(diag(object$vcov))
+  }
 
   object$pearson_resid <- residuals(object, type = "pearson")
 
   object$param <- c(object$coefficients, sigma = object$sigma)
 
-  if (inherits(object, "logistic2_fit")) {
-    names(object$param) <- c(
-      "Growth rate", "Midpoint at", "Residual std err."
-    )
-  } else if (inherits(object, "logistic4_fit")) {
-    names(object$param) <- c(
-      "Minimum", "Maximum", "Growth rate", "Midpoint at", "Residual std err."
-    )
+  if (is_2 || is_4) {
+    names(object$param) <-  {
+      c("Maximum", "Height", "Growth rate", "Midpoint at", "Residual std err.")
+    }
+
+    if (object$coefficients[2] > 0) {
+      names(object$param)[1] <- "Minimum"
+    }
   }
 
   q <- qnorm((1 - level) / 2)
