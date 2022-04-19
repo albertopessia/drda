@@ -749,7 +749,7 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
-  G <- matrix(0, nrow = object$m, ncol = 6)
+  G <- matrix(0, nrow = object$m, ncol = 5)
   G[, 1] <- w * d * gradient[, 1]
   G[, 2] <- w * d * gradient[, 2]
   G[, 3] <- w * d * gradient[, 3]
