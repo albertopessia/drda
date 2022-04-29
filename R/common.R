@@ -72,32 +72,37 @@ loglik_normal <- function(deviance, n, log_w = 0) {
 #
 # @return Approximate variance-covariance matrix.
 approx_vcov <- function(fim) {
-  vcov <- tryCatch(
-    {
-      chol2inv(chol(fim))
-    },
-    error = function(e) {
-      NULL
-    }
-  )
-
-  if (is.null(vcov)) {
-    vcov <- tryCatch(
-      {
-        # sometimes `solve` succeeds where the previous one instead fails.
-        # However, if the Cholesky decomposition failed, it is most likely a
-        # sign that the solution is not admissible.
-        # We will check later if all variances are non-negative.
-        solve(fim)
-      },
-      error = function(e) {
-        NULL
-      }
-    )
-  }
-
   # total number of parameters (last one is always the standard deviation)
   p <- nrow(fim)
+
+  vcov <- tryCatch(chol2inv(chol(fim)), error = function(e) NULL)
+
+  if (is.null(vcov)) {
+    # row/column associated to the standard deviation can create problems
+    vcov <- tryCatch(chol2inv(chol(fim[-p, -p])), error = function(e) NULL)
+
+    if (!is.null(vcov)) {
+      # we succeeded
+      vcov <- cbind(rbind(vcov, rep(NA_real_, p - 1)), rep(NA_real_, p))
+    }
+  }
+
+  if (is.null(vcov)) {
+    # sometimes `solve` succeeds where the previous one instead fails.
+    # However, if the Cholesky decomposition failed, it is most likely a
+    # sign that the solution is not admissible.
+    # We will check later if all variances are non-negative.
+    vcov <- tryCatch(solve(fim), error = function(e) NULL)
+
+    if (is.null(vcov)) {
+      vcov <- tryCatch(solve(fim[-p, -p]), error = function(e) NULL)
+
+      if (!is.null(vcov)) {
+        # we succeeded
+        vcov <- cbind(rbind(vcov, rep(NA_real_, p - 1)), rep(NA_real_, p))
+      }
+    }
+  }
 
   if (!is.null(vcov)) {
     d <- diag(vcov)
