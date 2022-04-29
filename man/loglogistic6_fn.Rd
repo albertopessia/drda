@@ -7,7 +7,7 @@
 loglogistic6_fn(x, theta)
 }
 \arguments{
-\item{x}{numeric vector at which the logistic function is to be evaluated.}
+\item{x}{numeric vector at which the function is to be evaluated.}
 
 \item{theta}{numeric vector with the six parameters in the form
 \code{c(alpha, delta, eta, phi, nu, xi)}.}
@@ -27,5 +27,13 @@ The 6-parameter log-logistic function \verb{f(x; theta)} is defined here as
 \verb{f(x; theta) = alpha + delta g(x; theta)}
 
 where \code{x >= 0}, \code{theta = c(alpha, delta, eta, phi, nu, xi)}, \code{eta > 0},
-\code{phi > 0}, \code{nu > 0}, and \code{xi > 0}.
+\code{phi > 0}, \code{nu > 0}, and \code{xi > 0}. When \code{delta} is positive (negative) the
+curve is monotonically increasing (decreasing).
+
+Parameter \code{alpha} is the value of the function when \code{x = 0}.
+Parameter \code{delta} affects the value of the function when \code{x -> Inf}.
+Parameter \code{eta} represents the steepness (growth rate) of the curve.
+Parameter \code{phi} is related to the mid-value of the function.
+Parameter \code{nu} affects near which asymptote maximum growth occurs.
+Parameter \code{xi} affects the value of the function when \code{x -> Inf}.
 }

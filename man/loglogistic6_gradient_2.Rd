@@ -36,11 +36,10 @@ where \code{x >= 0}, \code{theta = c(alpha, delta, eta, phi, nu, xi)}, \code{eta
 \code{phi > 0}, \code{nu > 0}, and \code{xi > 0}.
 
 This set of functions use a different parameterization from
-\code{link[drda]{loglogistic6_gradient_hessian}}. To avoid the non-negative
+\code{link[drda]{loglogistic6_gradient}}. To avoid the non-negative
 constraints of parameters, the gradient and Hessian computed here are for
-the function with \code{eta2 = log(eta)}, \code{phi2 = log(phi)}, \code{xi2 = log(xi)}, and
-\code{nu2 = log(nu)}.
+the function with \code{eta2 = log(eta)}, \code{phi2 = log(phi)}, \code{nu2 = log(nu)}, and
+\code{xi2 = log(xi)}.
 
-Note that argument \code{theta} is still on the original scale and not on the
-log scale.
+Note that argument \code{theta} is on the original scale and not on the log scale.
 }

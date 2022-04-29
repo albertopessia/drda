@@ -32,5 +32,6 @@ The 6-parameter log-logistic function \verb{f(x; theta)} is defined here as
 \verb{f(x; theta) = alpha + delta g(x; theta)}
 
 where \code{x >= 0}, \code{theta = c(alpha, delta, eta, phi, nu, xi)}, \code{eta > 0},
-\code{phi > 0}, \code{nu > 0}, and \code{xi > 0}.
+\code{phi > 0}, \code{nu > 0}, and \code{xi > 0}. When \code{delta} is positive (negative) the
+curve is monotonically increasing (decreasing).
 }

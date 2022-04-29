@@ -138,9 +138,17 @@ loglogistic6_new <-  function(
 #' `f(x; theta) = alpha + delta g(x; theta)`
 #'
 #' where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`,
-#' `phi > 0`, `nu > 0`, and `xi > 0`.
+#' `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is positive (negative) the
+#' curve is monotonically increasing (decreasing).
 #'
-#' @param x numeric vector at which the logistic function is to be evaluated.
+#' Parameter `alpha` is the value of the function when `x = 0`.
+#' Parameter `delta` affects the value of the function when `x -> Inf`.
+#' Parameter `eta` represents the steepness (growth rate) of the curve.
+#' Parameter `phi` is related to the mid-value of the function.
+#' Parameter `nu` affects near which asymptote maximum growth occurs.
+#' Parameter `xi` affects the value of the function when `x -> Inf`.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
 #'   `c(alpha, delta, eta, phi, nu, xi)`.
 #'
@@ -184,7 +192,8 @@ fn.loglogistic6_fit <- function(object, x, theta) {
 #' `f(x; theta) = alpha + delta g(x; theta)`
 #'
 #' where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`,
-#' `phi > 0`, `nu > 0`, and `xi > 0`.
+#' `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is positive (negative) the
+#' curve is monotonically increasing (decreasing).
 #'
 #' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
@@ -217,9 +226,8 @@ loglogistic6_gradient <- function(x, theta) {
   q <- (eta * log(x) - log(f)) * f / nu
   s <- pe + q
 
-  G <- matrix(0, nrow = k, ncol = 6)
+  G <- matrix(1, nrow = k, ncol = 6)
 
-  G[, 1] <- 1
   G[, 2] <- h
   G[, 3] <- a * d
   G[, 4] <- -eta * pe * d / phi
@@ -230,7 +238,7 @@ loglogistic6_gradient <- function(x, theta) {
   # however, the limits for x -> 0 are zero (not w.r.t. alpha)
   G[x_zero, -1] <- 0
 
-  # any other NaN is because of corner cases where the derivatives are zero
+  # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
   if (any(is_nan)) {
     warning(
@@ -308,6 +316,19 @@ loglogistic6_hessian <- function(x, theta) {
   # however, the limits for x -> 0 are zero
   H[x_zero, , ] <- 0
 
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
   H
 }
 
@@ -338,9 +359,8 @@ loglogistic6_gradient_hessian <- function(x, theta) {
   r <- d / f
   s <- pe + q
 
-  G <- matrix(0, nrow = k, ncol = 6)
+  G <- matrix(1, nrow = k, ncol = 6)
 
-  G[, 1] <- 1
   G[, 2] <- h
   G[, 3] <- a * d
   G[, 4] <- -eta * pe * d / phi
@@ -384,7 +404,7 @@ loglogistic6_gradient_hessian <- function(x, theta) {
   G[x_zero, -1] <- 0
   H[x_zero, , ] <- 0
 
-  # any other NaN is because of corner cases where the derivatives are zero
+  # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
   if (any(is_nan)) {
     warning(
@@ -395,6 +415,18 @@ loglogistic6_gradient_hessian <- function(x, theta) {
       )
     )
     G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
   }
 
   list(G = G, H = H)
@@ -415,13 +447,12 @@ loglogistic6_gradient_hessian <- function(x, theta) {
 #' `phi > 0`, `nu > 0`, and `xi > 0`.
 #'
 #' This set of functions use a different parameterization from
-#' \code{link[drda]{loglogistic6_gradient_hessian}}. To avoid the non-negative
+#' \code{link[drda]{loglogistic6_gradient}}. To avoid the non-negative
 #' constraints of parameters, the gradient and Hessian computed here are for
-#' the function with `eta2 = log(eta)`, `phi2 = log(phi)`, `xi2 = log(xi)`, and
-#' `nu2 = log(nu)`.
+#' the function with `eta2 = log(eta)`, `phi2 = log(phi)`, `nu2 = log(nu)`, and
+#' `xi2 = log(xi)`.
 #'
-#' Note that argument `theta` is still on the original scale and not on the
-#' log scale.
+#' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
@@ -458,8 +489,6 @@ loglogistic6_gradient_2 <- function(x, theta) {
 
   e <- log(x) - log(theta[4])
 
-  m <- (1 + nu) * xi * c1 / (nu * f)
-
   p <- a * g
   q <- a * d
   r <- b * q
@@ -469,9 +498,8 @@ loglogistic6_gradient_2 <- function(x, theta) {
   v <- q * t
   w <- q * c
 
-  G <- matrix(0, nrow = k, ncol = 6)
+  G <- matrix(1, nrow = k, ncol = 6)
 
-  G[, 1] <- 1
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
@@ -483,7 +511,7 @@ loglogistic6_gradient_2 <- function(x, theta) {
   # however, the limits for x -> 0 are zero (not w.r.t. alpha)
   G[x_zero, -1] <- 0
 
-  # any other NaN is because of corner cases where the derivatives are zero
+  # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
   if (any(is_nan)) {
     warning(
@@ -575,7 +603,7 @@ loglogistic6_hessian_2 <- function(x, theta) {
   # however, the limits for x -> 0 are zero
   H[x_zero, , ] <- 0
 
-  # any other NaN is because of corner cases where the derivatives are zero
+  # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(H)
   if (any(is_nan)) {
     warning(
@@ -632,9 +660,8 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   w <- q * c
   y <- eta * log(x) - log(f)
 
-  G <- matrix(0, nrow = k, ncol = 6)
+  G <- matrix(1, nrow = k, ncol = 6)
 
-  G[, 1] <- 1
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
@@ -679,7 +706,7 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
   H[x_zero, , ] <- 0
 
-  # any other NaN is because of corner cases where the derivatives are zero
+  # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
   if (any(is_nan)) {
     warning(
@@ -707,7 +734,7 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# 6-parameter log-logistic function
+# 6-parameter log-logistic function gradient and Hessian
 #
 # Evaluate at a particular set of parameters the gradient and Hessian of the
 # 6-parameter log-logistic function.
@@ -772,7 +799,7 @@ rss_fixed.loglogistic6 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 6)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[3:6] <- exp(theta[3:6])
@@ -838,7 +865,7 @@ rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 6)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[3:6] <- exp(theta[3:6])
@@ -888,20 +915,12 @@ mle_asy.loglogistic6 <- function(object, theta) {
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  s0 <- x / exp(theta[4])
-  s1 <- s0^exp(theta[3] - theta[5])
-  s2 <- exp(theta[6] - theta[5]) * s0^exp(theta[3])
+  eta <- exp(theta[3])
+  phi <- exp(theta[4])
+  nu <- exp(theta[5])
+  xi <- exp(theta[6])
 
-  g <- s1 * exp(-exp(-theta[5]) * (theta[5] + log1p(s2)))
-
-  # when theta[4] is extremely large the denominator might converge to zero
-  # when `x` is also zero this results in a 0 / 0 operation
-  # in such cases `x = 0` has the priority and `g` must be set to zero
-  g[is.nan(g)] <- 0
-
-  # when theta[4] is extremely small the ratio might converge to Inf
-  # this is the limit for theta[4] -> -Inf
-  g[is.infinite(g)] <- exp(-exp(-theta[5]) * theta[6])
+  g <- (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)
 
   t1 <- 0
   t2 <- 0
@@ -1465,4 +1484,40 @@ nauc.loglogistic6_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
 #' @export
 naac.loglogistic6_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
   1 - nauc.loglogistic6_fit(object, xlim, ylim)
+}
+
+#' @export
+effective_dose.loglogistic6_fit <- function(object, y, type = "relative") {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+  nu <- object$coefficients[5]
+  xi <- object$coefficients[6]
+
+  # value at -Inf is alpha
+  # value at Inf is alpha + delta / xi^(1 / nu)
+  fv <- if (type == "relative") {
+    y[y <= 0 | y >= 1] <- NA_real_
+    alpha + y * delta / xi^(1 / nu)
+  } else if (type == "absolute") {
+    y1 <- alpha
+    y2 <- alpha + delta / xi^(1 / nu)
+
+    if (delta > 0) {
+      y[y < y1 | y > y2] <- NA_real_
+    } else {
+      y[y < y2 | y > y1] <- NA_real_
+    }
+
+    y
+  } else {
+    stop("invalid value for `type`", call. = FALSE)
+  }
+
+  z <- (fv - alpha) / delta
+  x <- phi * (nu * z^nu / (1 - xi * z^nu))^(1 / eta)
+  names(x) <- NULL
+
+  x
 }
