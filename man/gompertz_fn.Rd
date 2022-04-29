@@ -10,7 +10,7 @@ gompertz_fn(x, theta)
 \item{x}{numeric vector at which the Gompertz function is to be evaluated.}
 
 \item{theta}{numeric vector with the four parameters in the form
-\code{c(alpha, beta, eta, phi)}.}
+\code{c(alpha, delta, eta, phi)}.}
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
@@ -22,10 +22,14 @@ Evaluate at a particular set of parameters the Gompertz function.
 \details{
 The Gompertz function \verb{f(x; theta)} is defined here as
 
-\verb{alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))}
+\verb{g(x; theta) = exp(-exp(-eta * (x - phi)))}
+\verb{f(x; theta) = alpha + delta g(x; theta)}
 
-where \code{theta = c(alpha, beta, eta, phi)}, \code{alpha} is the lower horizontal
-asymptote, \code{beta > alpha} is the upper horizontal asymptote, \code{eta} is the
-steepness of the curve or growth rate, and \code{phi} related to the function
-value at \code{x = 0}.
+where \code{theta = c(alpha, delta, eta, phi)}, \code{alpha} is the value of the
+function when \code{x -> -Inf}, \code{delta} is the (signed) height of the curve,
+\code{eta > 0} is the steepness of the curve or growth rate, and \code{phi} is related
+with the value of function at \code{x = 0}.
+
+When \code{delta < 0} the curve is monotonically decreasing while it is
+monotonically increasing for \code{delta > 0}.
 }
