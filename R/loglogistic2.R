@@ -36,7 +36,7 @@ loglogistic2_new <-  function(
     d <- -1
   }
 
-  if (!is.null(start)) {
+  start <- if (!is.null(start)) {
     if (length(start) != 2) {
       stop("'start' must be of length 2", call. = FALSE)
     }
@@ -49,9 +49,9 @@ loglogistic2_new <-  function(
       stop("parameter 'phi' cannot be negative nor zero", call. = FALSE)
     }
 
-    start <- c(a, d, log(start))
+    c(a, d, log(start))
   } else {
-    start <- c(a, d, NA_real_, NA_real_)
+    c(a, d, NA_real_, NA_real_)
   }
 
   object <- structure(
@@ -73,7 +73,7 @@ loglogistic2_new <-  function(
     object$constrained <- TRUE
 
     if (is.null(lower_bound)) {
-      rep(-Inf, 2)
+      lower_bound <- rep(-Inf, 2)
     } else {
       if (length(lower_bound) != 2) {
         stop("'lower_bound' must be of length 2", call. = FALSE)
@@ -93,7 +93,7 @@ loglogistic2_new <-  function(
     }
 
     if (is.null(upper_bound)) {
-      rep(Inf, 2)
+      upper_bound <- rep(Inf, 2)
     } else {
       if (length(upper_bound) != 2) {
         stop("'upper_bound' must be of length 2", call. = FALSE)
@@ -129,14 +129,14 @@ loglogistic2_new <-  function(
 #' `f(x; theta) = alpha + delta g(x; theta)`
 #'
 #' where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
-#' `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
-#' `alpha` and `delta` are constrained to be either `c(0, 1)` or `c(1, -1)`
-#' respectively.
+#' `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name) while
+#' vector `c(alpha, delta)` is constrained to be either `c(0, 1)` (monotonically
+#' increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #'
 #' This function allows values other than {0, 1, -1} for `alpha` and `delta` but
-#' will coerce them to their constraints.
+#' will coerce them to their proper constraints.
 #'
-#' @param x numeric vector at which the logistic function is to be evaluated.
+#' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`. `alpha` can only be equal to 0 or 1 while
 #'   `delta` can only be equal to 1 or -1.
@@ -169,7 +169,7 @@ fn.loglogistic2 <- function(object, x, theta) {
 
 # @rdname loglogistic2_fn
 fn.loglogistic2_fit <- function(object, x, theta) {
-  # within a fit parameter theta is known exactly
+  # within a fit, parameter theta is known exactly
   alpha <- theta[1]
   delta <- theta[2]
   eta <- theta[3]
@@ -179,6 +179,392 @@ fn.loglogistic2_fit <- function(object, x, theta) {
   t2 <- phi^eta
 
   alpha + delta * t1 / (t1 + t2)
+}
+
+#' 2-parameter log-logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 2-parameter log-logistic function.
+#'
+#' @details
+#' The 2-parameter log-logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = x^eta / (x^eta + phi^eta)`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+#' `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
+#' `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+#' increasing curve) or `c(1, -1)` (monotonically decreasing curve).
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the five parameters in the form
+#'   `c(eta, phi)`.
+#' @param delta value of delta parameter (either 1 or -1).
+#'
+#' @return Gradient or Hessian evaluated at the specified point.
+#'
+#' @export
+loglogistic2_gradient <- function(x, theta, delta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  pe <- phi^eta
+  xe <- x^eta
+  lr <- log(x / phi)
+
+  f <- xe + pe
+  g <- 1 / f
+  h <- xe * g
+  d <- h / f
+
+  a <- pe * lr
+
+  G <- matrix(0, nrow = k, ncol = 2)
+
+  G[, 1] <- a * d
+  G[, 2] <- -eta * pe * d / phi
+
+  # gradient might not be defined when we plug x = 0 directly into the formula
+  # however, the limits for x -> 0 are zero
+  G[x_zero, ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  sign(delta) * G
+}
+
+#' @rdname loglogistic2_gradient
+loglogistic2_hessian <- function(x, theta, delta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  pe <- phi^eta
+  xe <- x^eta
+  lr <- log(x / phi)
+
+  f <- xe + pe
+  g <- 1 / f
+  h <- xe * g
+  d <- h / f
+
+  a <- pe * lr
+  p <- pe - xe
+  r <- d / f
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- lr * a * p * r
+  H[, 2, 1] <- -(pe * f + eta * a * p) * r / phi
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- eta * pe * (f + eta * p) * r / phi^2
+
+  # Hessian might not be defined when we plug x = 0 directly into the formula
+  # however, the limits for x -> 0 are zero
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  sign(delta) * H
+}
+
+#' @rdname loglogistic2_gradient
+loglogistic2_gradient_hessian <- function(x, theta, delta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  pe <- phi^eta
+  xe <- x^eta
+  lr <- log(x / phi)
+
+  f <- xe + pe
+  g <- 1 / f
+  h <- xe * g
+  d <- h / f
+
+  a <- pe * lr
+  p <- pe - xe
+  r <- d / f
+
+  G <- matrix(0, nrow = k, ncol = 2)
+
+  G[, 1] <- a * d
+  G[, 2] <- -eta * pe * d / phi
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- lr * a * p * r
+  H[, 2, 1] <- -(pe * f + eta * a * p) * r / phi
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- eta * pe * (f + eta * p) * r / phi^2
+
+  # gradient and Hessian might not be defined when we plug x = 0 directly into
+  # the formula
+  # however, the limits for x -> 0 are zero (not w.r.t. alpha)
+  G[x_zero, ] <- 0
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = sign(delta) * G, H = sign(delta) * H)
+}
+
+#' 2-parameter log-logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 2-parameter log-logistic function.
+#'
+#' @details
+#' The 2-parameter log-logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = x^eta / (x^eta + phi^eta)`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+#' `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
+#' `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+#' increasing curve) or `c(1, -1)` (monotonically decreasing curve).
+#'
+#' This set of functions use a different parameterization from
+#' \code{link[drda]{loglogistic2_gradient}}. To avoid the non-negative
+#' constraints of parameters, the gradient and Hessian computed here are for
+#' the function with `eta2 = log(eta)` and `phi2 = log(phi)`.
+#'
+#' Note that argument `theta` is on the original scale and not on the log scale.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(eta, phi)`.
+#' @param delta value of delta parameter (either 1 or -1).
+#'
+#' @return Gradient or Hessian of the alternative parameterization evaluated at
+#'   the specified point.
+#'
+#' @export
+loglogistic2_gradient_2 <- function(x, theta, delta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  c1 <- x^eta
+  c2 <- phi^eta
+
+  f <- c1 + c2
+  g <- 1 / f
+
+  d <- g / f
+  e <- log(x) - log(phi)
+
+  q <- c1 * d
+  r <- eta * c2 * q
+
+  G <- matrix(0, nrow = k, ncol = 2)
+
+  G[, 1] <- e * r
+  G[, 2] <- -r
+
+  # gradient and Hessian might not be defined when we plug x = 0 directly into
+  # the formula
+  # however, the limits for x -> 0 are zero
+  G[x_zero, ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  sign(delta) * G
+}
+
+#' @rdname loglogistic2_gradient_2
+loglogistic2_hessian_2 <- function(x, theta, delta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  c1 <- x^eta
+  c2 <- phi^eta
+
+  f <- c1 + c2
+  g <- 1 / f
+
+  d <- g / f
+  e <- log(x) - log(phi)
+
+  l <- 2 * c2 / f
+
+  q <- c1 * d
+  r <- eta * c2 * q
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- e * (1 + eta * (l - 1) * e) * r
+  H[, 2, 1] <- -(1 + eta * (l - 1) * e) * r
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- eta * (l - 1) * r
+
+  # Hessian might not be defined when we plug x = 0 directly into the formula
+  # however, the limits for x -> 0 are zero
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  sign(delta) * H
+}
+
+#' @rdname loglogistic2_gradient_2
+loglogistic2_gradient_hessian_2 <- function(x, theta, delta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  c1 <- x^eta
+  c2 <- phi^eta
+
+  f <- c1 + c2
+  g <- 1 / f
+
+  d <- g / f
+  e <- log(x) - log(phi)
+
+  l <- 2 * c2 / f
+
+  q <- c1 * d
+  r <- eta * c2 * q
+
+  G <- matrix(0, nrow = k, ncol = 2)
+
+  G[, 1] <- e * r
+  G[, 2] <- -r
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- e * (1 + eta * (l - 1) * e) * r
+  H[, 2, 1] <- -(1 + eta * (l - 1) * e) * r
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- eta * (l - 1) * r
+
+  # gradient and Hessian might not be defined when we plug x = 0 directly into
+  # the formula
+  # however, the limits for x -> 0 are zero
+  G[x_zero, ] <- 0
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = sign(delta) * G, H = sign(delta) * H)
 }
 
 # 2-parameter log-logistic function
@@ -194,8 +580,8 @@ fn.loglogistic2_fit <- function(object, x, theta) {
 #
 # where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
 # `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
-# `alpha` and `delta` are constrained to be either `c(0, 1)` or `c(1, -1)`
-# respectively.
+# `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+# increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
 # To avoid issues with the non-negative constraints we consider in our
 # optimization algorithm the alternative parameterization `log(eta)` and
@@ -207,64 +593,7 @@ fn.loglogistic2_fit <- function(object, x, theta) {
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.loglogistic2 <- function(object, theta) {
-  x <- object$stats[, 1]
-  x_zero <- x == 0
-
-  eta <- theta[1]
-  phi <- theta[2]
-
-  c1 <- x^eta
-  c2 <- phi^eta
-
-  f <- c1 + c2
-  e <- log(x) - log(theta[2])
-
-  l <- 2 * c2 / f
-
-  r <- eta * c1 * c2 / f^2
-
-  gradient <- matrix(0, nrow = length(x), ncol = 2)
-  hessian <- array(0, dim = c(length(x), 2, 2))
-
-  gradient[, 1] <- e * r
-  gradient[, 2] <- -r
-
-  hessian[, 1, 1] <- e * (1 + eta * (l - 1) * e) * r
-  hessian[, 2, 1] <- -(1 + eta * (l - 1) * e) * r
-
-  hessian[, 1, 2] <- hessian[, 2, 1]
-  hessian[, 2, 2] <- eta * (l - 1) * r
-
-  # gradient and Hessian might not be defined when we plug x = 0 directly into
-  # the formula
-  # however, the limits for x -> 0 are zero
-  gradient[x_zero, ] <- 0
-  hessian[x_zero, , ] <- 0
-
-  # any other NaN is because of corner cases where the derivatives are zero
-  if (any(is.nan(gradient))) {
-    warning(
-      paste0(
-        "issues while computing the gradient at c(",
-        paste(theta, collapse = ", "),
-        ")"
-      )
-    )
-    gradient[is.nan(gradient)] <- 0
-  }
-
-  if (any(is.nan(hessian))) {
-    warning(
-      paste0(
-        "issues while computing the Hessian at c(",
-        paste(theta, collapse = ", "),
-        ")"
-      )
-    )
-    hessian[is.nan(hessian)] <- 0
-  }
-
-  list(G = object$start[2] * gradient, H = object$start[2] * hessian)
+  loglogistic2_gradient_hessian_2(object$stats[, 1], theta, object$start[2])
 }
 
 # Residual sum of squares
@@ -279,8 +608,8 @@ gradient_hessian.loglogistic2 <- function(object, theta) {
 #
 # where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
 # `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
-# `alpha` and `delta` are constrained to be either `c(0, 1)` or `c(1, -1)`
-# respectively.
+# `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+# increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
 # To avoid issues with the non-negative constraints we consider in our
 # optimization algorithm the alternative parameterization `log(eta)` and
@@ -306,7 +635,7 @@ rss_fixed.loglogistic2 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 2)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta <- exp(theta)
@@ -329,8 +658,8 @@ rss_fixed.loglogistic2 <- function(object, known_param) {
 #
 # where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
 # `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
-# `alpha` and `delta` are constrained to be either `c(0, 1)` or `c(1, -1)`
-# respectively.
+# `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+# increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
 # To avoid issues with the non-negative constraints we consider in our
 # optimization algorithm the alternative parameterization `log(eta)` and
@@ -370,7 +699,7 @@ rss_gradient_hessian_fixed.loglogistic2 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 2)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta <- exp(theta)
@@ -572,8 +901,8 @@ init.loglogistic2 <- function(object) {
 #
 # where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
 # `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
-# `alpha` and `delta` are constrained to be either `c(0, 1)` or `c(1, -1)`
-# respectively.
+# `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+# increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
 # To avoid issues with the non-negative constraints we consider in our
 # optimization algorithm the alternative parameterization `log(eta)` and
@@ -609,7 +938,7 @@ fit.loglogistic2 <- function(object) {
     converged = solution$converged,
     iterations = solution$iterations,
     constrained = FALSE,
-    estimated = c(rep(FALSE, 2), rep(TRUE, 2)),
+    estimated = rep(c(FALSE, TRUE), c(2, 2)),
     coefficients = theta,
     rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
     df.residual = object$n - 2,
@@ -709,61 +1038,28 @@ fisher_info.loglogistic2 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta[3:4]) - y
+  z <- fn(object, x, theta) - y
 
-  idx_zero <- x == 0
-
-  delta <- theta[2]
-  eta <- theta[3]
-  phi <- theta[4]
-
-  pe <- phi^eta
-  xe <- x^eta
-  lr <- log(x / phi)
-
-  f <- xe + pe
-  h <- xe / f
-  d <- delta * h / f
-
-  a <- pe * lr
-  p <- pe - xe
-  r <- d / f
-
-  gradient <- matrix(0, nrow = object$m, ncol = 2)
-
-  gradient[, 1] <- a * d
-  gradient[, 2] <- -eta * pe * d / phi
-
-  gradient[idx_zero, ] <- 0
+  gh <- loglogistic2_gradient_hessian(x, theta[3:4], theta[2])
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
   G <- matrix(0, nrow = object$m, ncol = 2)
-  G[, 1] <- w * z * gradient[, 1]
-  G[, 2] <- w * z * gradient[, 2]
+  G[, 1] <- w * z * gh$G[, 1]
+  G[, 2] <- w * z * gh$G[, 2]
 
   G <- apply(G, 2, sum)
 
-  hessian <- array(0, dim = c(object$m, 2, 2))
-
-  hessian[, 1, 1] <- lr * a * p * r
-  hessian[, 2, 1] <- -(pe * f + eta * a * p) * r / phi
-
-  hessian[, 1, 2] <- hessian[, 2, 1]
-  hessian[, 2, 2] <- eta * pe * (f + eta * p) * r / phi^2
-
-  hessian[idx_zero, , ] <- 0
-
   H <- array(0, dim = c(object$m, 2, 2))
 
-  H[, , 1] <- w * (z * hessian[, , 1] + gradient[, 1] * gradient)
-  H[, , 2] <- w * (z * hessian[, , 2] + gradient[, 2] * gradient)
+  H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
   mu <- fn(object, object$x, theta[3:4])
-  v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+  v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2
 
@@ -792,30 +1088,8 @@ curve_variance.loglogistic2_fit <- function(object, x) {
     return(rep(NA_real_, len))
   }
 
-  x_zero <- x == 0
-
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-
-  c1 <- x^eta
-  c2 <- phi^eta
-
-  f <- c1 + c2
-  g <- 1 / f
-
-  b <- eta * c2
-  d <- g / f
-
-  e <- log(x) - log(phi)
-
-  q <- c1 * d
-  r <- b * q
-
-  G <- matrix(0, nrow = len, ncol = 2)
-
-  G[, 1] <- e * r
-  G[, 2] <- -r
-  G[x_zero, ] <- 0
+  theta <- object$coefficients
+  G <- loglogistic2_gradient(x, theta[3:4], theta[2])
 
   variance <- rep(NA_real_, len)
 
@@ -839,142 +1113,23 @@ curve_variance.loglogistic2_fit <- function(object, x) {
 #
 # where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
 # `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
-# `alpha` and `delta` are constrained to be either `c(0, 1)` or `c(1, -1)`
-# respectively.
+# `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+# increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
 # The area under the curve (AUC) is the integral of `f(x; theta)` with respect
 # to `x`.
 #
-#' @importFrom stats integrate
-#'
 #' @export
 nauc.loglogistic2_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  if (length(xlim) != 2) {
-    stop("'xlim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  # predictor cannot be negative, so we cannot integrate for x < 0
-  if (xlim[1] < 0) {
-    xlim[1] <- 0
-  }
-
-  if (xlim[1] >= xlim[2]) {
-    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
-  }
-
-  if (length(ylim) != 2) {
-    stop("'ylim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(ylim)) {
-    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (ylim[1] >= ylim[2]) {
-    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
-  }
-
-  # we remove `ylim[1]` to shift the curve to zero
-  f <- function(x) {
-    fn(object, x, object$coefficients) - ylim[1]
-  }
-
-  alpha <- object$coefficients[1]
-  delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-
-  # in case the curve intersect `ylim`, these are the values at which it happens
-  tmp <- phi / ((delta / (ylim - alpha)) - 1)^(1 / eta)
-
-  # value of the integral
-  I <- 0
-
-  # check if we really need to perform an integration
-  flag <- TRUE
-
-  # we might change the range of integration
-  xlim_new <- xlim
-
-  if (delta >= 0) {
-    # curve is monotonically increasing
-    lb <- alpha
-    ub <- alpha + delta
-
-    if (lb < ylim[1]) {
-      # the curve in `c(0, tmp[1])` is to be considered zero
-      if (tmp[1] > xlim[2]) {
-        # the integral is simply zero
-        flag <- FALSE
-      } else if (tmp[1] > xlim[1]) {
-        xlim_new[1] <- tmp[1]
-      }
-    }
-
-    if (ub > ylim[2]) {
-      # the curve in `c(tmp[2], Inf)` is equal to `ylim[2]`
-      if (tmp[2] < xlim[1]) {
-        # not much to do in this case, the curve in the requested range is flat
-        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # stop here
-        flag <- FALSE
-      } else if (tmp[2] < xlim[2]) {
-        # standard before `tmp[2]` and flat in c(tmp[2], xlim[2])
-        I <- I + (xlim[2] - tmp[2]) * (ylim[2] - ylim[1])
-
-        # modify the range of integration
-        xlim_new[2] <- tmp[2]
-      }
-    }
-  } else {
-    # curve is monotonically decreasing
-    lb <- alpha + delta
-    ub <- alpha
-
-    if (ub > ylim[2]) {
-      # the first part of the curve in `c(0, tmp[2])` is equal to `ylim[2]`
-      if (tmp[2] > xlim[2]) {
-        # not much to do in this case, the curve in the requested range is flat
-        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # stop here
-        flag <- FALSE
-      } else if (tmp[2] > xlim[1]) {
-        # flat in c(xlim[1], tmp[2]) and standard after `tmp[2]`
-        I <- I + (tmp[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # modify the range of integration
-        xlim_new[1] <- tmp[2]
-      }
-    }
-
-    if (lb < ylim[1]) {
-      # the curve after `tmp[1]` is to be considered zero
-      if (tmp[1] < xlim[1]) {
-        # the integral is simply zero
-        flag <- FALSE
-      } else if (tmp[1] < xlim[2]) {
-        xlim_new[2] <- tmp[1]
-      }
-    }
-  }
-
-  if (flag) {
-    I <- I + integrate(f, lower = xlim_new[1], upper = xlim_new[2])$value
-  }
-
-  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
-  names(nauc) <- NULL
-
-  nauc
+  nauc.loglogistic4_fit(object, xlim, ylim)
 }
 
 #' @export
 naac.loglogistic2_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  1 - nauc(object, xlim, ylim)
+  1 - nauc.loglogistic4_fit(object, xlim, ylim)
+}
+
+#' @export
+effective_dose.loglogistic2_fit <- function(object, y, type = "relative") {
+  effective_dose.loglogistic4_fit(object, y, type)
 }

@@ -7,7 +7,7 @@
 loglogistic2_fn(x, theta)
 }
 \arguments{
-\item{x}{numeric vector at which the logistic function is to be evaluated.}
+\item{x}{numeric vector at which the function is to be evaluated.}
 
 \item{theta}{numeric vector with the four parameters in the form
 \code{c(alpha, delta, eta, phi)}. \code{alpha} can only be equal to 0 or 1 while
@@ -28,10 +28,10 @@ The 2-parameter log-logistic function \verb{f(x; theta)} is defined here as
 \verb{f(x; theta) = alpha + delta g(x; theta)}
 
 where \code{x >= 0}, \code{theta = c(alpha, delta, eta, phi)}, \code{eta > 0}, and
-\code{phi > 0}. Only \code{eta} and \code{phi} are free to vary (therefore the name), while
-\code{alpha} and \code{delta} are constrained to be either \code{c(0, 1)} or \code{c(1, -1)}
-respectively.
+\code{phi > 0}. Only \code{eta} and \code{phi} are free to vary (therefore the name) while
+vector \code{c(alpha, delta)} is constrained to be either \code{c(0, 1)} (monotonically
+increasing curve) or \code{c(1, -1)} (monotonically decreasing curve).
 
 This function allows values other than {0, 1, -1} for \code{alpha} and \code{delta} but
-will coerce them to their constraints.
+will coerce them to their proper constraints.
 }
