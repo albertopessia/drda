@@ -7,6 +7,8 @@
 effective_dose(object, y, type)
 }
 \arguments{
+\item{object}{fit object as returned by \code{\link[drda]{drda}}.}
+
 \item{y}{numeric vector with response levels.}
 
 \item{type}{character string with either "relative" (default) or "absolute".}
