@@ -161,6 +161,7 @@ naac <- function(object, xlim, ylim) {
 #' is free to vary on the whole real line. Note, however, that the solution
 #' does not exist when `y` is not in the image of the function.
 #'
+#' @param object fit object as returned by \code{\link[drda]{drda}}.
 #' @param y numeric vector with response levels.
 #' @param type character string with either "relative" (default) or "absolute".
 #'
