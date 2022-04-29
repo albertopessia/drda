@@ -34,7 +34,7 @@ logistic4_new <-  function(
     object$constrained <- TRUE
 
     if (is.null(lower_bound)) {
-      rep(-Inf, 4)
+      lower_bound <- rep(-Inf, 4)
     } else {
       if (length(lower_bound) != 4) {
         stop("'lower_bound' must be of length 4", call. = FALSE)
@@ -48,7 +48,7 @@ logistic4_new <-  function(
     }
 
     if (is.null(upper_bound)) {
-      rep(Inf, 4)
+      upper_bound <- rep(Inf, 4)
     } else {
       if (length(upper_bound) != 4) {
         stop("'upper_bound' must be of length 4", call. = FALSE)
@@ -78,7 +78,7 @@ logistic4_new <-  function(
 #' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
 #' `f(x; theta) = alpha + delta g(x; theta)`
 #'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the value of the
+#' where `theta = c(alpha, delta, eta, phi)`, `alpha` is the value of the
 #' function when `x -> -Inf`, `delta` is the (signed) height of the curve,
 #' `eta > 0` is the steepness of the curve or growth rate (also known as the
 #' Hill coefficient), and `phi` is the value of `x` at which the curve is equal
@@ -117,6 +117,373 @@ fn.logistic4_fit <- function(object, x, theta) {
   logistic4_fn(x, theta)
 }
 
+#' 4-parameter logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 4-parameter logistic function.
+#'
+#' @details
+#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. When `delta` is
+#' positive (negative) the curve is monotonically increasing (decreasing).
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#'
+#' @return Gradient or Hessian evaluated at the specified point.
+#'
+#' @export
+logistic4_gradient <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+  g <- 1 / f
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- delta * t
+  G[, 4] <- delta * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+#' @rdname logistic4_gradient
+logistic4_hessian <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+  g <- 1 / f
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- t
+  H[, 4, 2] <- u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- delta * q * t * (2 / f - 1 / b)
+  H[, 4, 3] <- delta * (1 / eta + (2 - f / b) * t / g) * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname logistic4_gradient
+logistic4_gradient_hessian <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+  g <- 1 / f
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- delta * t
+  G[, 4] <- delta * u
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- t
+  H[, 4, 2] <- u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- delta * q * t * (2 / f - 1 / b)
+  H[, 4, 3] <- delta * (1 / eta + (2 - f / b) * t / g) * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+#' 4-parameter logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 4-parameter logistic function.
+#'
+#' @details
+#' The 4-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. When `delta` is
+#' positive (negative) the curve is monotonically increasing (decreasing).
+#'
+#' This set of functions use a different parameterization from
+#' \code{link[drda]{logistic4_gradient}}. To avoid the non-negative
+#' constraints of parameters, the gradient and Hessian computed here are for
+#' the function with `eta2 = log(eta)`.
+#'
+#' Note that argument `theta` is on the original scale and not on the log scale.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#'
+#' @return Gradient or Hessian of the alternative parameterization evaluated at
+#'   the specified point.
+#'
+#' @export
+logistic4_gradient_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + b
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- 1 / f
+  G[, 3] <- delta * eta * t
+  G[, 4] <- delta * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+#' @rdname logistic4_gradient_2
+logistic4_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + b
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- eta * t
+  H[, 4, 2] <- u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * y * (1 + eta * (2 / f - 1 / b) * q) * u
+  H[, 4, 3] <- delta * (1 + eta * (2 / f - 1 / b) * q) * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname logistic4_gradient_2
+logistic4_gradient_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + b
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- 1 / f
+  G[, 3] <- delta * eta * t
+  G[, 4] <- delta * u
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- eta * t
+  H[, 4, 2] <- u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * y * (1 + eta * (2 / f - 1 / b) * q) * u
+  H[, 4, 3] <- delta * (1 + eta * (2 / f - 1 / b) * q) * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
 # 4-parameter logistic function
 #
 # Evaluate at a particular set of parameters the gradient and Hessian of the
@@ -136,56 +503,7 @@ fn.logistic4_fit <- function(object, x, theta) {
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic4 <- function(object, theta) {
-  x <- object$stats[, 1]
-
-  delta <- theta[2]
-  eta <- theta[3]
-  phi <- theta[4]
-
-  y <- x - phi
-
-  b <- exp(-eta * y)
-
-  f <- 1 + b
-
-  q <- y * b
-  r <- -eta * b
-
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
-
-  gradient <- matrix(0, nrow = length(x), ncol = 4)
-  hessian <- array(0, dim = c(length(x), 4, 4))
-
-  gradient[, 1] <- 1
-  gradient[, 2] <- 1 / f
-  gradient[, 3] <- delta * eta * t
-  gradient[, 4] <- delta * u
-
-  hessian[, 3, 2] <- eta * t
-  hessian[, 4, 2] <- u
-
-  hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- -delta * y * (1 + eta * (2 / f - 1 / b) * q) * u
-  hessian[, 4, 3] <- delta * (1 + eta * (2 / f - 1 / b) * q) * u
-
-  hessian[, 2, 4] <- hessian[, 4, 2]
-  hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
-
-  # When `b` is infinite, gradient and Hessian show NaNs
-  # these are the limits for b -> Inf
-  if (any(is.nan(gradient))) {
-    gradient[, 1][is.nan(gradient[, 1])] <- 1
-    gradient[, 2:4][is.nan(gradient[, 2:4])] <- 0
-  }
-
-  if (any(is.nan(hessian))) {
-    hessian[is.nan(hessian)] <- 0
-  }
-
-  list(G = gradient, H = hessian)
+  logistic4_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -222,7 +540,7 @@ rss_fixed.logistic4 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 4)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[3] <- exp(theta[3])
@@ -284,7 +602,7 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 4)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[3] <- exp(theta[3])
@@ -658,33 +976,35 @@ fit_constrained.logistic4 <- function(object) {
 #
 # @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic4 <- function(object, theta, sigma) {
+  x <- object$stats[, 1]
+  y <- object$stats[, 3]
   w <- object$stats[, 2]
-  d <- fn(object, object$stats[, 1], theta) - object$stats[, 3]
+  z <- fn(object, x, theta) - y
 
-  gh <- gradient_hessian(object, theta)
+  gh <- logistic4_gradient_hessian(x, theta)
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
   G <- matrix(0, nrow = object$m, ncol = 4)
-  G[, 1] <- w * d * gh$G[, 1]
-  G[, 2] <- w * d * gh$G[, 2]
-  G[, 3] <- w * d * gh$G[, 3]
-  G[, 4] <- w * d * gh$G[, 4]
+  G[, 1] <- w * z * gh$G[, 1]
+  G[, 2] <- w * z * gh$G[, 2]
+  G[, 3] <- w * z * gh$G[, 3]
+  G[, 4] <- w * z * gh$G[, 4]
 
   G <- apply(G, 2, sum)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
-  H[, , 1] <- w * (d * gh$H[, , 1] + gh$G[, 1] * gh$G)
-  H[, , 2] <- w * (d * gh$H[, , 2] + gh$G[, 2] * gh$G)
-  H[, , 3] <- w * (d * gh$H[, , 3] + gh$G[, 3] * gh$G)
-  H[, , 4] <- w * (d * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
   mu <- fn(object, object$x, theta)
-  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
 
@@ -713,34 +1033,7 @@ curve_variance.logistic4_fit <- function(object, x) {
     return(rep(NA_real_, m))
   }
 
-  delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-
-  y <- x - phi
-
-  b <- exp(-eta * y)
-
-  f <- 1 + b
-
-  q <- y * b
-  r <- -eta * b
-
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
-
-  G <- matrix(0, nrow = m, ncol = 4)
-
-  G[, 1] <- 1
-  G[, 2] <- 1 / f
-  G[, 3] <- delta * t
-  G[, 4] <- delta * u
-
-  if (any(is.nan(G))) {
-    G[, 1][is.nan(G[, 1])] <- 1
-    G[, 2:4][is.nan(G[, 2:4])] <- 0
-  }
+  G <- logistic4_gradient(x, object$coefficients)
 
   variance <- rep(NA_real_, m)
 
@@ -865,5 +1158,38 @@ nauc.logistic4_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 
 #' @export
 naac.logistic4_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  1 - nauc(object, xlim, ylim)
+  1 - nauc.logistic4_fit(object, xlim, ylim)
+}
+
+#' @export
+effective_dose.logistic4_fit <- function(object, y, type = "relative") {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+
+  # value at -Inf is alpha
+  # value at Inf is alpha + delta
+  fv <- if (type == "relative") {
+    y[y <= 0 | y >= 1] <- NA_real_
+    alpha + y * delta
+  } else if (type == "absolute") {
+    y1 <- alpha
+    y2 <- alpha + delta
+
+    if (delta > 0) {
+      y[y < y1 | y > y2] <- NA_real_
+    } else {
+      y[y < y2 | y > y1] <- NA_real_
+    }
+
+    y
+  } else {
+    stop("invalid value for `type`", call. = FALSE)
+  }
+
+  x <- phi - log(delta / (fv - alpha) - 1) / eta
+  names(x) <- NULL
+
+  x
 }

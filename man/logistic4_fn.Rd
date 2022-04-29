@@ -25,7 +25,7 @@ The 4-parameter logistic function \verb{f(x; theta)} is defined here as
 \verb{g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))}
 \verb{f(x; theta) = alpha + delta g(x; theta)}
 
-where \code{theta = c(alpha, beta, eta, phi)}, \code{alpha} is the value of the
+where \code{theta = c(alpha, delta, eta, phi)}, \code{alpha} is the value of the
 function when \code{x -> -Inf}, \code{delta} is the (signed) height of the curve,
 \code{eta > 0} is the steepness of the curve or growth rate (also known as the
 Hill coefficient), and \code{phi} is the value of \code{x} at which the curve is equal
