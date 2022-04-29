@@ -145,3 +145,27 @@ nauc <- function(object, xlim, ylim) {
 naac <- function(object, xlim, ylim) {
   UseMethod("naac", object)
 }
+
+#' Effective dose
+#'
+#' Estimate effective doses, that is the `x` values for which `f(x) = y`.
+#'
+#' @details
+#' Given a fitted model `f(x; theta)` we seek the values `x` at which the
+#' function is equal to the specified response values.
+#'
+#' If responses are given on a relative scale (`type = "relative"`), then `y` is
+#' expected to range in the interval `(0, 1)`.
+#'
+#' If responses are given on an absolute scale (`type = "absolute"`), then `y`
+#' is free to vary on the whole real line. Note, however, that the solution
+#' does not exist when `y` is not in the image of the function.
+#'
+#' @param y numeric vector with response levels.
+#' @param type character string with either "relative" (default) or "absolute".
+#'
+#' @return Numeric vector with the effective doses corresponding to each value
+#'   of `y`.
+effective_dose <- function(object, y, type) {
+  UseMethod("effective_dose", object)
+}
