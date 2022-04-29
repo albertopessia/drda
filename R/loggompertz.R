@@ -38,7 +38,7 @@ loggompertz_new <-  function(
     object$constrained <- TRUE
 
     if (is.null(lower_bound)) {
-      rep(-Inf, 4)
+      lower_bound <- rep(-Inf, 4)
     } else {
       if (length(lower_bound) != 4) {
         stop("'lower_bound' must be of length 4", call. = FALSE)
@@ -58,7 +58,7 @@ loggompertz_new <-  function(
     }
 
     if (is.null(upper_bound)) {
-      rep(Inf, 4)
+      upper_bound <- rep(Inf, 4)
     } else {
       if (length(upper_bound) != 4) {
         stop("'upper_bound' must be of length 4", call. = FALSE)
@@ -95,7 +95,7 @@ loggompertz_new <-  function(
 #' `phi > 0`. By convention we set
 #' `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
 #'
-#' @param x numeric vector at which the logistic function is to be evaluated.
+#' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
@@ -125,7 +125,391 @@ fn.loggompertz_fit <- function(object, x, theta) {
   loggompertz_fn(x, theta)
 }
 
-# log-Gompertz function
+#' log-Gompertz function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' log-Gompertz function.
+#'
+#' @details
+#' The log-Gompertz function `f(x; theta)` is defined here as
+#'
+#' `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
+#'
+#' where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+#' `phi > 0`. By convention we set
+#' `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the five parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#'
+#' @return Gradient or Hessian evaluated at the specified point.
+#'
+#' @export
+loggompertz_gradient <- function(x, theta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  f <- (phi / x)^eta
+  g <- exp(-f)
+
+  a <- log(phi / x)
+  d <- f * g
+  q <- a * d
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- -delta * q
+  G[, 4] <- -delta * eta * d / phi
+
+  # gradient might not be defined when we plug x = 0 directly into the formula
+  # however, the limits for x -> 0 are zero (not w.r.t. alpha)
+  G[x_zero, -1] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+#' @rdname loggompertz_gradient
+loggompertz_hessian <- function(x, theta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  f <- (phi / x)^eta
+  g <- exp(-f)
+
+  a <- log(phi / x)
+  b <- 1 - f
+  d <- f * g
+  l <- a * b
+  q <- a * d
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- -q
+  H[, 4, 2] <- -eta * d / phi
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * l * q
+  H[, 4, 3] <- -delta * (1 + eta * l) * d / phi
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * eta * (1 - eta * b) * d / phi^2
+
+  # Hessian might not be defined when we plug x = 0 directly into the formula
+  # however, the limits for x -> 0 are zero
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname loggompertz_gradient
+loggompertz_gradient_hessian <- function(x, theta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  f <- (phi / x)^eta
+  g <- exp(-f)
+
+  a <- log(phi / x)
+  b <- 1 - f
+  d <- f * g
+  l <- a * b
+  q <- a * d
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- -delta * q
+  G[, 4] <- -delta * eta * d / phi
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- -q
+  H[, 4, 2] <- -eta * d / phi
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * l * q
+  H[, 4, 3] <- -delta * (1 + eta * l) * d / phi
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * eta * (1 - eta * b) * d / phi^2
+
+  # gradient and Hessian might not be defined when we plug x = 0 directly into
+  # the formula
+  # however, the limits for x -> 0 are zero (not w.r.t. alpha)
+  G[x_zero, -1] <- 0
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+#' Log-Gompertz function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' log-Gompertz function.
+#'
+#' @details
+#' The log-Gompertz function `f(x; theta)` is defined here as
+#'
+#' `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
+#'
+#' where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+#' `phi > 0`. By convention we set
+#' `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
+#'
+#' This set of functions use a different parameterization from
+#' \code{link[drda]{loggompertz_gradient}}. To avoid the non-negative
+#' constraints of parameters, the gradient and Hessian computed here are for
+#' the function with `eta2 = log(eta)` and `phi2 = log(phi)`.
+#'
+#' Note that argument `theta` is on the original scale and not on the log scale.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#'
+#' @return Gradient or Hessian of the alternative parameterization evaluated at
+#'   the specified point.
+#'
+#' @export
+loggompertz_gradient_2 <- function(x, theta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  f <- (phi / x)^eta
+  g <- exp(-f)
+
+  a <- log(phi / x)
+  d <- eta * f * g
+  q <- a * d
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- -delta * q
+  G[, 4] <- -delta * d
+
+  # gradient and Hessian might not be defined when we plug x = 0 directly into
+  # the formula
+  # however, the limits for x -> 0 are zero (not w.r.t. alpha)
+  G[x_zero, -1] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+#' @rdname loggompertz_gradient_2
+loggompertz_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  f <- (phi / x)^eta
+  g <- exp(-f)
+
+  a <- log(phi / x)
+  b <- 1 - f
+  d <- eta * f * g
+  l <- eta * a * b
+  q <- a * d
+  r <- b * d
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- -q
+  H[, 4, 2] <- -d
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * (1 + l) * q
+  H[, 4, 3] <- -delta * (1 + l) * d
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- -delta * eta * r
+
+  # Hessian might not be defined when we plug x = 0 directly into the formula
+  # however, the limits for x -> 0 are zero
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname loggompertz_gradient_2
+loggompertz_gradient_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  x_zero <- x == 0
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  f <- (phi / x)^eta
+  g <- exp(-f)
+
+  a <- log(phi / x)
+  b <- 1 - f
+  d <- eta * f * g
+  l <- eta * a * b
+  q <- a * d
+  r <- b * d
+
+  G <- matrix(1, nrow = k, ncol = 4)
+  H <- array(0, dim = c(k, 4, 4))
+
+  G[, 2] <- g
+  G[, 3] <- -delta * q
+  G[, 4] <- -delta * d
+
+  H[, 3, 2] <- -q
+  H[, 4, 2] <- -d
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * (1 + l) * q
+  H[, 4, 3] <- -delta * (1 + l) * d
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- -delta * eta * r
+
+  # gradient and Hessian might not be defined when we plug x = 0 directly into
+  # the formula
+  # however, the limits for x -> 0 are zero (not w.r.t. alpha)
+  G[x_zero, -1] <- 0
+  H[x_zero, , ] <- 0
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+# log-Gompertz function gradient and Hessian
 #
 # Evaluate at a particular set of parameters the gradient and Hessian of the
 # log-Gompertz function.
@@ -149,72 +533,7 @@ fn.loggompertz_fit <- function(object, x, theta) {
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.loggompertz <- function(object, theta) {
-  x <- object$stats[, 1]
-  x_zero <- x == 0
-
-  delta <- theta[2]
-  eta <- theta[3]
-  phi <- theta[4]
-
-  f <- (phi / x)^eta
-  g <- exp(-f)
-
-  a <- log(phi / x)
-  b <- 1 - f
-  d <- eta * f * g
-  l <- eta * a * b
-  q <- a * d
-  r <- b * d
-
-  gradient <- matrix(0, nrow = length(x), ncol = 4)
-  hessian <- array(0, dim = c(length(x), 4, 4))
-
-  gradient[, 1] <- 1
-  gradient[, 2] <- g
-  gradient[, 3] <- -delta * q
-  gradient[, 4] <- -delta * d
-
-  hessian[, 3, 2] <- -q
-  hessian[, 4, 2] <- -d
-
-  hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- -delta * (1 + l) * q
-  hessian[, 4, 3] <- -delta * (1 + l) * d
-
-  hessian[, 2, 4] <- hessian[, 4, 2]
-  hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- -delta * eta * r
-
-  # gradient and Hessian might not be defined when we plug x = 0 directly into
-  # the formula
-  # however, the limits for x -> 0 are zero (not w.r.t. alpha)
-  gradient[x_zero, -1] <- 0
-  hessian[x_zero, , ] <- 0
-
-  # any other NaN is because of corner cases where the derivatives are zero
-  if (any(is.nan(gradient))) {
-    warning(
-      paste0(
-        "issues while computing the gradient at c(",
-        paste(theta, collapse = ", "),
-        ")"
-      )
-    )
-    gradient[is.nan(gradient)] <- 0
-  }
-
-  if (any(is.nan(hessian))) {
-    warning(
-      paste0(
-        "issues while computing the Hessian at c(",
-        paste(theta, collapse = ", "),
-        ")"
-      )
-    )
-    hessian[is.nan(hessian)] <- 0
-  }
-
-  list(G = gradient, H = hessian)
+  loggompertz_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -255,7 +574,7 @@ rss_fixed.loggompertz <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 4)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[3:4] <- exp(theta[3:4])
@@ -319,7 +638,7 @@ rss_gradient_hessian_fixed.loggompertz <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 4)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[3:4] <- exp(theta[3:4])
@@ -369,10 +688,9 @@ mle_asy.loggompertz <- function(object, theta) {
 
   g <- exp(-(exp(theta[4]) / x)^exp(theta[3]))
 
-  # when parameters are extremely large the denominator might converge to zero
-  # when `x` is also zero this results in a 0 / 0 operation
-  # in such cases `x = 0` has the priority and `g` must be set to zero
-  g[is.nan(g)] <- 0
+  # when theta[4] is extremely small and `x = 0` the ratio turns into 0 / 0
+  # in such cases, `x = 0` has the priority and `g` must be set to zero
+  g[x == 0] <- 0
 
   t1 <- 0
   t2 <- 0
@@ -697,7 +1015,7 @@ fit_constrained.loggompertz <- function(object) {
   result
 }
 
-# 4-parameter log-logistic fit
+# log-Gompertz fit
 #
 # Evaluate the Fisher information matrix at the maximum likelihood estimate.
 #
@@ -723,68 +1041,30 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
   w <- object$stats[, 2]
   z <- fn(object, x, theta) - y
 
-  idx_zero <- x == 0
-
-  delta <- theta[2]
-  eta <- theta[3]
-  phi <- theta[4]
-
-  f <- (phi / x)^eta
-  g <- exp(-f)
-
-  a <- log(phi / x)
-  b <- 1 - f
-  d <- f * g
-  l <- a * b
-  q <- a * d
-
-  gradient <- matrix(0, nrow = object$m, ncol = 4)
-
-  gradient[, 1] <- 1
-  gradient[, 2] <- g
-  gradient[, 3] <- -delta * q
-  gradient[, 4] <- -delta * eta * d / phi
-
-  gradient[idx_zero, 1] <- 1
-  gradient[idx_zero, -1] <- 0
+  gh <- loggompertz_gradient_hessian(x, theta)
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
   G <- matrix(0, nrow = object$m, ncol = 4)
-  G[, 1] <- w * z * gradient[, 1]
-  G[, 2] <- w * z * gradient[, 2]
-  G[, 3] <- w * z * gradient[, 3]
-  G[, 4] <- w * z * gradient[, 4]
+  G[, 1] <- w * z * gh$G[, 1]
+  G[, 2] <- w * z * gh$G[, 2]
+  G[, 3] <- w * z * gh$G[, 3]
+  G[, 4] <- w * z * gh$G[, 4]
 
   G <- apply(G, 2, sum)
 
-  hessian <- array(0, dim = c(object$m, 4, 4))
-
-  hessian[, 3, 2] <- -q
-  hessian[, 4, 2] <- -eta * d / phi
-
-  hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- -delta * l * q
-  hessian[, 4, 3] <- -delta * (1 + eta * l) * d / phi
-
-  hessian[, 2, 4] <- hessian[, 4, 2]
-  hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- delta * eta * (1 - eta * b) * d / phi^2
-
-  hessian[idx_zero, , ] <- 0
-
   H <- array(0, dim = c(object$m, 4, 4))
 
-  H[, , 1] <- w * (z * hessian[, , 1] + gradient[, 1] * gradient)
-  H[, , 2] <- w * (z * hessian[, , 2] + gradient[, 2] * gradient)
-  H[, , 3] <- w * (z * hessian[, , 3] + gradient[, 3] * gradient)
-  H[, , 4] <- w * (z * hessian[, , 4] + gradient[, 4] * gradient)
+  H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
   mu <- fn(object, object$x, theta)
-  v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+  v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2
 
@@ -813,27 +1093,7 @@ curve_variance.loggompertz_fit <- function(object, x) {
     return(rep(NA_real_, len))
   }
 
-  x_zero <- x == 0
-
-  delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-
-  f <- (phi / x)^eta
-  g <- exp(-f)
-
-  a <- log(phi / x)
-  d <- f * g
-  q <- a * d
-
-  G <- matrix(0, nrow = len, ncol = 4)
-
-  G[, 1] <- 1
-  G[, 2] <- g
-  G[, 3] <- -delta * q
-  G[, 4] <- -delta * eta * d / phi
-
-  G[x_zero, -1] <- 0
+  G <- loggompertz_gradient(x, object$coefficients)
 
   variance <- rep(NA_real_, len)
 
@@ -1001,5 +1261,39 @@ nauc.loggompertz_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
 
 #' @export
 naac.loggompertz_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  1 - nauc(object, xlim, ylim)
+  1 - nauc.loggompertz_fit(object, xlim, ylim)
+}
+
+#' @export
+effective_dose.loggompertz_fit <- function(object, y, type = "relative") {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+
+  # value at -Inf is alpha
+  # value at Inf is alpha + delta / xi^(1 / nu)
+  fv <- if (type == "relative") {
+    y[y <= 0 | y >= 1] <- NA_real_
+    alpha + y * delta
+  } else if (type == "absolute") {
+    y1 <- alpha
+    y2 <- alpha + delta
+
+    if (delta > 0) {
+      y[y < y1 | y > y2] <- NA_real_
+    } else {
+      y[y < y2 | y > y1] <- NA_real_
+    }
+
+    y
+  } else {
+    stop("invalid value for `type`", call. = FALSE)
+  }
+
+  z <- (fv - alpha) / delta
+  x <- phi / (-log(z))^(1 / eta)
+  names(x) <- NULL
+
+  x
 }
