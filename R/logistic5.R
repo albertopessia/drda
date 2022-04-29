@@ -38,7 +38,7 @@ logistic5_new <-  function(
     object$constrained <- TRUE
 
     if (is.null(lower_bound)) {
-      rep(-Inf, 5)
+      lower_bound <- rep(-Inf, 5)
     } else {
       if (length(lower_bound) != 5) {
         stop("'lower_bound' must be of length 5", call. = FALSE)
@@ -58,7 +58,7 @@ logistic5_new <-  function(
     }
 
     if (is.null(upper_bound)) {
-      rep(Inf, 5)
+      upper_bound <- rep(Inf, 5)
     } else {
       if (length(upper_bound) != 5) {
         stop("'upper_bound' must be of length 5", call. = FALSE)
@@ -132,26 +132,241 @@ fn.logistic5_fit <- function(object, x, theta) {
   logistic5_fn(x, theta)
 }
 
-# 5-parameter logistic function
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 5-parameter logistic function.
-#
-# @details
-# The 5-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
-#
-# @param object object of class `logistic5`.
-# @param theta numeric vector with the five parameters in the form
-#   `c(alpha, delta, eta, phi, nu)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-gradient_hessian.logistic5 <- function(object, theta) {
-  x <- object$stats[, 1]
+#' 5-parameter logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 5-parameter logistic function.
+#'
+#' @details
+#' The 5-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`. When
+#' `delta` is positive (negative) the curve is monotonically increasing
+#' (decreasing).
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi, nu)`.
+#'
+#' @return Gradient or Hessian evaluated at the specified point.
+#'
+#' @export
+logistic5_gradient <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+  nu <- theta[5]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + nu * b
+  g <- f^(-1 / nu)
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+  v <- u / eta + g * log(f) / nu
+
+  G <- matrix(1, nrow = k, ncol = 5)
+
+  G[, 2] <- g
+  G[, 3] <- delta * t
+  G[, 4] <- delta * u
+  G[, 5] <- delta * v / nu
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+#' @rdname logistic5_gradient
+logistic5_hessian <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+  nu <- theta[5]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + nu * b
+  g <- f^(-1 / nu)
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+  v <- u / eta + g * log(f) / nu
+
+  H <- array(0, dim = c(k, 5, 5))
+
+  H[, 3, 2] <- t
+  H[, 4, 2] <- u
+  H[, 5, 2] <- v / nu
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- delta * q * t * ((1 + nu) / f - 1 / b)
+  H[, 4, 3] <- delta * (1 / eta + (1 + nu - f / b) * t / g) * u
+  H[, 5, 3] <- delta * (nu * u / eta + v) * t / (nu * g)
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
+  H[, 5, 4] <- delta * (nu * u / eta + v) * u / (nu * g)
+
+  H[, 2, 5] <- H[, 5, 2]
+  H[, 3, 5] <- H[, 5, 3]
+  H[, 4, 5] <- H[, 5, 4]
+  H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname logistic5_gradient
+logistic5_gradient_hessian <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+  nu <- theta[5]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + nu * b
+  g <- f^(-1 / nu)
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+  v <- u / eta + g * log(f) / nu
+
+  G <- matrix(1, nrow = k, ncol = 5)
+
+  G[, 2] <- g
+  G[, 3] <- delta * t
+  G[, 4] <- delta * u
+  G[, 5] <- delta * v / nu
+
+  H <- array(0, dim = c(k, 5, 5))
+
+  H[, 3, 2] <- t
+  H[, 4, 2] <- u
+  H[, 5, 2] <- v / nu
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- delta * q * t * ((1 + nu) / f - 1 / b)
+  H[, 4, 3] <- delta * (1 / eta + (1 + nu - f / b) * t / g) * u
+  H[, 5, 3] <- delta * (nu * u / eta + v) * t / (nu * g)
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
+  H[, 5, 4] <- delta * (nu * u / eta + v) * u / (nu * g)
+
+  H[, 2, 5] <- H[, 5, 2]
+  H[, 3, 5] <- H[, 5, 3]
+  H[, 4, 5] <- H[, 5, 4]
+  H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+#' 5-parameter logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 5-parameter logistic function.
+#'
+#' @details
+#' The 5-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`. When
+#' `delta` is positive (negative) the curve is monotonically increasing
+#' (decreasing).
+#'
+#' This set of functions use a different parameterization from
+#' \code{link[drda]{logistic5_gradient}}. To avoid the non-negative
+#' constraints of parameters, the gradient and Hessian computed here are for
+#' the function with `eta2 = log(eta)` and `nu2 = log(nu)`.
+#'
+#' Note that argument `theta` is on the original scale and not on the log scale.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi, nu)`.
+#'
+#' @return Gradient or Hessian of the alternative parameterization evaluated at
+#'   the specified point.
+#'
+#' @export
+logistic5_gradient_2 <- function(x, theta) {
+  k <- length(x)
 
   delta <- theta[2]
   eta <- theta[3]
@@ -173,46 +388,190 @@ gradient_hessian.logistic5 <- function(object, theta) {
   u <- r * s
   v <- u / eta + g * log(f) / nu
 
-  gradient <- matrix(0, nrow = length(x), ncol = 5)
-  hessian <- array(0, dim = c(length(x), 5, 5))
+  G <- matrix(1, nrow = k, ncol = 5)
 
-  gradient[, 1] <- 1
-  gradient[, 2] <- g
-  gradient[, 3] <- delta * eta * t
-  gradient[, 4] <- delta * u
-  gradient[, 5] <- delta * v
+  G[, 2] <- g
+  G[, 3] <- delta * eta * t
+  G[, 4] <- delta * u
+  G[, 5] <- delta * v
 
-  hessian[, 3, 2] <- eta * t
-  hessian[, 4, 2] <- u
-  hessian[, 5, 2] <- v
-
-  hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- -delta * y * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
-  hessian[, 4, 3] <- delta * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
-  hessian[, 5, 3] <- -delta * y * (nu * u / eta + v) * u / g
-
-  hessian[, 2, 4] <- hessian[, 4, 2]
-  hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
-  hessian[, 5, 4] <- delta * (nu * u / eta + v) * u / g
-
-  hessian[, 2, 5] <- hessian[, 5, 2]
-  hessian[, 3, 5] <- hessian[, 5, 3]
-  hessian[, 4, 5] <- hessian[, 5, 4]
-  hessian[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - g)) / g
-
-  # When `b` is infinite, gradient and Hessian show NaNs
-  # these are the limits for b -> Inf
-  if (any(is.nan(gradient))) {
-    gradient[, 1][is.nan(gradient[, 1])] <- 1
-    gradient[, 2:5][is.nan(gradient[, 2:5])] <- 0
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
   }
 
-  if (any(is.nan(hessian))) {
-    hessian[is.nan(hessian)] <- 0
+  G
+}
+
+#' @rdname logistic5_gradient_2
+logistic5_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+  nu <- theta[5]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + nu * b
+  g <- f^(-1 / nu)
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+  v <- u / eta + g * log(f) / nu
+
+  H <- array(0, dim = c(k, 5, 5))
+
+  H[, 3, 2] <- eta * t
+  H[, 4, 2] <- u
+  H[, 5, 2] <- v
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * y * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
+  H[, 4, 3] <- delta * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
+  H[, 5, 3] <- -delta * y * (nu * u / eta + v) * u / g
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
+  H[, 5, 4] <- delta * (nu * u / eta + v) * u / g
+
+  H[, 2, 5] <- H[, 5, 2]
+  H[, 3, 5] <- H[, 5, 3]
+  H[, 4, 5] <- H[, 5, 4]
+  H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - g)) / g
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
   }
 
-  list(G = gradient, H = hessian)
+  H
+}
+
+#' @rdname logistic5_gradient_2
+logistic5_gradient_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+  nu <- theta[5]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + nu * b
+  g <- f^(-1 / nu)
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+  v <- u / eta + g * log(f) / nu
+
+  G <- matrix(1, nrow = k, ncol = 5)
+
+  G[, 2] <- g
+  G[, 3] <- delta * eta * t
+  G[, 4] <- delta * u
+  G[, 5] <- delta * v
+
+  H <- array(0, dim = c(k, 5, 5))
+
+  H[, 3, 2] <- eta * t
+  H[, 4, 2] <- u
+  H[, 5, 2] <- v
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * y * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
+  H[, 4, 3] <- delta * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
+  H[, 5, 3] <- -delta * y * (nu * u / eta + v) * u / g
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
+  H[, 5, 4] <- delta * (nu * u / eta + v) * u / g
+
+  H[, 2, 5] <- H[, 5, 2]
+  H[, 3, 5] <- H[, 5, 3]
+  H[, 4, 5] <- H[, 5, 4]
+  H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - g)) / g
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+# 5-parameter logistic function gradient and Hessian
+#
+# Evaluate at a particular set of parameters the gradient and Hessian of the
+# 5-parameter logistic function.
+#
+# @details
+# The 5-parameter logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
+#
+# @param object object of class `logistic5`.
+# @param theta numeric vector with the five parameters in the form
+#   `c(alpha, delta, eta, phi, nu)`.
+#
+# @return List of two elements: `G` the gradient and `H` the Hessian.
+gradient_hessian.logistic5 <- function(object, theta) {
+  logistic5_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -252,7 +611,7 @@ rss_fixed.logistic5 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 5)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[c(3, 5)] <- exp(theta[c(3, 5)])
@@ -315,7 +674,7 @@ rss_gradient_hessian_fixed.logistic5 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 5)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[c(3, 5)] <- exp(theta[c(3, 5)])
@@ -710,86 +1069,29 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
+  z <- fn(object, x, theta) - y
 
-  delta <- theta[2]
-  eta <- theta[3]
-  phi <- theta[4]
-  nu <- theta[5]
-
-  b <- exp(-eta * (x - phi))
-
-  f <- 1 + nu * b
-  g <- f^(-1 / nu)
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  s <- g / f
-  t <- q * s
-  u <- r * s
-  v <- u / eta + g * log(f) / nu
-
-  d <- fn(object, x, theta) - y
-
-  gradient <- matrix(0, nrow = object$m, ncol = 5)
-
-  gradient[, 1] <- 1
-  gradient[, 2] <- g
-  gradient[, 3] <- delta * t
-  gradient[, 4] <- delta * u
-  gradient[, 5] <- delta * v / nu
-
-  # When `b` is infinite, gradient and Hessian show NaNs
-  # these are the limits for b -> Inf
-  if (any(is.nan(gradient))) {
-    gradient[, 1][is.nan(gradient[, 1])] <- 1
-    gradient[, 2:5][is.nan(gradient[, 2:5])] <- 0
-  }
+  gh <- logistic5_gradient_hessian(x, theta)
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
   G <- matrix(0, nrow = object$m, ncol = 5)
-  G[, 1] <- w * d * gradient[, 1]
-  G[, 2] <- w * d * gradient[, 2]
-  G[, 3] <- w * d * gradient[, 3]
-  G[, 4] <- w * d * gradient[, 4]
-  G[, 5] <- w * d * gradient[, 5]
+  G[, 1] <- w * z * gh$G[, 1]
+  G[, 2] <- w * z * gh$G[, 2]
+  G[, 3] <- w * z * gh$G[, 3]
+  G[, 4] <- w * z * gh$G[, 4]
+  G[, 5] <- w * z * gh$G[, 5]
 
   G <- apply(G, 2, sum)
 
-  hessian <- array(0, dim = c(object$m, 5, 5))
-
-  hessian[, 3, 2] <- t
-  hessian[, 4, 2] <- u
-  hessian[, 5, 2] <- v / nu
-
-  hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- delta * q * t * ((1 + nu) / f - 1 / b)
-  hessian[, 4, 3] <- delta * (1 / eta + (1 + nu - f / b) * t / g) * u
-  hessian[, 5, 3] <- delta * (nu * u / eta + v) * t / (nu * g)
-
-  hessian[, 2, 4] <- hessian[, 4, 2]
-  hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- delta * ((1 + nu) / f - 1 / b) * r * u
-  hessian[, 5, 4] <- delta * (nu * u / eta + v) * u / (nu * g)
-
-  hessian[, 2, 5] <- hessian[, 5, 2]
-  hessian[, 3, 5] <- hessian[, 5, 3]
-  hessian[, 4, 5] <- hessian[, 5, 4]
-  hessian[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
-
-  if (any(is.nan(hessian))) {
-    hessian[is.nan(hessian)] <- 0
-  }
-
   H <- array(0, dim = c(object$m, 5, 5))
 
-  H[, , 1] <- w * (d * hessian[, , 1] + gradient[, 1] * gradient)
-  H[, , 2] <- w * (d * hessian[, , 2] + gradient[, 2] * gradient)
-  H[, , 3] <- w * (d * hessian[, , 3] + gradient[, 3] * gradient)
-  H[, , 4] <- w * (d * hessian[, , 4] + gradient[, 4] * gradient)
-  H[, , 5] <- w * (d * hessian[, , 5] + gradient[, 5] * gradient)
+  H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  H[, , 5] <- w * (z * gh$H[, , 5] + gh$G[, 5] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
@@ -823,38 +1125,7 @@ curve_variance.logistic5_fit <- function(object, x) {
     return(rep(NA_real_, m))
   }
 
-  alpha <- object$coefficients[1]
-  delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-  nu <- object$coefficients[5]
-
-  b <- exp(-eta * (x - phi))
-
-  f <- 1 + nu * b
-  g <- f^(-1 / nu)
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  s <- g / f
-  t <- q * s
-  u <- r * s
-  v <- u / eta + g * log(f) / nu
-
-  G <- matrix(0, nrow = m, ncol = 5)
-  G[, 1] <- 1 - g
-  G[, 2] <- g
-  G[, 3] <- delta * t
-  G[, 4] <- delta * u
-  G[, 5] <- delta * v / nu
-
-  # When `b` is infinite, gradient shows NaNs
-  if (any(is.nan(G))) {
-    # these are the limits for b -> Inf
-    G[, 1][is.nan(G[, 1])] <- 1
-    G[, 2:5][is.nan(G[, 2:5])] <- 0
-  }
+  G <- logistic5_gradient(x, object$coefficients)
 
   variance <- rep(NA_real_, m)
 
@@ -982,5 +1253,39 @@ nauc.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 
 #' @export
 naac.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  1 - nauc(object, xlim, ylim)
+  1 - nauc.logistic5_fit(object, xlim, ylim)
+}
+
+#' @export
+effective_dose.logistic5_fit <- function(object, y, type = "relative") {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+  nu <- object$coefficients[5]
+
+  # value at -Inf is alpha
+  # value at Inf is alpha + delta
+  fv <- if (type == "relative") {
+    y[y <= 0 | y >= 1] <- NA_real_
+    alpha + y * delta
+  } else if (type == "absolute") {
+    y1 <- alpha
+    y2 <- alpha + delta
+
+    if (delta > 0) {
+      y[y < y1 | y > y2] <- NA_real_
+    } else {
+      y[y < y2 | y > y1] <- NA_real_
+    }
+
+    y
+  } else {
+    stop("invalid value for `type`", call. = FALSE)
+  }
+
+  x <- phi - log(((delta / (fv - alpha))^nu - 1) / nu) / eta
+  names(x) <- NULL
+
+  x
 }
