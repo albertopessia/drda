@@ -2,14 +2,50 @@
 logistic2_new <-  function(
   x, y, w, start, max_iter, lower_bound, upper_bound
 ) {
-  if (!is.null(start)) {
+  # 2-parameter log-logistic curve is tricky because according to our
+  # parameterization we have two options:
+  #
+  # x^eta / (x^eta + phi^eta)
+  #
+  # or
+  #
+  # 1 - x^eta / (x^eta + phi^eta)
+  #
+  # this duality creates some problem while initializing the model because we
+  # do not know yet if the curve is increasing or decreasing.
+  #
+  # We will try our best to infer it from the data.
+
+  stats <- suff_stats(x, y, w)
+  m <- nrow(stats)
+
+  # depending on the quality of data, the guessing can be hard or easy
+  #
+  # we use `lowess` as a non-linear non-parametric smoother to get an idea of
+  # the trend.
+  xx <- sqrt(stats[, 2]) * stats[, 1]
+  yy <- sqrt(stats[, 2]) * stats[, 3]
+  fit <- lowess(xx, yy, f = 0.9)
+
+  a <- 0
+  d <- 1
+  if (fit$y[1] > fit$y[m]) {
+    a <- 1
+    d <- -1
+  }
+
+  start <- if (!is.null(start)) {
     if (length(start) != 2) {
       stop("'start' must be of length 2", call. = FALSE)
     }
 
-    if (start[1] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
+    if (start[1] <= 0) {
+      stop("parameter 'eta' cannot be negative nor zero", call. = FALSE)
     }
+
+    c(a, d, log(start[1]), start[2])
+  } else {
+    c(a, d, NA_real_, NA_real_)
   }
 
   object <- structure(
@@ -18,33 +54,44 @@ logistic2_new <-  function(
       y = y,
       w = w,
       n = length(y),
-      stats = suff_stats(x, y, w),
+      stats = stats,
       constrained = FALSE,
       start = start,
-      max_iter = max_iter
+      max_iter = max_iter,
+      m = m
     ),
     class = "logistic2"
   )
-
-  object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
     object$constrained <- TRUE
 
     if (is.null(lower_bound)) {
-      rep(-Inf, 2)
+      lower_bound <- rep(-Inf, 2)
     } else {
       if (length(lower_bound) != 2) {
         stop("'lower_bound' must be of length 2", call. = FALSE)
       }
+
+      lower_bound[1] <- if (lower_bound[1] > 0) {
+        log(lower_bound[1])
+      } else {
+        -Inf
+      }
     }
 
     if (is.null(upper_bound)) {
-      rep(Inf, 2)
+      upper_bound <- rep(Inf, 2)
     } else {
       if (length(upper_bound) != 2) {
         stop("'upper_bound' must be of length 2", call. = FALSE)
       }
+
+      if (upper_bound[1] <= 0) {
+        stop("'upper_bound[1]' cannot be negative nor zero.", call. = FALSE)
+      }
+
+      upper_bound[1] <- log(upper_bound[1])
     }
 
     object$lower_bound <- lower_bound
@@ -61,52 +108,396 @@ logistic2_new <-  function(
 #' @details
 #' The 2-parameter logistic function `f(x; theta)` is defined here as
 #'
-#' `1 / (1 + exp(-eta * (x - phi)))`
+#' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
 #'
-#' where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-#' rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-#' which the curve is equal to its mid-point, i.e. 1 / 2.
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+#' are free to vary (therefore the name) while vector `c(alpha, delta)` is
+#' constrained to be either `c(0, 1)` (monotonically increasing curve) or
+#' `c(1, -1)` (monotonically decreasing curve).
+#'
+#' This function allows values other than {0, 1, -1} for `alpha` and `delta` but
+#' will coerce them to their proper constraints.
 #'
 #' @param x numeric vector at which the logistic function is to be evaluated.
-#' @param theta numeric vector with the parameters in the form `c(eta, phi)`.
+#' @param theta numeric vector with the four parameters in the form
+#'   `c(alpha, delta, eta, phi)`. `alpha` can only be equal to 0 or 1 while
+#'   `delta` can only be equal to 1 or -1.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
 #'
 #' @export
 logistic2_fn <- function(x, theta) {
+  alpha <- 0
+  delta <- 1
+  if (theta[2] < 0) {
+    alpha <- 1
+    delta <- -1
+  }
+
+  eta <- theta[3]
+  phi <- theta[4]
+
+  alpha + delta / (1 + exp(-eta * (x - phi)))
+}
+
+# @rdname logistic2_fn
+fn.logistic2 <- function(object, x, theta) {
+  logistic2_fn(x, c(object$start[1:2], theta))
+}
+
+# @rdname logistic2_fn
+fn.logistic2_fit <- function(object, x, theta) {
+  # within a fit, parameter theta is known exactly
+  alpha <- theta[1]
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  alpha + delta / (1 + exp(-eta * (x - phi)))
+}
+
+#' 2-parameter logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 2-parameter logistic function.
+#'
+#' @details
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+#' are free to vary (therefore the name) while vector `c(alpha, delta)` is
+#' constrained to be either `c(0, 1)` (monotonically increasing curve) or
+#' `c(1, -1)` (monotonically decreasing curve).
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(eta, phi)`.
+#' @param delta value of delta parameter (either 1 or -1).
+#'
+#' @return Gradient or Hessian evaluated at the specified point.
+#'
+#' @export
+logistic2_gradient <- function(x, theta, delta) {
+  k <- length(x)
+
   eta <- theta[1]
   phi <- theta[2]
 
-  1 / (1 + exp(-eta * (x - phi)))
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+  g <- 1 / f
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 2)
+
+  G[, 1] <- t
+  G[, 2] <- u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  sign(delta) * G
 }
 
-# 2-parameter logistic function
-#
-# Evaluate at a particular set of parameters the 2-parameter logistic function.
-#
-# @details
-# The 2-parameter logistic function `f(x; theta)` is defined here as
-#
-# `1 / (1 + exp(-eta * (x - phi)))`
-#
-# where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-# rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-# which the curve is equal to its mid-point, i.e. 1 / 2.
-#
-# @param object object of class `logistic2`.
-# @param x numeric vector at which the logistic function is to be evaluated.
-# @param theta numeric vector with the parameters in the form `c(eta, phi)`.
-#
-# @return Numeric vector of the same length of `x` with the values of the
-#   logistic function.
-fn.logistic2 <- function(object, x, theta) {
-  logistic2_fn(x, theta)
+#' @rdname logistic2_gradient
+logistic2_hessian <- function(x, theta, delta) {
+  k <- length(x)
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+  g <- 1 / f
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- q * t * (2 / f - 1 / b)
+  H[, 2, 1] <- (1 / eta + (2 - f / b) * t / g) * u
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  sign(delta) * H
 }
 
-# @rdname fn.logistic2
-fn.logistic2_fit <- function(object, x, theta) {
-  logistic2_fn(x, theta)
+#' @rdname logistic2_gradient
+logistic2_gradient_hessian <- function(x, theta, delta) {
+  k <- length(x)
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  b <- exp(-eta * (x - phi))
+
+  f <- 1 + b
+  g <- 1 / f
+
+  q <- (x - phi) * b
+  r <- -eta * b
+
+  s <- g / f
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 2)
+
+  G[, 1] <- t
+  G[, 2] <- u
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- q * t * (2 / f - 1 / b)
+  H[, 2, 1] <- (1 / eta + (2 - f / b) * t / g) * u
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = sign(delta) * G, H = sign(delta) * H)
+}
+
+#' 2-parameter logistic function gradient and Hessian
+#'
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' 2-parameter logistic function.
+#'
+#' @details
+#' The 2-parameter logistic function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+#' are free to vary (therefore the name) while vector `c(alpha, delta)` is
+#' constrained to be either `c(0, 1)` (monotonically increasing curve) or
+#' `c(1, -1)` (monotonically decreasing curve).
+#'
+#' This set of functions use a different parameterization from
+#' \code{link[drda]{logistic2_gradient}}. To avoid the non-negative
+#' constraints of parameters, the gradient and Hessian computed here are for
+#' the function with `eta2 = log(eta)`.
+#'
+#' Note that argument `theta` is on the original scale and not on the log scale.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#' @param delta value of delta parameter (either 1 or -1).
+#'
+#' @return Gradient or Hessian of the alternative parameterization evaluated at
+#'   the specified point.
+#'
+#' @export
+logistic2_gradient_2 <- function(x, theta, delta) {
+  k <- length(x)
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + b
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 2)
+
+  G[, 1] <- eta * t
+  G[, 2] <- u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  sign(delta) * G
+}
+
+#' @rdname logistic2_gradient_2
+logistic2_hessian_2 <- function(x, theta, delta) {
+  k <- length(x)
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + b
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  u <- r * s
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- -y * (1 + eta * (2 / f - 1 / b) * q) * u
+  H[, 2, 1] <- (1 + eta * (2 / f - 1 / b) * q) * u
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  sign(delta) * H
+}
+
+#' @rdname logistic2_gradient_2
+logistic2_gradient_hessian_2 <- function(x, theta, delta) {
+  k <- length(x)
+
+  eta <- theta[1]
+  phi <- theta[2]
+
+  y <- x - phi
+
+  b <- exp(-eta * y)
+
+  f <- 1 + b
+
+  q <- y * b
+  r <- -eta * b
+
+  s <- 1 / f^2
+  t <- q * s
+  u <- r * s
+
+  G <- matrix(1, nrow = k, ncol = 2)
+
+  G[, 1] <- eta * t
+  G[, 2] <- u
+
+  H <- array(0, dim = c(k, 2, 2))
+
+  H[, 1, 1] <- -y * (1 + eta * (2 / f - 1 / b) * q) * u
+  H[, 2, 1] <- (1 + eta * (2 / f - 1 / b) * q) * u
+
+  H[, 1, 2] <- H[, 2, 1]
+  H[, 2, 2] <- (2 / f - 1 / b) * r * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = sign(delta) * G, H = sign(delta) * H)
 }
 
 # 2-parameter logistic function
@@ -117,56 +508,23 @@ fn.logistic2_fit <- function(object, x, theta) {
 # @details
 # The 2-parameter logistic function `f(x; theta)` is defined here as
 #
-# `1 / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-# rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-# which the curve is equal to its mid-point, i.e. 1 / 2.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name) while vector `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
+#
+# To avoid issues with the non-negative constraints we consider in our
+# optimization algorithm the alternative parameterization with `log(eta)`.
 #
 # @param object object of class `logistic2`.
 # @param theta numeric vector with the parameters in the form `c(eta, phi)`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.logistic2 <- function(object, theta) {
-  x <- object$stats[, 1]
-
-  eta <- theta[1]
-  phi <- theta[2]
-
-  b <- exp(-eta * (x - phi))
-
-  f <- 1 + b
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
-
-  gradient <- matrix(0, nrow = length(x), ncol = 2)
-  hessian <- array(0, dim = c(length(x), 2, 2))
-
-  gradient[, 1] <- t
-  gradient[, 2] <- u
-
-  hessian[, 1, 1] <- q * t * (2 / f - 1 / b)
-  hessian[, 2, 1] <- (1 / eta + (2 - f / b) * t * f) * u
-
-  hessian[, 1, 2] <- hessian[, 2, 1]
-  hessian[, 2, 2] <- (2 / f - 1 / b) * r * u
-
-  # When `b` is infinite, gradient and Hessian show NaNs
-  # these are the limits for b -> Inf
-  if (any(is.nan(gradient))) {
-    gradient[is.nan(gradient)] <- 0
-  }
-
-  if (any(is.nan(hessian))) {
-    hessian[is.nan(hessian)] <- 0
-  }
-
-  list(G = gradient, H = hessian)
+  logistic2_gradient_hessian_2(object$stats[, 1], theta, object$start[2])
 }
 
 # Residual sum of squares
@@ -177,11 +535,16 @@ gradient_hessian.logistic2 <- function(object, theta) {
 # @details
 # The 2-parameter logistic function `f(x; theta)` is defined here as
 #
-# `1 / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-# rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-# which the curve is equal to its mid-point, i.e. 1 / 2.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name), while `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
+#
+# To avoid issues with the non-negative constraints we consider in our
+# optimization algorithm the alternative parameterization with `log(eta)`.
 #
 # @param object object of class `logistic2`.
 # @param known_param numeric vector with the known fixed values of the model
@@ -191,6 +554,8 @@ gradient_hessian.logistic2 <- function(object, theta) {
 #   parameter choice `p`.
 rss.logistic2 <- function(object) {
   function(theta) {
+    theta[1] <- exp(theta[1])
+
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
@@ -202,8 +567,10 @@ rss_fixed.logistic2 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 2)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[1] <- exp(theta[1])
 
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
@@ -218,11 +585,16 @@ rss_fixed.logistic2 <- function(object, known_param) {
 # @details
 # The 2-parameter logistic function `f(x; theta)` is defined here as
 #
-# `1 / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-# rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-# which the curve is equal to its mid-point, i.e. 1 / 2.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name), while `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
+#
+# To avoid issues with the non-negative constraints we consider in our
+# optimization algorithm the alternative parameterization with `log(eta)`.
 #
 # @param object object of class `logistic2`.
 # @param known_param numeric vector with the known fixed values of the model
@@ -232,6 +604,8 @@ rss_fixed.logistic2 <- function(object, known_param) {
 #   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.logistic2 <- function(object) {
   function(theta) {
+    theta[1] <- exp(theta[1])
+
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
 
@@ -256,8 +630,10 @@ rss_gradient_hessian_fixed.logistic2 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 2)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[1] <- exp(theta[1])
 
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
@@ -308,10 +684,12 @@ init.logistic2 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
 
-  min_value <- min(stats[, 3])
-  max_value <- max(stats[, 3])
+  theta <- if (any(is.na(object$start))) {
+    # data might not be compatible with a 2-parameter log-logistic function
+    idx <- (stats[, 3] >= 0) & (stats[, 3] <= 1)
+    xx <- stats[idx, 1]
+    yy <- stats[idx, 3]
 
-  theta <- if (is.null(object$start)) {
     # we cannot guarantee that all values are between zero and one, so we assume
     # a 4-parameter logistic model as a starting point
     #
@@ -325,11 +703,17 @@ init.logistic2 <- function(object) {
     # fit a linear model `z ~ u0 + u1 x` and set `eta = u1` and `phi = -u0 / u1`
     #
     # we add a very small number to avoid the logarithm of zero.
-    zv <- (stats[, 3] - min_value + 1.0e-8) / (max_value - min_value + 2.0e-8)
+    zv <- (yy + 1.0e-8) / (1 + 2.0e-8)
     zv <- log(zv) - log1p(-zv)
-    tmp <- lm(zv ~ stats[, 1])
+    tmp <- lm(zv ~ xx)
 
-    c(tmp$coefficients[2], -tmp$coefficients[1] / tmp$coefficients[2])
+    # the curve can either increase of decrease depending on the `alpha` and
+    # `delta` parameter. However, we want `eta` to be positive. If `eta` is
+    # negative we simply change its sign and switch curve direction.
+    log_eta <- log(abs(tmp$coefficients[2]))
+    phi <- -tmp$coefficients[1] / tmp$coefficients[2]
+
+    c(log_eta, phi)
   } else {
     object$start
   }
@@ -362,7 +746,7 @@ init.logistic2 <- function(object) {
 
   if (bic[1] <= bic[2]) {
     # we are in big problems as a flat horizontal line is likely the best model
-    theta <- c(-100, stats[m, 1] + 100)
+    theta <- c(-5, object$stats[m, 1] + 100)
     best_rss <- rss_fn(theta)
   }
 
@@ -370,18 +754,20 @@ init.logistic2 <- function(object) {
   v2 <- 20L
   v <- v1 * v2
 
-  eta_set <- seq(-10, 10, length.out = v1)
+  log_eta_set <- seq(-10, 10, length.out = v1)
   phi_set <- seq(-20, 20, length.out = v2)
 
   theta_tmp <- matrix(nrow = 2, ncol = v)
   rss_tmp <- rep(10000, v)
 
   i <- 0
-  for (eta in eta_set) {
+  for (log_eta in log_eta_set) {
     for (phi in phi_set) {
       i <- i + 1
-      theta_tmp[, i] <- c(eta, phi)
-      rss_tmp[i] <- rss_fn(c(eta, phi))
+      current_par <- c(log_eta, phi)
+      current_rss <- rss_fn(current_par)
+      theta_tmp[, i] <- current_par
+      rss_tmp[i] <- current_rss
     }
   }
 
@@ -425,8 +811,9 @@ init.logistic2 <- function(object) {
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
     best_rss <- tmp$rss
-    niter <- niter + tmp$niter
   }
+
+  niter <- niter + tmp$niter
 
   names(theta) <- NULL
   names(niter) <- NULL
@@ -442,11 +829,13 @@ init.logistic2 <- function(object) {
 # @details
 # The 2-parameter logistic function `f(x; theta)` is defined here as
 #
-# `1 / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-# rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-# which the curve is equal to its mid-point, i.e. 1 / 2.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name), while `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
 #
 # @param object object of class `logistic2`.
 #
@@ -471,21 +860,24 @@ init.logistic2 <- function(object) {
 fit.logistic2 <- function(object) {
   solution <- find_optimum(object)
 
+  # bring the parameters back to their natural scale
+  theta <- c(object$start[1:2], exp(solution$optimum[1]), solution$optimum[2])
+
   result <- list(
     converged = solution$converged,
     iterations = solution$iterations,
     constrained = FALSE,
-    estimated = rep(TRUE, 2),
-    coefficients = solution$optimum,
+    estimated = rep(c(FALSE, TRUE), c(2, 2)),
+    coefficients = theta,
     rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
     df.residual = length(object$y) - 2,
-    fitted.values = logistic2_fn(object$x, solution$optimum),
+    fitted.values = logistic2_fn(object$x, theta),
     weights = object$w
   )
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("eta", "phi")
+  param_names <- c("alpha", "delta", "eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -520,8 +912,10 @@ fit_constrained.logistic2 <- function(object) {
 
   solution <- find_optimum_constrained(object, constraint, known_param)
 
+  # bring the parameters back to their natural scale
   theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
+  theta <- c(object$start[1:2], exp(theta[1]), theta[2])
 
   estimated <- !constraint[, 2]
 
@@ -539,7 +933,7 @@ fit_constrained.logistic2 <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("eta", "phi")
+  param_names <- c("alpha", "delta", "eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
@@ -568,33 +962,35 @@ fit_constrained.logistic2 <- function(object) {
 #
 # @return Fisher information matrix evaluated at `theta`.
 fisher_info.logistic2 <- function(object, theta, sigma) {
+  x <- object$stats[, 1]
+  y <- object$stats[, 3]
   w <- object$stats[, 2]
-  d <- fn(object, object$stats[, 1], theta) - object$stats[, 3]
+  z <- fn(object, x, theta) - y
 
-  gh <- gradient_hessian(object, theta)
+  gh <- logistic2_gradient_hessian(x, theta[3:4], theta[2])
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
   G <- matrix(0, nrow = object$m, ncol = 2)
-  G[, 1] <- w * d * gh$G[, 1]
-  G[, 2] <- w * d * gh$G[, 2]
+  G[, 1] <- w * z * gh$G[, 1]
+  G[, 2] <- w * z * gh$G[, 2]
 
   G <- apply(G, 2, sum)
 
   H <- array(0, dim = c(object$m, 2, 2))
 
-  H[, , 1] <- w * (d * gh$H[, , 1] + gh$G[, 1] * gh$G)
-  H[, , 2] <- w * (d * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
   mu <- fn(object, object$x, theta)
-  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
 
-  lab <- c(names(theta), "sigma")
+  lab <- c(names(theta)[-seq_len(2)], "sigma")
   rownames(fim) <- lab
   colnames(fim) <- lab
 
@@ -619,30 +1015,8 @@ curve_variance.logistic2_fit <- function(object, x) {
     return(rep(NA_real_, m))
   }
 
-  eta <- object$coefficients[1]
-  phi <- object$coefficients[2]
-
-  b <- exp(-eta * (x - phi))
-
-  f <- 1 + b
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
-
-  G <- matrix(0, nrow = m, ncol = 2)
-
-  G[, 1] <- t
-  G[, 2] <- u
-
-  # When `b` is infinite, gradient shows NaNs
-  if (any(is.nan(G))) {
-    # these are the limits for b -> Inf
-    G[is.nan(G)] <- 0
-  }
+  theta <- object$coefficients
+  G <- logistic2_gradient(x, theta[3:4], theta[2])
 
   variance <- rep(NA_real_, m)
 
@@ -661,97 +1035,28 @@ curve_variance.logistic2_fit <- function(object, x) {
 # @details
 # The 2-parameter logistic function `f(x; theta)` is defined here as
 #
-# `1 / (1 + exp(-eta * (x - phi)))`
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(eta, phi)`, `eta` is the steepness of the curve or growth
-# rate (also known as the Hill coefficient), and `phi` is the value of `x` at
-# which the curve is equal to its mid-point, i.e. 1 / 2.
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name), while `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
 #
 # The area under the curve (AUC) is simply the integral of `f(x; theta)` with
 # respect to `x`.
 #
 #' @export
 nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  if (length(xlim) != 2) {
-    stop("'xlim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (xlim[1] >= xlim[2]) {
-    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
-  }
-
-  if (length(ylim) != 2) {
-    stop("'ylim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(ylim)) {
-    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (ylim[1] >= ylim[2]) {
-    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
-  }
-
-  if (ylim[1] > 1) {
-    stop("'ylim[1]' cannot be larger or equal to 1", call. = FALSE)
-  }
-
-  eta <- object$coefficients[1]
-  phi <- object$coefficients[2]
-
-  I <- 0
-  xlim_new <- xlim
-
-  if (ylim[1] > 0) {
-    tmp <- phi + log(ylim[1] / (1 - ylim[1])) / eta
-
-    # if the curve is decreasing we change the upper bound of integration,
-    # otherwise the lower bound
-    if (eta < 0) {
-      if (tmp < xlim[2]) {
-        xlim_new[2] <- tmp
-      }
-    } else {
-      if (tmp > xlim[1]) {
-        xlim_new[1] <- tmp
-      }
-    }
-  }
-
-  if (ylim[2] < 1) {
-    tmp <- phi + log(ylim[2] / (1 - ylim[2])) / eta
-
-    # if the curve is decreasing we change the lower bound of integration,
-    # otherwise the upper bound
-    # in any case, we must now consider the area of the rectangle
-    if (eta < 0) {
-      if (tmp > xlim[1]) {
-        I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
-        xlim_new[1] <- tmp
-      }
-    } else {
-      if (tmp < xlim[2]) {
-        I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
-        xlim_new[2] <- tmp
-      }
-    }
-  }
-
-  t1 <- 1 + exp(-eta * (xlim_new[2] - phi))
-  t2 <- 1 + exp(-eta * (xlim_new[1] - phi))
-  I <- I + (xlim_new[2] - xlim_new[1]) * (1 - ylim[1]) + log(t1 / t2) / eta
-
-  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
-  names(nauc) <- NULL
-
-  nauc
+  nauc.logistic4_fit(object, xlim, ylim)
 }
 
 #' @export
 naac.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  1 - nauc(object, xlim, ylim)
+  1 - nauc.logistic4_fit(object, xlim, ylim)
+}
+
+#' @export
+effective_dose.logistic2_fit <- function(object, y, type = "relative") {
+  effective_dose.logistic4_fit(object, y, type)
 }
