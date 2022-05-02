@@ -388,33 +388,31 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
 
   theta <- x$coefficients
 
-  lb <- 0
-  ub <- 1
+  lb <- theta[1]
+  ub <- theta[1]
   mp <- 0
 
+  if (theta[2] >= 0) {
+    ub <- theta[1] + theta[2]
+  } else {
+    lb <- theta[1] + theta[2]
+  }
+
   if (x$mean_function == "logistic4") {
-    lb <- theta[1]
-    ub <- theta[2]
     mp <- theta[4]
   } else if (x$mean_function == "logistic2") {
-    mp <- theta[2]
+    mp <- theta[4]
   } else if (x$mean_function == "logistic5") {
-    lb <- theta[1]
-    ub <- theta[2]
     mp <- theta[4] + (log(theta[5]) - log(2^theta[5] - 1)) / theta[3]
   } else if (x$mean_function == "gompertz") {
-    lb <- theta[1]
-    ub <- theta[2]
     mp <- theta[4] - log(log(2)) / theta[3]
   } else if (x$mean_function == "logistic6") {
     q <- theta[6]^(-1 / theta[5])
 
-    if (theta[3] <= 0) {
-      lb <- theta[1]
-      ub <- theta[1] + (theta[2] - theta[1]) * q
+    if (theta[2] >= 0) {
+      ub <- theta[1] + theta[2] * q
     } else {
-      lb <- theta[1] + (theta[2] - theta[1]) * q
-      ub <- theta[1]
+      lb <- theta[1] + theta[2] * q
     }
 
     mp <- theta[4] + (
@@ -447,7 +445,11 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
   }
 
   if (is.null(ylim)) {
-    ylim <- extendrange(yv, f = 0.08)
+    ylim <- if (x$mean_function != "logistic2") {
+      extendrange(yv, f = 0.08)
+    } else {
+      c(0, 1)
+    }
 
     if (ylim[1] > lb) {
       ylim[1] <- lb - 0.5
@@ -673,7 +675,11 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
   }
 
   if (is.null(ylim)) {
-    ylim <- extendrange(yv, f = 0.08)
+    ylim <- if (x$mean_function != "loglogistic2") {
+      extendrange(yv, f = 0.08)
+    } else {
+      c(0, 1)
+    }
 
     if (ylim[1] > lb) {
       ylim[1] <- lb - 0.5
