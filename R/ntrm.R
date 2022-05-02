@@ -211,6 +211,17 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
   cur_optimum <- init
   cur_minimum <- fn(cur_optimum)
 
+  if (max_iter == 0) {
+    return(
+      list(
+        optimum = cur_optimum,
+        minimum = cur_minimum,
+        converged = ntrm_max_abs(gh(cur_optimum)$G) <= eps,
+        iterations = 0
+      )
+    )
+  }
+
   f_converged <- 0
   x_converged <- FALSE
   g_converged <- FALSE

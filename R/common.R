@@ -238,7 +238,9 @@ find_optimum <- function(object) {
     mle_asy(object, theta)
   }
 
-  solution <- ntrm(rss_fn, rss_gh, start$theta, object$max_iter, update_fn)
+  max_iter <- max(0, object$max_iter - start$niter)
+
+  solution <- ntrm(rss_fn, rss_gh, start$theta, max_iter, update_fn)
   solution$iterations <- solution$iterations + start$niter
 
   solution
@@ -247,6 +249,8 @@ find_optimum <- function(object) {
 # @rdname find_optimum
 find_optimum_constrained <- function(object, constraint, known_param) {
   start <- init(object)
+
+  max_iter <- max(0, object$max_iter - start$niter)
 
   # equality constraints have the priority over the provided starting values
   theta <- ifelse(is.na(known_param), start$theta, known_param)
@@ -261,10 +265,10 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     if (all(constraint[idx, 1])) {
       # we only have equality constraints, so after fixing the parameters what
       # remains is an unconstrained optimization
-      ntrm(rss_fn, rss_gh, theta[idx], object$max_iter)
+      ntrm(rss_fn, rss_gh, theta[idx], max_iter)
     } else {
       ntrm_constrained(
-        rss_fn, rss_gh, theta[idx], object$max_iter, object$lower_bound[idx],
+        rss_fn, rss_gh, theta[idx], max_iter, object$lower_bound[idx],
         object$upper_bound[idx]
       )
     }
@@ -273,8 +277,7 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     rss_gh <- rss_gradient_hessian(object)
 
     ntrm_constrained(
-      rss_fn, rss_gh, theta, object$max_iter, object$lower_bound,
-      object$upper_bound
+      rss_fn, rss_gh, theta, max_iter, object$lower_bound, object$upper_bound
     )
   }
 
