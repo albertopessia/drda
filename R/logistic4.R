@@ -821,7 +821,7 @@ init.logistic4 <- function(object) {
 
   start <- cbind(theta, theta_1, theta_2, theta_3)
 
-  tmp <- fit_nlminb(object, start)
+  tmp <- fit_nlminb(object, start, object$max_iter - niter)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
