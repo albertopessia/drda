@@ -512,6 +512,8 @@ gradient_hessian.gompertz <- function(object, theta) {
 #   particular parameter choice `theta`.
 rss.gompertz <- function(object) {
   function(theta) {
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
@@ -525,6 +527,8 @@ rss_fixed.gompertz <- function(object, known_param) {
     theta <- rep(0, 4)
     theta[idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[3] <- exp(theta[3])
 
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
@@ -554,6 +558,8 @@ rss_fixed.gompertz <- function(object, known_param) {
 #   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.gompertz <- function(object) {
   function(theta) {
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
 
@@ -582,6 +588,8 @@ rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
     theta <- rep(0, 4)
     theta[idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[3] <- exp(theta[3])
 
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
