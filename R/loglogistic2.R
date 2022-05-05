@@ -736,6 +736,7 @@ rss_gradient_hessian_fixed.loglogistic2 <- function(object, known_param) {
 # @return Numeric vector of length 2 with the MLE of the two parameters `alpha`
 #   and `delta`.
 mle_asy.loglogistic2 <- function(object, theta) {
+  names(theta) <- NULL
   theta
 }
 

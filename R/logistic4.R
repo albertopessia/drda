@@ -239,18 +239,17 @@ logistic4_gradient_hessian <- function(x, theta) {
   b <- exp(-eta * (x - phi))
 
   f <- 1 + b
-  g <- 1 / f
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
+  s <- 1 / f^2
   t <- q * s
   u <- r * s
 
   G <- matrix(1, nrow = k, ncol = 4)
 
-  G[, 2] <- g
+  G[, 2] <- 1 / f
   G[, 3] <- delta * t
   G[, 4] <- delta * u
 
@@ -261,7 +260,7 @@ logistic4_gradient_hessian <- function(x, theta) {
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- delta * q * t * (2 / f - 1 / b)
-  H[, 4, 3] <- delta * (1 / eta + (2 - f / b) * t / g) * u
+  H[, 4, 3] <- delta * (1 / eta + (2 - f / b) * t * f) * u
 
   H[, 2, 4] <- H[, 4, 2]
   H[, 3, 4] <- H[, 4, 3]
@@ -640,7 +639,7 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two asymptotes.
 mle_asy.logistic4 <- function(object, theta) {
-  m <- object$m
+  names(theta) <- NULL
 
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -657,7 +656,7 @@ mle_asy.logistic4 <- function(object, theta) {
   t4 <- 0
   t5 <- 0
 
-  for (i in seq_len(m)) {
+  for (i in seq_along(x)) {
     t1 <- t1 + w[i]
     t2 <- t2 + w[i] * g[i]
     t3 <- t3 + w[i] * g[i]^2

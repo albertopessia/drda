@@ -624,7 +624,7 @@ rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two asymptotes.
 mle_asy.gompertz <- function(object, theta) {
-  m <- object$m
+  names(theta) <- NULL
 
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -641,7 +641,7 @@ mle_asy.gompertz <- function(object, theta) {
   t4 <- 0
   t5 <- 0
 
-  for (i in seq_len(m)) {
+  for (i in seq_along(x)) {
     t1 <- t1 + w[i]
     t2 <- t2 + w[i] * g[i]
     t3 <- t3 + w[i] * g[i]^2

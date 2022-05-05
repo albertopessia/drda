@@ -677,10 +677,7 @@ rss_gradient_hessian_fixed.loggompertz <- function(object, known_param) {
 # @return Numeric vector of length 2 with the MLE of the two parameters `alpha`
 #   and `delta`.
 mle_asy.loggompertz <- function(object, theta) {
-  # remove names in case they are set
   names(theta) <- NULL
-
-  m <- object$m
 
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -698,7 +695,7 @@ mle_asy.loggompertz <- function(object, theta) {
   t4 <- 0
   t5 <- 0
 
-  for (i in seq_len(m)) {
+  for (i in seq_along(x)) {
     t1 <- t1 + w[i]
     t2 <- t2 + w[i] * g[i]
     t3 <- t3 + w[i] * g[i]^2

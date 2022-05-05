@@ -666,6 +666,7 @@ rss_gradient_hessian_fixed.logistic2 <- function(object, known_param) {
 #
 # @return Numeric vector `theta`.
 mle_asy.logistic2 <- function(object, theta) {
+  names(theta) <- NULL
   theta
 }
 
