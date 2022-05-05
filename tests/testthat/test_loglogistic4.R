@@ -1,27 +1,15 @@
 test_that("Constructor", {
-  x <- rep(c(0, 10^seq(-3, 2)), times = c(3, 2, 2, 5, 3, 4, 1))
+  x <- lltd$D$x
+  y <- lltd$D$y
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
-
+  m <- length(unique(x))
   n <- length(y)
 
   w <- rep(1, n)
 
   max_iter <- 10000
 
-  stats <- matrix(
-    c(
-      0, 0.001, 0.01, 0.1, 1, 10, 100, 3, 2, 2, 5, 3, 4, 1, 0.932, 0.902, 0.89,
-      0.5542, 0.2556666667, 0.16425, 0.092, 0.0014186667, 0.002116, 0.000049,
-      0.00160656, 0.0000862222, 0.0014676875, 0
-    ),
-    nrow = 7,
-    ncol = 4
-  )
-  colnames(stats) <- c("x", "n", "m", "v")
+  stats <- lltd$stats_1
 
   start <- c(0, 1, 1, 1)
 
@@ -35,7 +23,7 @@ test_that("Constructor", {
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_false(object$constrained)
   expect_equal(object$max_iter, max_iter)
@@ -45,35 +33,23 @@ test_that("Constructor", {
 
   object <- loglogistic4_new(x, y, w, start, max_iter, lower_bound, upper_bound)
 
+  i <- c(1, 2)
+
   expect_true(inherits(object, "loglogistic4"))
   expect_equal(object$x, x)
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_true(object$constrained)
   expect_equal(object$max_iter, max_iter)
-  expect_equal(object$start, c(0, 1, 0, 0))
-  expect_equal(object$lower_bound, c(0, -1, log(0.5), 0))
-  expect_equal(object$upper_bound, c(3, 2, log(2), log(5)))
+  expect_equal(object$start, c(start[i], log(start[-i])))
+  expect_equal(object$lower_bound, c(lower_bound[i], log(lower_bound[-i])))
+  expect_equal(object$upper_bound, c(upper_bound[i], log(upper_bound[-i])))
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
-
-  stats <- matrix(
-    c(
-      0, 0.001, 0.01, 0.1, 1, 10, 100, 4.549, 0.96, 1.126, 3.756, 1.797, 2.61,
-      0.157, 0.9353000659, 0.948, 0.8836838366, 0.55221459, 0.2606149137,
-      0.1807233716, 0.092, 0.0014467345, 0, 0.0000091061, 0.0007707846,
-      0.0000597738, 0.0014230308, 0
-    ),
-    nrow = 7,
-    ncol = 4
-  )
-  colnames(stats) <- c("x", "n", "m", "v")
+  w <- lltd$D$w
+  stats <- lltd$stats_2
 
   object <- loglogistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
@@ -82,7 +58,7 @@ test_that("Constructor", {
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_false(object$constrained)
   expect_equal(object$max_iter, max_iter)
@@ -97,32 +73,28 @@ test_that("Constructor", {
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_true(object$constrained)
   expect_equal(object$max_iter, max_iter)
-  expect_equal(object$start, c(0, 1, 0, 0))
-  expect_equal(object$lower_bound, c(0, -1, log(0.5), 0))
-  expect_equal(object$upper_bound, c(3, 2, log(2), log(5)))
+  expect_equal(object$start, c(start[i], log(start[-i])))
+  expect_equal(object$lower_bound, c(lower_bound[i], log(lower_bound[-i])))
+  expect_equal(object$upper_bound, c(upper_bound[i], log(upper_bound[-i])))
 })
 
 test_that("Constructor: errors", {
-  x <- rep(c(0, 10^seq(-3, 2)), times = c(3, 2, 2, 5, 3, 4, 1))
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
-
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
-
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
   max_iter <- 10000
 
   expect_error(
     loglogistic4_new(x, y, w, c(0, 1, 1), max_iter, NULL, NULL),
+    "'start' must be of length 4"
+  )
+
+  expect_error(
+    loglogistic4_new(x, y, w, c(0, 1, 1, 1, 1), max_iter, NULL, NULL),
     "'start' must be of length 4"
   )
 
@@ -162,177 +134,470 @@ test_that("Constructor: errors", {
   )
 
   expect_error(
-    loglogistic4_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, 0, Inf)
-    ),
+    loglogistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, 0, Inf)),
     "'upper_bound[3]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
-    loglogistic4_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, -1, Inf)
-    ),
+    loglogistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, -1, Inf)),
     "'upper_bound[3]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
-    loglogistic4_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, 0)
-    ),
+    loglogistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, 0)),
     "'upper_bound[4]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
-    loglogistic4_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, -1)
-    ),
+    loglogistic4_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, -1)),
     "'upper_bound[4]' cannot be negative nor zero",
     fixed = TRUE
   )
 })
 
 test_that("Function value", {
-  x <- c(0, 2, 4, 6, 8, 10)
-  theta <- c(4 / 100, -9 / 10, 3, 2)
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
+
+  m <- length(x)
 
   true_value <- c(
-    0.04, -0.41, -0.76, -0.82785714285714286, -0.84615384615384615,
-    -0.85285714285714286
+    1, 0.88275862068965517, 0.66829268292682927, 0.49836065573770492,
+    0.38876404494382022, 0.32, 0.15211970074812968, 0.15002124946876328
   )
 
   value <- loglogistic4_fn(x, theta)
 
   expect_type(value, "double")
-  expect_length(value, 6)
+  expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "loglogistic4"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loglogistic4")
 
   value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
-  expect_length(value, 6)
+  expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "loglogistic4_fit"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loglogistic4_fit")
 
   value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
-  expect_length(value, 6)
+  expect_length(value, m)
   expect_equal(value, true_value)
 })
 
-test_that("Gradient and Hessian", {
-  x <- c(0, 2, 4, 6, 8, 10)
-  theta <- c(4 / 100, -9 / 10, 3, 2)
+test_that("Gradient (1)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
+
+  m <- length(x)
 
   true_gradient <- matrix(
     c(
       # alpha
-      rep(1, 6),
+      rep(1, m),
       # delta
-      0, 0.5, 0.88888888888888889, 0.96428571428571429, 0.98461538461538462,
-      0.99206349206349206,
-      # log_eta
-      0, 0, -0.18483924814931875, -0.10215412735191989, -0.056698619077282154,
-      -0.034214241335758937,
-      # log_phi
-      0, 0.675, 0.26666666666666667, 0.092984693877551020, 0.040899408284023669,
-      0.021258503401360544
+      0, 0.13793103448275862, 0.39024390243902439, 0.59016393442622951,
+      0.71910112359550562, 0.8, 0.99750623441396509, 0.99997500062498438,
+      # eta
+      0, 0.092609645908802831, 0.045133139468668243, -0.037483469752049258,
+      -0.080697504831990955, -0.094268016556152562, -0.0063342203904724283,
+      -0.00011258361478804162,
+      # phi
+      0, 0.040428061831153389, 0.080904223676383105, 0.082235958075786079,
+      0.068678197197323570, 0.0544, 0.00084576588454051903,
+      8.4995750159369688e-06
     ),
-    nrow = 6,
+    nrow = m,
+    ncol = 4
+  )
+
+  G <- loglogistic4_gradient(x, theta)
+
+  expect_type(G, "double")
+  expect_length(G, m * 4)
+  expect_equal(G, true_gradient)
+})
+
+test_that("Hessian (1)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
+
+  m <- length(x)
+
+  true_hessian <- array(
+    c(
+      # (alpha, alpha)
+      rep(0, m),
+      # (alpha, delta)
+      rep(0, m),
+      # (alpha, eta)
+      rep(0, m),
+      # (alpha, phi)
+      rep(0, m),
+      # (delta, alpha)
+      rep(0, m),
+      # (delta, delta)
+      rep(0, m),
+      # (delta, eta)
+      0, -0.10895252459859157, -0.053097811139609698, 0.044098199708293245,
+      0.094938240978812888, 0.11090354888959125, 0.0074520239887910921,
+      0.00013245131151534308,
+      # (delta, phi)
+      0, -0.047562425683709869, -0.095181439619274242, -0.096748185971513034,
+      -0.080797879055674789, -0.064, -0.00099501868769472827,
+      -9.9995000187493750e-06,
+      # (eta, alpha)
+      rep(0, m),
+      # (eta, delta)
+      0, -0.10895252459859157, -0.053097811139609698, 0.044098199708293245,
+      0.094938240978812888, 0.11090354888959125, 0.0074520239887910921,
+      0.00013245131151534308,
+      # (eta, eta)
+      0, -0.061448433268829283, -0.0022107444196825224, 0.0012323686910091807,
+      0.016620187478003710, 0.039204965935725236, 0.018880986913130335,
+      0.00059647389697977526,
+      # (eta, phi)
+      0, -0.0066108320373179186, 0.036489202031186536, 0.038414253350859978,
+      0.020194367414627416, 0.0045756760265233851, -0.0020981683652594152,
+      -0.000040781406791242802,
+      # (phi, alpha)
+      rep(0, m),
+      # (phi, delta)
+      0, -0.047562425683709869, -0.095181439619274242, -0.096748185971513034,
+      -0.080797879055674789, -0.064, -0.00099501868769472827,
+      -9.9995000187493750e-06,
+      # (phi, eta)
+      0, -0.0066108320373179186, 0.036489202031186536, 0.038414253350859978,
+      0.020194367414627416, 0.0045756760265233851, -0.0020981683652594152,
+      -0.000040781406791242802,
+      # (phi, phi)
+      0, -0.019795809586288901, -0.023284630228812699, -0.010515417590018548,
+      -0.0016976633015068748, 0.002176, 0.00016746586342273619,
+      1.6997450159367563e-06
+    ),
+    dim = c(m, 4, 4)
+  )
+
+  H <- loglogistic4_hessian(x, theta)
+
+  expect_type(H, "double")
+  expect_length(H, m * 4 * 4)
+  expect_equal(H, true_hessian)
+})
+
+test_that("Gradient and Hessian (1)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
+
+  m <- length(x)
+
+  true_gradient <- matrix(
+    c(
+      # alpha
+      rep(1, m),
+      # delta
+      0, 0.13793103448275862, 0.39024390243902439, 0.59016393442622951,
+      0.71910112359550562, 0.8, 0.99750623441396509, 0.99997500062498438,
+      # eta
+      0, 0.092609645908802831, 0.045133139468668243, -0.037483469752049258,
+      -0.080697504831990955, -0.094268016556152562, -0.0063342203904724283,
+      -0.00011258361478804162,
+      # phi
+      0, 0.040428061831153389, 0.080904223676383105, 0.082235958075786079,
+      0.068678197197323570, 0.0544, 0.00084576588454051903,
+      8.4995750159369688e-06
+    ),
+    nrow = m,
     ncol = 4
   )
 
   true_hessian <- array(
     c(
       # (alpha, alpha)
-      rep(0, 6),
+      rep(0, m),
       # (alpha, delta)
-      rep(0, 6),
-      # (alpha, log_eta)
-      rep(0, 6),
-      # (alpha, log_phi)
-      rep(0, 6),
+      rep(0, m),
+      # (alpha, eta)
+      rep(0, m),
+      # (alpha, phi)
+      rep(0, m),
       # (delta, alpha)
-      rep(0, 6),
+      rep(0, m),
       # (delta, delta)
-      rep(0, 6),
-      # (delta, log_eta)
-      0, 0, 0.20537694238813194, 0.11350458594657766, 0.062998465641424615,
-      0.038015823706398818,
-      # (delta, log_phi)
-      0, -0.75000000000000000, -0.29629629629629630, -0.10331632653061224,
-      -0.045443786982248521, -0.023620559334845049,
-      # (log_eta, alpha)
-      rep(0, 6),
-      # (log_eta, delta)
-      0, 0, 0.20537694238813194, 0.11350458594657766, 0.062998465641424615,
-      0.038015823706398818,
-      # (log_eta, log_eta)
-      0, 0, 0.11410929384422880, 0.21048040166468468, 0.17184883395368479,
-      0.12836067406225549,
-      # (log_eta, log_phi)
-      0, 0.67500000000000000, -0.16462491234841041, -0.19158751803136868,
-      -0.12396273026376598, -0.079754971018499173,
-      # (log_phi, alpha)
-      rep(0, 6),
-      # (log_phi, delta)
-      0, -0.75000000000000000, -0.29629629629629630, -0.10331632653061224,
-      -0.045443786982248521, -0.023620559334845049,
-      # (log_phi, log_eta)
-      0, 0.67500000000000000, -0.16462491234841041, -0.19158751803136868,
-      -0.12396273026376598, -0.079754971018499173,
-      # (log_phi, log_phi)
-      0, 0, 0.62222222222222222, 0.25902879008746356, 0.11892289485662267,
-      0.062763200518302559
+      rep(0, m),
+      # (delta, eta)
+      0, -0.10895252459859157, -0.053097811139609698, 0.044098199708293245,
+      0.094938240978812888, 0.11090354888959125, 0.0074520239887910921,
+      0.00013245131151534308,
+      # (delta, phi)
+      0, -0.047562425683709869, -0.095181439619274242, -0.096748185971513034,
+      -0.080797879055674789, -0.064, -0.00099501868769472827,
+      -9.9995000187493750e-06,
+      # (eta, alpha)
+      rep(0, m),
+      # (eta, delta)
+      0, -0.10895252459859157, -0.053097811139609698, 0.044098199708293245,
+      0.094938240978812888, 0.11090354888959125, 0.0074520239887910921,
+      0.00013245131151534308,
+      # (eta, eta)
+      0, -0.061448433268829283, -0.0022107444196825224, 0.0012323686910091807,
+      0.016620187478003710, 0.039204965935725236, 0.018880986913130335,
+      0.00059647389697977526,
+      # (eta, phi)
+      0, -0.0066108320373179186, 0.036489202031186536, 0.038414253350859978,
+      0.020194367414627416, 0.0045756760265233851, -0.0020981683652594152,
+      -0.000040781406791242802,
+      # (phi, alpha)
+      rep(0, m),
+      # (phi, delta)
+      0, -0.047562425683709869, -0.095181439619274242, -0.096748185971513034,
+      -0.080797879055674789, -0.064, -0.00099501868769472827,
+      -9.9995000187493750e-06,
+      # (phi, eta)
+      0, -0.0066108320373179186, 0.036489202031186536, 0.038414253350859978,
+      0.020194367414627416, 0.0045756760265233851, -0.0020981683652594152,
+      -0.000040781406791242802,
+      # (phi, phi)
+      0, -0.019795809586288901, -0.023284630228812699, -0.010515417590018548,
+      -0.0016976633015068748, 0.002176, 0.00016746586342273619,
+      1.6997450159367563e-06
     ),
-    dim = c(6, 4, 4)
+    dim = c(m, 4, 4)
   )
 
-  object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "loglogistic4"
+  gh <- loglogistic4_gradient_hessian(x, theta)
+
+  expect_type(gh, "list")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
+
+  expect_length(gh$G, m * 4)
+  expect_length(gh$H, m * 4 * 4)
+
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
+})
+
+test_that("Gradient (2)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
+
+  m <- length(x)
+
+  true_gradient <- matrix(
+    c(
+      # alpha
+      rep(1, m),
+      # delta
+      0, 0.13793103448275862, 0.39024390243902439, 0.59016393442622951,
+      0.71910112359550562, 0.8, 0.99750623441396509, 0.99997500062498438,
+      # log_eta
+      0, 0.18521929181760566, 0.090266278937336487, -0.074966939504098516,
+      -0.16139500966398191, -0.18853603311230512, -0.012668440780944857,
+      -0.00022516722957608324,
+      # log_phi
+      0, 0.20214030915576694, 0.40452111838191553, 0.41117979037893040,
+      0.34339098598661785, 0.272, 0.0042288294227025951, 0.000042497875079684844
+    ),
+    nrow = m,
+    ncol = 4
   )
 
-  gradient_hessian <- gradient_hessian(object, theta)
+  G <- loglogistic4_gradient_2(x, theta)
 
-  expect_type(gradient_hessian, "list")
-  expect_type(gradient_hessian$G, "double")
-  expect_type(gradient_hessian$H, "double")
+  expect_type(G, "double")
+  expect_length(G, m * 4)
+  expect_equal(G, true_gradient)
+})
 
-  expect_length(gradient_hessian$G, 6 * 4)
-  expect_length(gradient_hessian$H, 6 * 4 * 4)
+test_that("Hessian (2)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
 
-  expect_equal(gradient_hessian$G, true_gradient)
-  expect_equal(gradient_hessian$H, true_hessian)
+  m <- length(x)
+
+  true_hessian <- array(
+    c(
+      # (alpha, alpha)
+      rep(0, m),
+      # (alpha, delta)
+      rep(0, m),
+      # (alpha, log_eta)
+      rep(0, m),
+      # (alpha, log_phi)
+      rep(0, m),
+      # (delta, alpha)
+      rep(0, m),
+      # (delta, delta)
+      rep(0, m),
+      # (delta, log_eta)
+      0, -0.21790504919718313, -0.10619562227921940, 0.088196399416586489,
+      0.18987648195762578, 0.22180709777918250, 0.014904047977582184,
+      0.00026490262303068616,
+      # (delta, log_phi)
+      0, -0.23781212841854935, -0.47590719809637121, -0.48374092985756517,
+      -0.40398939527837394, -0.32, -0.0049750934384736413,
+      -0.000049997500093746875,
+      # (log_eta, alpha)
+      rep(0, m),
+      # (log_eta, delta)
+      0, -0.21790504919718313, -0.10619562227921940, 0.088196399416586489,
+      0.18987648195762578, 0.22180709777918250, 0.014904047977582184,
+      0.00026490262303068616,
+      # (log_eta, log_eta)
+      0, -0.060574441257711472, 0.081423301258606397, -0.070037464740061793,
+      -0.094914259751967070, -0.031716169369404179, 0.062855506871576484,
+      0.0021607283583430178,
+      # (log_eta, log_phi)
+      0, -0.066108320373179186, 0.36489202031186536, 0.38414253350859978,
+      0.20194367414627416, 0.045756760265233851, -0.020981683652594152,
+      -0.00040781406791242802,
+      # (log_phi, alpha)
+      rep(0, m),
+      # (log_phi, delta)
+      0, -0.23781212841854935, -0.47590719809637121, -0.48374092985756517,
+      -0.40398939527837394, -0.32, -0.0049750934384736413,
+      -0.000049997500093746875,
+      # (log_phi, log_eta)
+      0, -0.066108320373179186, 0.36489202031186536, 0.38414253350859978,
+      0.20194367414627416, 0.045756760265233851, -0.020981683652594152,
+      -0.00040781406791242802,
+      # (log_phi, log_phi)
+      0, -0.29275493050145557, -0.17759463733840194, 0.14829435062846670,
+      0.30094940344894598, 0.3264, 0.0084154760082709998,
+      0.000084991500478103751
+    ),
+    dim = c(m, 4, 4)
+  )
+
+  H <- loglogistic4_hessian_2(x, theta)
+
+  expect_type(H, "double")
+  expect_length(H, m * 4 * 4)
+  expect_equal(H, true_hessian)
+})
+
+test_that("Gradient and Hessian (2)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_4
+
+  m <- length(x)
+
+  true_gradient <- matrix(
+    c(
+      # alpha
+      rep(1, m),
+      # delta
+      0, 0.13793103448275862, 0.39024390243902439, 0.59016393442622951,
+      0.71910112359550562, 0.8, 0.99750623441396509, 0.99997500062498438,
+      # log_eta
+      0, 0.18521929181760566, 0.090266278937336487, -0.074966939504098516,
+      -0.16139500966398191, -0.18853603311230512, -0.012668440780944857,
+      -0.00022516722957608324,
+      # log_phi
+      0, 0.20214030915576694, 0.40452111838191553, 0.41117979037893040,
+      0.34339098598661785, 0.272, 0.0042288294227025951, 0.000042497875079684844
+    ),
+    nrow = m,
+    ncol = 4
+  )
+
+  true_hessian <- array(
+    c(
+      # (alpha, alpha)
+      rep(0, m),
+      # (alpha, delta)
+      rep(0, m),
+      # (alpha, log_eta)
+      rep(0, m),
+      # (alpha, log_phi)
+      rep(0, m),
+      # (delta, alpha)
+      rep(0, m),
+      # (delta, delta)
+      rep(0, m),
+      # (delta, log_eta)
+      0, -0.21790504919718313, -0.10619562227921940, 0.088196399416586489,
+      0.18987648195762578, 0.22180709777918250, 0.014904047977582184,
+      0.00026490262303068616,
+      # (delta, log_phi)
+      0, -0.23781212841854935, -0.47590719809637121, -0.48374092985756517,
+      -0.40398939527837394, -0.32, -0.0049750934384736413,
+      -0.000049997500093746875,
+      # (log_eta, alpha)
+      rep(0, m),
+      # (log_eta, delta)
+      0, -0.21790504919718313, -0.10619562227921940, 0.088196399416586489,
+      0.18987648195762578, 0.22180709777918250, 0.014904047977582184,
+      0.00026490262303068616,
+      # (log_eta, log_eta)
+      0, -0.060574441257711472, 0.081423301258606397, -0.070037464740061793,
+      -0.094914259751967070, -0.031716169369404179, 0.062855506871576484,
+      0.0021607283583430178,
+      # (log_eta, log_phi)
+      0, -0.066108320373179186, 0.36489202031186536, 0.38414253350859978,
+      0.20194367414627416, 0.045756760265233851, -0.020981683652594152,
+      -0.00040781406791242802,
+      # (log_phi, alpha)
+      rep(0, m),
+      # (log_phi, delta)
+      0, -0.23781212841854935, -0.47590719809637121, -0.48374092985756517,
+      -0.40398939527837394, -0.32, -0.0049750934384736413,
+      -0.000049997500093746875,
+      # (log_phi, log_eta)
+      0, -0.066108320373179186, 0.36489202031186536, 0.38414253350859978,
+      0.20194367414627416, 0.045756760265233851, -0.020981683652594152,
+      -0.00040781406791242802,
+      # (log_phi, log_phi)
+      0, -0.29275493050145557, -0.17759463733840194, 0.14829435062846670,
+      0.30094940344894598, 0.3264, 0.0084154760082709998,
+      0.000084991500478103751
+    ),
+    dim = c(m, 4, 4)
+  )
+
+  gh <- loglogistic4_gradient_hessian_2(x, theta)
+
+  expect_type(gh, "list")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
+
+  expect_length(gh$G, m * 4)
+  expect_length(gh$H, m * 4 * 4)
+
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
+
+  object <- structure(list(stats = lltd$stats_1), class = "loglogistic4")
+
+  gh <- gradient_hessian(object, theta)
+
+  expect_type(gh, "list")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
+
+  expect_length(gh$G, m * 4)
+  expect_length(gh$H, m * 4 * 4)
+
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
 })
 
 test_that("Value of the RSS", {
-  x <- c(0, 2, 4, 6, 8)
-  n <- c(3, 3, 2, 4, 3)
-  m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-  v <- c(
-    643663 / 450000000, 31087 / 112500000, 961 / 160000,
-    177363 / 25000000, 560629 / 112500000
-  )
+  theta <- lltd$theta_4
+  theta[3:4] <- log(theta[3:4])
 
-  theta <- c(4 / 100, -9 / 10, log(3), log(2))
-
-  true_value <- 19.276313893957252
+  true_value <- 0.13049198890475033
 
   object <- structure(
-    list(stats = cbind(x, n, m, v), m = 5),
+    list(stats = lltd$stats_1, m = nrow(lltd$stats_1)),
     class = "loglogistic4"
   )
 
@@ -346,12 +611,12 @@ test_that("Value of the RSS", {
   expect_length(value, 1)
   expect_equal(value, true_value)
 
-  known_param <- c(4 / 100, NA, NA, log(2))
+  known_param <- c(theta[1], NA, NA, theta[4])
   rss_fn <- rss_fixed(object, known_param)
 
   expect_type(rss_fn, "closure")
 
-  value <- rss_fn(c(-9 / 10, log(3)))
+  value <- rss_fn(theta[2:3])
 
   expect_type(value, "double")
   expect_length(value, 1)
@@ -359,41 +624,34 @@ test_that("Value of the RSS", {
 })
 
 test_that("Gradient and Hessian of the RSS", {
-  x <- c(0, 2, 4, 6, 8)
-  n <- c(3, 3, 2, 4, 3)
-  m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-  v <- c(
-    643663 / 450000000, 31087 / 112500000, 961 / 160000,
-    177363 / 25000000, 560629 / 112500000
-  )
-
-  theta <- c(4 / 100, -9 / 10, log(3), log(2))
+  theta <- lltd$theta_4
+  theta[3:4] <- log(theta[3:4])
 
   true_gradient <- c(
-    -16.612290109890110, -11.322024907083149, 1.1701819464814164,
-    -3.8609372916475908
+    1.1763566356699270, 0.46825093563955542, -0.022171348272167373,
+    0.15714798395105493
   )
 
   true_hessian <- matrix(
     c(
       # alpha
-      15, 10.088766788766789, -0.94839086293816353, 3.0529703336956084,
-      # beta
-      10.088766788766789, 8.9580370355461931, -2.1903073311110781,
-      6.2559702057947107,
-      # eta
-      -0.94839086293816353, -2.1903073311110781, -1.5611816136875038,
-      -1.0026466887351753,
-      # phi
-      3.0529703336956084, 6.2559702057947107, -1.0026466887351753,
-      -1.8579749594331474
+      19, 9.5072274862706741, -0.26196043558462076, 4.3708554404271919,
+      # delta
+      9.5072274862706741, 6.9361360507252671, -0.52829868503799506,
+      2.1520196116438464,
+      # log_eta
+      -0.26196043558462076, -0.52829868503799506, 0.24291119321302682,
+      -0.10852328156447682,
+      # log_phi
+      4.3708554404271919, 2.1520196116438464, -0.10852328156447682,
+      1.5960201200846326
     ),
     nrow = 4,
     ncol = 4
   )
 
   object <- structure(
-    list(stats = cbind(x, n, m, v), m = 5),
+    list(stats = lltd$stats_1, m = nrow(lltd$stats_1)),
     class = "loglogistic4"
   )
 
@@ -401,56 +659,49 @@ test_that("Gradient and Hessian of the RSS", {
 
   expect_type(rss_gh, "closure")
 
-  gradient_hessian <- rss_gh(theta)
+  gh <- rss_gh(theta)
 
-  expect_type(gradient_hessian$G, "double")
-  expect_type(gradient_hessian$H, "double")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
 
-  expect_length(gradient_hessian$G, 4)
-  expect_length(gradient_hessian$H, 4 * 4)
+  expect_length(gh$G, 4)
+  expect_length(gh$H, 4 * 4)
 
-  expect_equal(gradient_hessian$G, true_gradient)
-  expect_equal(gradient_hessian$H, true_hessian)
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
 
-  known_param <- c(4 / 100, NA, NA, log(2))
+  known_param <- c(theta[1], NA, NA, theta[4])
   rss_gh <- rss_gradient_hessian_fixed(object, known_param)
 
   expect_type(rss_gh, "closure")
 
-  gradient_hessian <- rss_gh(c(-9 / 10, log(3)))
+  gh <- rss_gh(theta[2:3])
 
-  expect_type(gradient_hessian$G, "double")
-  expect_type(gradient_hessian$H, "double")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
 
-  expect_length(gradient_hessian$G, 2)
-  expect_length(gradient_hessian$H, 2 * 2)
+  expect_length(gh$G, 2)
+  expect_length(gh$H, 2 * 2)
 
-  expect_equal(gradient_hessian$G, true_gradient[c(2, 3)])
-  expect_equal(gradient_hessian$H, true_hessian[c(2, 3), c(2, 3)])
+  expect_equal(gh$G, true_gradient[2:3])
+  expect_equal(gh$H, true_hessian[2:3, 2:3])
 })
 
 test_that("mle_asy", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- rep(1, length(y))
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  max_iter <- 10000
 
-  n <- length(y)
-
-  w <- rep(1, n)
-
-  theta <- c(0, 1, 1.8115476511704276, 1.8210577595704281)
+  theta <- c(0, 1, 1.0597641935779216, 1.8170414285831683)
 
   true_value <- c(
-    0.92551260060548019, -0.80876869456840958, 1.8115476511704276,
-    1.8210577595704281
+    0.84803242222048425, -0.76457472791925385, 1.0597641935779216,
+    1.8170414285831683
   )
 
-  object <- loglogistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loglogistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   result <- mle_asy(object, theta)
 
@@ -460,47 +711,45 @@ test_that("mle_asy", {
 })
 
 test_that("fit", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.065671734266434990
+
   theta <- c(
-    alpha = 0.92551260060548019,
-    delta = -0.80876869456840958,
-    eta = exp(1.8115476511704276),
-    phi = exp(1.8210577595704281)
+    alpha = 0.84803242222048425, delta = -0.76457472791925385,
+    eta = exp(1.0597641935779216), phi = exp(1.8170414285831683)
   )
 
-  rss_value <- 0.025373136628166469
-
-  fitted_values <- c(
-    rep(0.92551260060548019, 3), rep(0.92470055974557833, 2),
-    rep(0.8726743286848762, 2), rep(0.557285088913756, 5),
-    rep(0.254730718198142, 3), rep(0.157087720976285, 4),
-    0.116743938254306
+  fitted_values <- rep(
+    c(
+      0.84803242222048425, 0.8193061170955434, 0.6768336235925299,
+      0.4796839372400049, 0.3275506915281221, 0.234565997851723,
+      0.083702650178120, 0.083458013114508
+    ),
+    k
   )
 
   residuals <- c(
-    0.00248739939451981, -0.03751260060548019, 0.05448739939451981,
-    0.02329944025442167, -0.06870055974557833, 0.0243256713151238,
-    0.0103256713151238, -0.069285088913756, -0.025285088913756,
-    0.028714911086244, 0.008714911086244, 0.041714911086244, 0.004269281801858,
-    0.010269281801858, -0.011730718198142, -0.040087720976285,
-    -0.014087720976285, 0.020912279023715, 0.061912279023715, -0.024743938254306
+    0.00466757777951575, -0.09093242222048425, 0.08896757777951575,
+    0.0081938829044566, -0.0415061170955434, 0.0652938829044566,
+    -0.1207336235925299, 0.0279663764074701, 0.0656160627599951,
+    0.0063160627599951, 0.0554160627599951, -0.0397839372400049,
+    0.0277493084718779, -0.0143506915281221, 0.0223493084718779,
+    -0.092465997851723, -0.066902650178120, 0.054897349821880,
+    0.039241986885492
   )
 
-  object <- loglogistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loglogistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -516,7 +765,7 @@ test_that("fit", {
   expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 
-  object <- loglogistic4_new(x, y, w, c(0, 1, 1, 1), 10000, NULL, NULL)
+  object <- loglogistic4_new(x, y, w, c(0, 1, 1, 1), max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -534,48 +783,47 @@ test_that("fit", {
 })
 
 test_that("fit_constrained: inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.065671734266434990
+
   theta <- c(
-    alpha = 0.92551260060548019,
-    delta = -0.80876869456840958,
-    eta = exp(1.8115476511704276),
-    phi = exp(1.8210577595704281)
+    alpha = 0.84803242222048425, delta = -0.76457472791925385,
+    eta = exp(1.0597641935779216), phi = exp(1.8170414285831683)
   )
 
-  rss_value <- 0.025373136628166469
-
-  fitted_values <- c(
-    rep(0.92551260060548019, 3), rep(0.92470055974557833, 2),
-    rep(0.8726743286848762, 2), rep(0.557285088913756, 5),
-    rep(0.254730718198142, 3), rep(0.157087720976285, 4),
-    0.116743938254306
+  fitted_values <- rep(
+    c(
+      0.84803242222048425, 0.8193061170955434, 0.6768336235925299,
+      0.4796839372400049, 0.3275506915281221, 0.234565997851723,
+      0.083702650178120, 0.083458013114508
+    ),
+    k
   )
 
   residuals <- c(
-    0.00248739939451981, -0.03751260060548019, 0.05448739939451981,
-    0.02329944025442167, -0.06870055974557833, 0.0243256713151238,
-    0.0103256713151238, -0.069285088913756, -0.025285088913756,
-    0.028714911086244, 0.008714911086244, 0.041714911086244, 0.004269281801858,
-    0.010269281801858, -0.011730718198142, -0.040087720976285,
-    -0.014087720976285, 0.020912279023715, 0.061912279023715, -0.024743938254306
+    0.00466757777951575, -0.09093242222048425, 0.08896757777951575,
+    0.0081938829044566, -0.0415061170955434, 0.0652938829044566,
+    -0.1207336235925299, 0.0279663764074701, 0.0656160627599951,
+    0.0063160627599951, 0.0554160627599951, -0.0397839372400049,
+    0.0277493084718779, -0.0143506915281221, 0.0223493084718779,
+    -0.092465997851723, -0.066902650178120, 0.054897349821880,
+    0.039241986885492
   )
 
   object <- loglogistic4_new(
-    x, y, w, NULL, 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -594,7 +842,8 @@ test_that("fit_constrained: inequalities", {
 
   # initial values within the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(0, 0, 2, 2), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(0.6, -0.6, 4, 8), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -613,7 +862,8 @@ test_that("fit_constrained: inequalities", {
 
   # initial values outside the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(-2, -5, 0.5, 20), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(-2, 2, 7, 1), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -632,47 +882,46 @@ test_that("fit_constrained: inequalities", {
 })
 
 test_that("fit_constrained: equalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.18260381517441647
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.3774037382542154),
-    phi = exp(1.8461172076558907)
+    alpha = 0.8, delta = -0.9, eta = exp(1.0311116743448195),
+    phi = exp(2.0344389197855765)
   )
 
-  rss_value <- 0.066796495711301507
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.98975897104553855, 2), rep(0.8609270809729283, 2),
-    rep(0.553669054087477, 5), rep(0.283932781514331, 3),
-    rep(0.140673135711566, 4), 0.000017760285330
+  fitted_values <- rep(
+    c(
+      0.8, 0.77954595995735380, 0.6742409051933649, 0.4974687113710638,
+      0.3216436306778372, 0.1883607158194651, -0.099334450265717,
+      -0.099998954510080
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.04175897104553855, -0.13375897104553855,
-    0.0360729190270717, 0.0220729190270717, -0.065669054087477,
-    -0.021669054087477, 0.032330945912523, 0.012330945912523, 0.045330945912523,
-    -0.024932781514331, -0.018932781514331, -0.040932781514331,
-    -0.023673135711566, 0.002326864288434, 0.037326864288434, 0.078326864288434,
-    0.091982239714670
+    0.0527, -0.0429, 0.137, 0.04795404004264620, -0.00174595995735380,
+    0.10505404004264620, -0.1181409051933649, 0.0305590948066351,
+    0.0478312886289362, -0.0114687113710638, 0.0376312886289362,
+    -0.0575687113710638, 0.0336563693221628, -0.0084436306778372,
+    0.0282563693221628, -0.0462607158194651, 0.116134450265717,
+    0.237934450265717, 0.222698954510080
   )
 
   object <- loglogistic4_new(
-    x, y, w, NULL, 10000, c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, NULL, max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -691,8 +940,8 @@ test_that("fit_constrained: equalities", {
 
   # initial values with same equalities
   object <- loglogistic4_new(
-    x, y, w, c(1, -1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0.8, -0.9, 1, 1), max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -711,8 +960,8 @@ test_that("fit_constrained: equalities", {
 
   # initial values with different equalities
   object <- loglogistic4_new(
-    x, y, w, c(0, 1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0, 1, 1, 1), max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -731,47 +980,46 @@ test_that("fit_constrained: equalities", {
 })
 
 test_that("fit_constrained: equalities and inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.18260381517441647
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.3774037382542154),
-    phi = exp(1.8461172076558907)
+    alpha = 0.8, delta = -0.9, eta = exp(1.0311116743448195),
+    phi = exp(2.0344389197855765)
   )
 
-  rss_value <- 0.066796495711301507
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.98975897104553855, 2), rep(0.8609270809729283, 2),
-    rep(0.553669054087477, 5), rep(0.283932781514331, 3),
-    rep(0.140673135711566, 4), 0.000017760285330
+  fitted_values <- rep(
+    c(
+      0.8, 0.77954595995735380, 0.6742409051933649, 0.4974687113710638,
+      0.3216436306778372, 0.1883607158194651, -0.099334450265717,
+      -0.099998954510080
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.04175897104553855, -0.13375897104553855,
-    0.0360729190270717, 0.0220729190270717, -0.065669054087477,
-    -0.021669054087477, 0.032330945912523, 0.012330945912523, 0.045330945912523,
-    -0.024932781514331, -0.018932781514331, -0.040932781514331,
-    -0.023673135711566, 0.002326864288434, 0.037326864288434, 0.078326864288434,
-    0.091982239714670
+    0.0527, -0.0429, 0.137, 0.04795404004264620, -0.00174595995735380,
+    0.10505404004264620, -0.1181409051933649, 0.0305590948066351,
+    0.0478312886289362, -0.0114687113710638, 0.0376312886289362,
+    -0.0575687113710638, 0.0336563693221628, -0.0084436306778372,
+    0.0282563693221628, -0.0462607158194651, 0.116134450265717,
+    0.237934450265717, 0.222698954510080
   )
 
   object <- loglogistic4_new(
-    x, y, w, NULL, 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -790,7 +1038,8 @@ test_that("fit_constrained: equalities and inequalities", {
 
   # initial values within the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(1, -1, 2, 2), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0.8, -0.9, 3, 7), max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -809,7 +1058,8 @@ test_that("fit_constrained: equalities and inequalities", {
 
   # initial values outside the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(0, 1, 0.5, 0.5), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0, 1, 8, 1), max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -828,49 +1078,45 @@ test_that("fit_constrained: equalities and inequalities", {
 })
 
 test_that("fit (weighted)", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.028149462100107135
+
   theta <- c(
-    alpha = 0.93806056213457730,
-    delta = -0.79670860565100278,
-    eta = exp(1.8199023333421624),
-    phi = exp(1.8020330741835448)
+    alpha = 0.85946644015940627, delta = -0.77755335460964313,
+    eta = exp(1.2410728497889232), phi = exp(1.8216686605281363)
   )
 
-  rss_value <- 0.013912488651588458
-
-  fitted_values <- c(
-    rep(0.93806056213457730, 3), rep(0.93721164651371502, 2),
-    rep(0.8811887559772096, 2), rep(0.552330070097719, 5),
-    rep(0.263176550555172, 3), rep(0.176058052614237, 4),
-    0.141351980945642
+  fitted_values <- rep(
+    c(
+      0.85946644015940627, 0.8440987075059350, 0.7183269332966290,
+      0.4907843357327152, 0.307990679902764, 0.205756559537494,
+      0.081964238053554, 0.081913103315067
+    ),
+    k
   )
 
   residuals <- c(
-    -0.01006056213457730, -0.05006056213457730, 0.04193943786542270,
-    0.01078835348628498, -0.08121164651371502, 0.0158112440227904,
-    0.0018112440227904, -0.064330070097719, -0.020330070097719,
-    0.033669929902281, 0.013669929902281, 0.046669929902281,
-    -0.004176550555172, 0.001823449444828, -0.020176550555172,
-    -0.059058052614237, -0.033058052614237, 0.001941947385763,
-    0.042941947385763, -0.049351980945642
+    -0.00676644015940627, -0.10236644015940627, 0.07753355984059373,
+    -0.0165987075059350, -0.0662987075059350, 0.0405012924940650,
+    -0.1622269332966290, -0.0135269332966290, 0.0545156642672848,
+    -0.0047843357327152, 0.0443156642672848, -0.0508843357327152,
+    0.047309320097236, 0.005209320097236, 0.041909320097236,
+    -0.063656559537494, -0.065164238053554, 0.056635761946446,
+    0.040786896684933
   )
 
-  object <- loglogistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loglogistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -886,7 +1132,7 @@ test_that("fit (weighted)", {
   expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 
-  object <- loglogistic4_new(x, y, w, c(1, -1, 1, 1), 10000, NULL, NULL)
+  object <- loglogistic4_new(x, y, w, c(0, 1, 1, 1), max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -904,50 +1150,47 @@ test_that("fit (weighted)", {
 })
 
 test_that("fit_constrained (weighted): inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.028149462100107135
+
   theta <- c(
-    alpha = 0.93806056213457730,
-    delta = -0.79670860565100278,
-    eta = exp(1.8199023333421624),
-    phi = exp(1.8020330741835448)
+    alpha = 0.85946644015940627, delta = -0.77755335460964313,
+    eta = exp(1.2410728497889232), phi = exp(1.8216686605281363)
   )
 
-  rss_value <- 0.013912488651588458
-
-  fitted_values <- c(
-    rep(0.93806056213457730, 3), rep(0.93721164651371502, 2),
-    rep(0.8811887559772096, 2), rep(0.552330070097719, 5),
-    rep(0.263176550555172, 3), rep(0.176058052614237, 4),
-    0.141351980945642
+  fitted_values <- rep(
+    c(
+      0.85946644015940627, 0.8440987075059350, 0.7183269332966290,
+      0.4907843357327152, 0.307990679902764, 0.205756559537494,
+      0.081964238053554, 0.081913103315067
+    ),
+    k
   )
 
   residuals <- c(
-    -0.01006056213457730, -0.05006056213457730, 0.04193943786542270,
-    0.01078835348628498, -0.08121164651371502, 0.0158112440227904,
-    0.0018112440227904, -0.064330070097719, -0.020330070097719,
-    0.033669929902281, 0.013669929902281, 0.046669929902281,
-    -0.004176550555172, 0.001823449444828, -0.020176550555172,
-    -0.059058052614237, -0.033058052614237, 0.001941947385763,
-    0.042941947385763, -0.049351980945642
+    -0.00676644015940627, -0.10236644015940627, 0.07753355984059373,
+    -0.0165987075059350, -0.0662987075059350, 0.0405012924940650,
+    -0.1622269332966290, -0.0135269332966290, 0.0545156642672848,
+    -0.0047843357327152, 0.0443156642672848, -0.0508843357327152,
+    0.047309320097236, 0.005209320097236, 0.041909320097236,
+    -0.063656559537494, -0.065164238053554, 0.056635761946446,
+    0.040786896684933
   )
 
   object <- loglogistic4_new(
-    x, y, w, NULL, 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -966,7 +1209,8 @@ test_that("fit_constrained (weighted): inequalities", {
 
   # initial values within the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(0.3, 0.6, 2, 3), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(0.6, -0.6, 4, 8), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -985,7 +1229,8 @@ test_that("fit_constrained (weighted): inequalities", {
 
   # initial values outside the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(-2, -5, 0.5, 20), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(-2, 2, 7, 1), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1004,48 +1249,46 @@ test_that("fit_constrained (weighted): inequalities", {
 })
 
 test_that("fit_constrained (weighted): equalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.047616281998049843
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.3311583629301975),
-    phi = exp(1.8484421002700265)
+    alpha = 0.9, delta = -0.9, eta = exp(0.99935582830934212),
+    phi = exp(1.8494626509107548)
   )
 
-  rss_value <- 0.040523243758802340
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.98754725333678601, 2), rep(0.8518803828725668, 2),
-    rep(0.5534371122379037, 5), rep(0.294333091935288, 3),
-    rep(0.151983958045141, 4), 0.000029373464958
+  fitted_values <- rep(
+    c(
+      0.9, 0.86270334460885678, 0.7008462168978897, 0.4851972721174256,
+      0.3138327685225718, 0.2034181924346560, 0.000504528021877,
+      9.69609809e-07
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.03954725333678601, -0.13154725333678601,
-    0.0451196171274332, 0.0311196171274332, -0.0654371122379037,
-    -0.0214371122379037, 0.0325628877620963, 0.0125628877620963,
-    0.0455628877620963, -0.035333091935288, -0.029333091935288,
-    -0.051333091935288, -0.034983958045141, -0.008983958045141,
-    0.026016041954859, 0.067016041954859, 0.091970626535042
+    -0.0473, -0.1429, 0.037, -0.03520334460885678, -0.08490334460885678,
+    0.02189665539114322, -0.1447462168978897, 0.0039537831021103,
+    0.0601027278825744, 0.0008027278825744, 0.0499027278825744,
+    -0.0452972721174256, 0.0414672314774282, -0.0006327685225718,
+    0.0360672314774282, -0.0613181924346560, 0.016295471978123,
+    0.138095471978123, 0.122699030390191
   )
 
   object <- loglogistic4_new(
-    x, y, w, NULL, 10000, c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, NULL, max_iter,
+    c(0.9, -0.9, rep(-Inf, 2)), c(0.9, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -1064,8 +1307,8 @@ test_that("fit_constrained (weighted): equalities", {
 
   # initial values with same equalities
   object <- loglogistic4_new(
-    x, y, w, c(1, -1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0.9, -0.9, 1, 1), max_iter,
+    c(0.9, -0.9, rep(-Inf, 2)), c(0.9, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -1084,8 +1327,8 @@ test_that("fit_constrained (weighted): equalities", {
 
   # initial values with different equalities
   object <- loglogistic4_new(
-    x, y, w, c(0, 1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0, 1, 1, 1), max_iter,
+    c(0.9, -0.9, rep(-Inf, 2)), c(0.9, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -1104,48 +1347,46 @@ test_that("fit_constrained (weighted): equalities", {
 })
 
 test_that("fit_constrained (weighted): equalities and inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.047616281998049843
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.3311583629301975),
-    phi = exp(1.8484421002700265)
+    alpha = 0.9, delta = -0.9, eta = exp(0.99935582830934212),
+    phi = exp(1.8494626509107548)
   )
 
-  rss_value <- 0.040523243758802340
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.98754725333678601, 2), rep(0.8518803828725668, 2),
-    rep(0.5534371122379037, 5), rep(0.294333091935288, 3),
-    rep(0.151983958045141, 4), 0.000029373464958
+  fitted_values <- rep(
+    c(
+      0.9, 0.86270334460885678, 0.7008462168978897, 0.4851972721174256,
+      0.3138327685225718, 0.2034181924346560, 0.000504528021877,
+      9.69609809e-07
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.03954725333678601, -0.13154725333678601,
-    0.0451196171274332, 0.0311196171274332, -0.0654371122379037,
-    -0.0214371122379037, 0.0325628877620963, 0.0125628877620963,
-    0.0455628877620963, -0.035333091935288, -0.029333091935288,
-    -0.051333091935288, -0.034983958045141, -0.008983958045141,
-    0.026016041954859, 0.067016041954859, 0.091970626535042
+    -0.0473, -0.1429, 0.037, -0.03520334460885678, -0.08490334460885678,
+    0.02189665539114322, -0.1447462168978897, 0.0039537831021103,
+    0.0601027278825744, 0.0008027278825744, 0.0499027278825744,
+    -0.0452972721174256, 0.0414672314774282, -0.0006327685225718,
+    0.0360672314774282, -0.0613181924346560, 0.016295471978123,
+    0.138095471978123, 0.122699030390191
   )
 
   object <- loglogistic4_new(
-    x, y, w, NULL, 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.9, -0.9, 1, 3), c(0.9, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1164,7 +1405,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
 
   # initial values within the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(1, -1, 2, 2), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0.9, -0.9, 3, 7), max_iter,
+    c(0.9, -0.9, 1, 3), c(0.9, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1183,7 +1425,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
 
   # initial values outside the boundaries
   object <- loglogistic4_new(
-    x, y, w, c(0, 1, 0.5, 0.5), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0, 1, 8, 1), max_iter,
+    c(0.9, -0.9, 1, 3), c(0.9, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1202,40 +1445,33 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
 })
 
 test_that("fisher_info", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  max_iter <- 10000
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  theta <- lltd$theta_4
+  names(theta) <- c("alpha", "delta", "eta", "phi")
 
-  theta <- c(alpha = 4 / 100, delta = -9 / 10, eta = 3, phi = 2)
-
-  sigma <- 0.05
+  sigma <- lltd$sigma
 
   true_value <- matrix(c(
       # alpha
-      5982, 3847.3537344782560, -104.40263338110749, 285.30029971608626,
-      275947.34244121722,
+      6206.96, 3213.3730235910022, -25.345500911144129, 305.59395175952439,
+      -12564.573197905927,
       # delta
-      3847.3537344782560, 3636.0201791330070, -258.69909747088174,
-      654.17722274224129, 193269.92078353599,
+      3213.3730235910022, 2314.5672831218128, -91.521827408072732,
+      147.85088411543430, -6955.2079876339471,
       # eta
-      -104.40263338110749, -258.69909747088174, -132.47182391898161,
-      52.152763193549342, -5742.3762879391817,
+      -25.345500911144129, -91.521827408072732, 27.900844069407526,
+      -4.2726065359333406, 353.68532278262947,
       # phi
-      285.30029971608626, 654.17722274224129, 52.152763193549342,
-      -35.178966118180261, 15953.701512060766,
+      305.59395175952439, 147.85088411543430, -4.2726065359333406,
+      20.082539137142281, -428.57767745995749,
       # sigma
-      275947.34244121722, 193269.92078353599, -5742.3762879391817,
-      15953.701512060766, 9955612.1461136607
+      -12564.573197905927, -6955.2079876339471, 353.68532278262947,
+      -428.57767745995749, 42844.361630297012
     ),
     nrow = 5,
     ncol = 5
@@ -1245,7 +1481,7 @@ test_that("fisher_info", {
     "alpha", "delta", "eta", "phi", "sigma"
   )
 
-  object <- loglogistic4_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loglogistic4_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   fim <- fisher_info(object, theta, sigma)
 
@@ -1255,18 +1491,13 @@ test_that("fisher_info", {
 })
 
 test_that("drda: 'lower_bound' argument errors", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", lower_bound = c("a", "b", "c", "d")
+      y ~ x, mean_function = "loglogistic4",
+      lower_bound = c("a", "b", "c", "d")
     ),
     "'lower_bound' must be a numeric vector"
   )
@@ -1274,7 +1505,8 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic4",
-      lower_bound = matrix(-Inf, nrow = 4, ncol = 2), upper_bound = rep(Inf, 4)
+      lower_bound = matrix(-Inf, nrow = 4, ncol = 2),
+      upper_bound = rep(Inf, 4)
     ),
     "'lower_bound' must be a numeric vector"
   )
@@ -1282,7 +1514,8 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic4",
-      lower_bound = rep(-Inf, 5), upper_bound = rep(Inf, 4)
+      lower_bound = rep(-Inf, 5),
+      upper_bound = rep(Inf, 4)
     ),
     "'lower_bound' and 'upper_bound' must have the same length"
   )
@@ -1290,7 +1523,8 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic4",
-      lower_bound = c( 0, -Inf, -Inf, -Inf), upper_bound = c(-1, Inf, Inf, Inf)
+      lower_bound = c( 0, -Inf, -Inf, -Inf),
+      upper_bound = c(-1, Inf, Inf, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
   )
@@ -1307,25 +1541,21 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic4",
-      lower_bound = rep(-Inf, 5), upper_bound = rep(Inf, 5)
+      lower_bound = rep(-Inf, 5),
+      upper_bound = rep(Inf, 5)
     ),
     "'lower_bound' must be of length 4"
   )
 })
 
 test_that("drda: 'upper_bound' argument errors", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", upper_bound = c("a", "b", "c", "d")
+      y ~ x, mean_function = "loglogistic4",
+      upper_bound = c("a", "b", "c", "d")
     ),
     "'upper_bound' must be a numeric vector"
   )
@@ -1333,7 +1563,8 @@ test_that("drda: 'upper_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic4",
-      lower_bound = rep(-Inf, 4), upper_bound = matrix(Inf, nrow = 4, ncol = 2)
+      lower_bound = rep(-Inf, 4),
+      upper_bound = matrix(Inf, nrow = 4, ncol = 2)
     ),
     "'upper_bound' must be a numeric vector"
   )
@@ -1350,163 +1581,146 @@ test_that("drda: 'upper_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic4",
-      lower_bound = rep(-Inf, 5), upper_bound = rep(Inf, 5)
+      lower_bound = rep(-Inf, 5),
+      upper_bound = rep(Inf, 5)
     ),
     "'lower_bound' must be of length 4"
   )
 })
 
 test_that("drda: 'start' argument errors", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c("a", "b", "c", "d")
+      y ~ x, mean_function = "loglogistic4",
+      start = c("a", "b", "c", "d")
     ),
     "'start' must be a numeric vector"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(0, Inf, 1, 1)
+      y ~ x, mean_function = "loglogistic4",
+      start = c(0, Inf, 1, 1)
     ),
     "'start' must be finite"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(-Inf, 1, 1, 1)
+      y ~ x, mean_function = "loglogistic4",
+      start = c(-Inf, 1, 1, 1)
     ),
     "'start' must be finite"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(1, 1, 1, 1, 1)
+      y ~ x, mean_function = "loglogistic4",
+      start = rep(1, 5)
     ),
     "'start' must be of length 4"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(0, 1, -1, 1)
+      y ~ x, mean_function = "loglogistic4",
+      start = c(0, 1, -1, 1)
     ),
     "parameter 'eta' cannot be negative nor zero"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(0, 1, 0, 1)
+      y ~ x, mean_function = "loglogistic4",
+      start = c(0, 1, 0, 1)
     ),
     "parameter 'eta' cannot be negative nor zero"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(0, 1, 1, -1)
+      y ~ x, mean_function = "loglogistic4",
+      start = c(0, 1, 1, -1)
     ),
     "parameter 'phi' cannot be negative nor zero"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loglogistic4", start = c(0, 1, 1, 0)
+      y ~ x, mean_function = "loglogistic4",
+      start = c(0, 1, 1, 0)
     ),
     "parameter 'phi' cannot be negative nor zero"
   )
 })
 
 test_that("nauc: decreasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  result <- drda(y ~ x, weights = w, mean_function = "loglogistic4")
 
-  result <- drda(y ~ x, mean_function = "loglogistic4")
-
-  expect_equal(nauc(result), 0.63097122559352374)
-  expect_equal(nauc(result, xlim = c(0, 2)), 0.92539849554119428)
-  expect_equal(nauc(result, ylim = c(0.2, 0.8)), 0.64001041004420353)
-  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(nauc(result), 0.57996858042024657)
+  expect_equal(nauc(result, xlim = c(0, 2)), 0.85599012126905068)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.59897567503640588)
+  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
-    nauc(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 0.45969717209770064
+    nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.36063326947370824
   )
-  expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(nauc(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 0.0)
 })
 
 test_that("naac: decreasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  result <- drda(y ~ x, weights = w, mean_function = "loglogistic4")
 
-  result <- drda(y ~ x, mean_function = "loglogistic4")
-
-  expect_equal(naac(result), 1.0 - 0.63097122559352374)
-  expect_equal(naac(result, xlim = c(0, 2)), 1.0 - 0.92539849554119428)
-  expect_equal(naac(result, ylim = c(0.2, 0.8)), 1.0 - 0.64001041004420353)
-  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(naac(result), 1 - 0.57996858042024657)
+  expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.85599012126905068)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.59897567503640588)
+  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
-    naac(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 1.0 - 0.45969717209770064
+    naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.36063326947370824
   )
-  expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(naac(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 1.0)
 })
 
 test_that("nauc: increasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- rev(lltd$D$y)
+  w <- lltd$D$w
 
-  y <- rev(c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  ))
+  result <- drda(y ~ x, weights = w, mean_function = "loglogistic4")
 
-  result <- drda(y ~ x, mean_function = "loglogistic4")
-
-  expect_equal(nauc(result), 0.43871949389022659)
-  expect_equal(nauc(result, xlim = c(0, 2)), 0.15536599581899617)
-  expect_equal(nauc(result, ylim = c(0.2, 0.8)), 0.40467437230093021)
-  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(nauc(result), 0.48770480530276260)
+  expect_equal(nauc(result, xlim = c(0, 2)), 0.15122707630633397)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.52680013875927759)
+  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
-    nauc(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 0.63244069235812449
+    nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.84700641564881314
   )
-  expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 1.0)
 })
 
 test_that("naac: increasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- rev(lltd$D$y)
+  w <- lltd$D$w
 
-  y <- rev(c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  ))
+  result <- drda(y ~ x, weights = w, mean_function = "loglogistic4")
 
-  result <- drda(y ~ x, mean_function = "loglogistic4")
-
-  expect_equal(naac(result), 1.0 - 0.43871949389022659)
-  expect_equal(naac(result, xlim = c(0, 2)), 1.0 - 0.15536599581899617)
-  expect_equal(naac(result, ylim = c(0.2, 0.8)), 1.0 - 0.40467437230093021)
-  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(naac(result), 1 - 0.48770480530276260)
+  expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.15122707630633397)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.52680013875927759)
+  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
-    naac(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 1.0 - 0.63244069235812449
+    naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.84700641564881314
   )
-  expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 0.0)
 })

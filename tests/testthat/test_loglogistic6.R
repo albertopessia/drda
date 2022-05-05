@@ -236,10 +236,7 @@ test_that("Function value", {
   expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = m, ncol = 1)),
-    class = "loglogistic6"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loglogistic6")
 
   value <- fn(object, object$stats[, 1], theta)
 
@@ -247,10 +244,7 @@ test_that("Function value", {
   expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = m, ncol = 1)),
-    class = "loglogistic6_fit"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loglogistic6_fit")
 
   value <- fn(object, object$stats[, 1], theta)
 
@@ -944,10 +938,7 @@ test_that("Gradient and Hessian (2)", {
   expect_equal(gh$G, true_gradient)
   expect_equal(gh$H, true_hessian)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = m, ncol = 1)),
-    class = "loglogistic6"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loglogistic6")
 
   gh <- gradient_hessian(object, theta)
 
@@ -969,7 +960,7 @@ test_that("Value of the RSS", {
   true_value <- 2.8517831854811524
 
   object <- structure(
-    list(stats = lltd$stats_1, m = 5),
+    list(stats = lltd$stats_1, m = nrow(lltd$stats_1)),
     class = "loglogistic6"
   )
 
@@ -1030,7 +1021,7 @@ test_that("Gradient and Hessian of the RSS", {
   )
 
   object <- structure(
-    list(stats = lltd$stats_1, m = 5),
+    list(stats = lltd$stats_1, m = nrow(lltd$stats_1)),
     class = "loglogistic6"
   )
 
@@ -1798,9 +1789,8 @@ test_that("fisher_info", {
 
   true_value <- matrix(c(
       # alpha
-      6206.9600000000000, 4033.6259327887426, -78.699146035632538,
-      198.77058917560704, -293.58875257662276, 269.87863134052620,
-      89181.461311549703,
+      6206.96, 4033.6259327887426, -78.699146035632538, 198.77058917560704,
+      -293.58875257662276, 269.87863134052620, 89181.461311549703,
       # delta
       4033.6259327887426, 2878.4597528145919, -88.705348162354274,
       244.00408263047195, -320.80516117638226, 282.55798267636782,
@@ -2081,14 +2071,14 @@ test_that("nauc: increasing", {
   y <- rev(lltd$D$y)
   w <- lltd$D$w
 
-  result <- drda(y ~ x, mean_function = "loglogistic6")
+  result <- drda(y ~ x, weights = w, mean_function = "loglogistic6")
 
-  expect_equal(nauc(result), 0.48956965931169600)
-  expect_equal(nauc(result, xlim = c(0, 2)), 0.17502499958193786)
-  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.49142869302873806)
+  expect_equal(nauc(result), 0.49315307829620485)
+  expect_equal(nauc(result, xlim = c(0, 2)), 0.16335338880478015)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.49785365693988435)
   expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
-    nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.77685613973089947
+    nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.79822066734104781
   )
   expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 1.0)
 })
@@ -2098,14 +2088,14 @@ test_that("naac: increasing", {
   y <- rev(lltd$D$y)
   w <- lltd$D$w
 
-  result <- drda(y ~ x, mean_function = "loglogistic6")
+  result <- drda(y ~ x, weights = w, mean_function = "loglogistic6")
 
-  expect_equal(naac(result), 1 - 0.48956965931169600)
-  expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.17502499958193786)
-  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.49142869302873806)
+  expect_equal(naac(result), 1 - 0.49315307829620485)
+  expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.16335338880478015)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.49785365693988435)
   expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
-    naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.77685613973089947
+    naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.79822066734104781
   )
   expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 0.0)
 })
