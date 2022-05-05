@@ -145,11 +145,10 @@ approx_vcov <- function(fim) {
 #
 # @param object object of some model class.
 # @param start matrix of candidate starting points.
+# @param niter maximum number of iterations
 #
 #' @importFrom stats nlminb
-fit_nlminb <- function(object, start) {
-  control <- list(eval.max = 10000L, iter.max = 10000L)
-
+fit_nlminb <- function(object, start, max_iter) {
   # define the objective function
   f <- rss(object)
 
@@ -166,9 +165,10 @@ fit_nlminb <- function(object, start) {
   }
 
   fit_fn <- if (!object$constrained) {
-    function(x) {
+    function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h, control = control
+        start = x, objective = f, gradient = g, hessian = h,
+        control = list(eval.max = k, iter.max = k)
       )
 
       list(
@@ -176,9 +176,10 @@ fit_nlminb <- function(object, start) {
       )
     }
   } else {
-    function(x) {
+    function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h, control = control,
+        start = x, objective = f, gradient = g, hessian = h,
+        control = list(eval.max = k, iter.max = k),
         lower = object$lower_bound, upper = object$upper_bound
       )
 
@@ -192,18 +193,23 @@ fit_nlminb <- function(object, start) {
   niter <- 0
   for (i in seq_len(ncol(start))) {
     tmp <- tryCatch(
-      suppressWarnings(fit_fn(start[, i])),
+      suppressWarnings(fit_fn(start[, i], max_iter)),
       error = function(e) NULL
     )
 
     if (!is.null(tmp)) {
       current_rss <- f(tmp$par)
+      max_iter <- max(0, max_iter - tmp$niter)
       niter <- niter + tmp$niter
 
       if (!is.nan(current_rss) && (current_rss < best_rss)) {
         best_par <- tmp$par
         best_rss <- current_rss
       }
+    }
+
+    if (max_iter == 0) {
+      break
     }
   }
 
