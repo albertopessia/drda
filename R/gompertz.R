@@ -1101,61 +1101,94 @@ nauc.gompertz_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  asymptote <- alpha + delta
+  # in case the curve intersect `ylim`, these are the values at which it happens
+  tmp <- delta / (ylim - alpha)
+  tmp[tmp > 1] <- phi - log(log(tmp[tmp > 1])) / eta
 
+  # value of the integral
   I <- 0
+
+  # check if we really need to perform an integration
+  flag <- TRUE
+
+  # we might change the range of integration
   xlim_new <- xlim
 
-  if (delta < 0) {
-    # curve is decreasing: upper bound is alpha and lower bound is asymptote
-    if (ylim[1] > asymptote) {
-      # the curve intersect `ylim[1]` at this point
-      x_i <- phi - log(log(delta / (ylim[1] - alpha))) / eta
+  if (delta >= 0) {
+    # curve is monotonically increasing
+    lb <- alpha
+    ub <- alpha + delta
 
-      if (x_i < xlim[2]) {
-        xlim_new[2] <- x_i
+    if (lb < ylim[1]) {
+      # the curve in `c(-Inf, tmp[1])` is to be considered zero
+      if (tmp[1] > xlim[2]) {
+        # the integral is simply zero
+        flag <- FALSE
+      } else if (tmp[1] > xlim[1]) {
+        xlim_new[1] <- tmp[1]
       }
     }
 
-    if (ylim[2] < alpha) {
-      # the curve intersect `ylim[2]` at this point
-      x_i <- phi - log(log(delta / (ylim[2] - alpha))) / eta
+    if (ub > ylim[2]) {
+      # the curve in `c(tmp[2], Inf)` is equal to `ylim[2]`
+      if (tmp[2] < xlim[1]) {
+        # not much to do in this case, the curve in the requested range is flat
+        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
 
-      if (x_i > xlim[1]) {
-        I <- I + (x_i - xlim[1]) * (ylim[2] - ylim[1])
-        xlim_new[1] <- x_i
+        # stop here
+        flag <- FALSE
+      } else if (tmp[2] < xlim[2]) {
+        # standard before `tmp[2]` and flat in c(tmp[2], xlim[2])
+        I <- I + (xlim[2] - tmp[2]) * (ylim[2] - ylim[1])
+
+        # modify the range of integration
+        xlim_new[2] <- tmp[2]
       }
     }
   } else {
-    # curve is increasing: upper bound is asymptote and lower bound is alpha
-    if (ylim[1] > alpha) {
-      # the curve intersect `ylim[1]` at this point
-      x_i <- phi - log(log(delta / (ylim[1] - alpha))) / eta
+    # curve is monotonically decreasing
+    lb <- alpha + delta
+    ub <- alpha
 
-      if (x_i > xlim[1]) {
-        xlim_new[1] <- x_i
+    if (ub > ylim[2]) {
+      # the first part of the curve in `c(-Inf, tmp[2])` is equal to `ylim[2]`
+      if (tmp[2] > xlim[2]) {
+        # not much to do in this case, the curve in the requested range is flat
+        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
+
+        # stop here
+        flag <- FALSE
+      } else if (tmp[2] > xlim[1]) {
+        # flat in c(xlim[1], tmp[2]) and standard after `tmp[2]`
+        I <- I + (tmp[2] - xlim[1]) * (ylim[2] - ylim[1])
+
+        # modify the range of integration
+        xlim_new[1] <- tmp[2]
       }
     }
 
-    if (ylim[2] < asymptote) {
-      # the curve intersect `ylim[2]` at this point
-      x_i <- phi - log(log(delta / (ylim[2] - alpha))) / eta
-
-      if (x_i < xlim[2]) {
-        I <- I + (xlim[2] - x_i) * (ylim[2] - ylim[1])
-        xlim_new[2] <- x_i
+    if (lb < ylim[1]) {
+      # the curve after `tmp[1]` is to be considered zero
+      if (tmp[1] < xlim[1]) {
+        # the integral is simply zero
+        flag <- FALSE
+      } else if (tmp[1] < xlim[2]) {
+        xlim_new[2] <- tmp[1]
       }
     }
   }
 
-  f <- function(x) {
-    fn(object, x, object$coefficients) - ylim[1]
-  }
+  if (flag) {
+    # we remove `ylim[1]` to shift the curve to zero
+    f <- function(x) {
+      fn(object, x, object$coefficients) - ylim[1]
+    }
 
-  I <- I + integrate(
-    f, lower = xlim_new[1], upper = xlim_new[2],
-    rel.tol = sqrt(.Machine$double.eps)
-  )$value
+    I <- I + integrate(
+      f, lower = xlim_new[1], upper = xlim_new[2],
+      rel.tol = sqrt(.Machine$double.eps)
+    )$value
+  }
 
   nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
   names(nauc) <- NULL

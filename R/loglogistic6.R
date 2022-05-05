@@ -1409,11 +1409,6 @@ nauc.loglogistic6_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
     stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
   }
 
-  # we remove `ylim[1]` to shift the curve to zero
-  f <- function(x) {
-    fn(object, x, object$coefficients) - ylim[1]
-  }
-
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
   eta <- object$coefficients[3]
@@ -1498,7 +1493,15 @@ nauc.loglogistic6_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
   }
 
   if (flag) {
-    I <- I + integrate(f, lower = xlim_new[1], upper = xlim_new[2])$value
+    # we remove `ylim[1]` to shift the curve to zero
+    f <- function(x) {
+      fn(object, x, object$coefficients) - ylim[1]
+    }
+
+    I <- I + integrate(
+      f, lower = xlim_new[1], upper = xlim_new[2],
+      rel.tol = sqrt(.Machine$double.eps)
+    )$value
   }
 
   nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
