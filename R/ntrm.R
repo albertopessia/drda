@@ -203,7 +203,7 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 # **Journal of Open Source Software**, 3(24):615, 2018.
 # doi: 10.21105/joss.00615.
 ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
-  eps <- 1.0e-10
+  eps <- sqrt(.Machine$double.eps)
   converged <- FALSE
 
   delta <- 1
@@ -239,15 +239,7 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
     if (!g_converged && any(is.infinite(gradient_hessian$H))) {
       # when the model is close to non-identifiability the gradient might be
       # close to zero, but not enough for our previous check to succeed
-      #
-      # if the Hessian contains infinite values, we relax the condition for
-      # convergence
-      g_converged <- g_min <= sqrt(.Machine$double.eps)
-
-      if (!g_converged) {
-        # this was our last try because we cannot continue our search
-        break
-      }
+      break
     }
 
     # we use a counter for f_converged because the objective function might
