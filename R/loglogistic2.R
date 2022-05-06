@@ -790,36 +790,6 @@ init.loglogistic2 <- function(object) {
 
   best_rss <- rss_fn(theta)
 
-  # theta is so far a very crude estimation of our curve, but is the curve flat?
-  y <- object$y
-  x <- object$x
-  w <- object$w
-
-  idx <- !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
-
-  if (sum(idx) != length(object$y)) {
-    y <- y[idx]
-    x <- x[idx]
-    w <- w[idx]
-  }
-
-  weighted_mean <- sum(w * y) / sum(w)
-  linear_rss <- sum(w * (y - weighted_mean)^2)
-
-  complete_rss <- sum(stats[, 2] * stats[, 4]) + best_rss
-
-  loglik <- loglik_normal(c(linear_rss, complete_rss), m, sum(log(stats[, 2])))
-
-  # variance + intercept -> 2 parameters estimated
-  # variance + logistic4 -> 5 parameters estimated
-  bic <- log(m) * c(2, 5) - 2 * loglik
-
-  if (bic[1] <= bic[2]) {
-    # we are in big problems as a flat horizontal line is likely the best model
-    theta <- c(5, 10)
-    best_rss <- rss_fn(theta)
-  }
-
   # this is a latin hypercube design
   v <- 100
   param_set <- matrix(
