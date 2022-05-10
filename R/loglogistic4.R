@@ -712,18 +712,20 @@ mle_asy.loglogistic4 <- function(object, theta) {
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  s1 <- x^exp(theta[3])
-  s2 <- exp(theta[4] * exp(theta[3]))
+  eta <- exp(theta[3])
+  phi <- exp(theta[4])
+
+  s1 <- x^eta
+  s2 <- phi^eta
 
   g <- s1 / (s1 + s2)
 
-  # when theta[4] is extremely large or extremely small, the ratio `s0` can be
-  # problematic
+  # when phi is extremely large or extremely small, the ratio can be problematic
   # in the case `x = 0` it must be set to zero
   g[x == 0] <- 0
 
-  # when theta[4] is extremely small the ratio might converge to Inf
-  # this is the limit for theta[4] -> -Inf
+  # when eta is extremely large the ratio might converge to Inf
+  # this is the limit for s1 -> Inf
   g[is.infinite(s1)] <- 1
 
   t1 <- 0

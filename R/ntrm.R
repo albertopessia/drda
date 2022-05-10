@@ -264,7 +264,7 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
       # This can happen if the trust region radius is too large and the
       # Hessian is not positive definite. We should shrink the trust region.
       -1
-    } else if (abs(result$m) <= eps) {
+    } else if (abs(result$m) <= 1.0e-12) {
       # This should only happen when the step is very small, in which case
       # we should accept the step and assess convergence
       1

@@ -917,7 +917,18 @@ mle_asy.loglogistic6 <- function(object, theta) {
   nu <- exp(theta[5])
   xi <- exp(theta[6])
 
-  g <- (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)
+  s1 <- x^eta
+  s2 <- phi^eta
+
+  g <- (s1 / (xi * s1 + nu * s2))^(1 / nu)
+
+  # when phi is extremely large or extremely small, the ratio can be problematic
+  # in the case `x = 0` it must be set to zero
+  g[x == 0] <- 0
+
+  # when eta is extremely large the ratio might converge to Inf
+  # this is the limit for s1 -> Inf
+  g[is.infinite(s1)] <- xi^(-1 / nu)
 
   t1 <- 0
   t2 <- 0
