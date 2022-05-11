@@ -161,8 +161,7 @@ loglogistic4_gradient <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xe + pe
-  g <- 1 / f
-  h <- xe * g
+  h <- xe / f
   d <- delta * h / f
 
   a <- pe * lr
@@ -208,8 +207,7 @@ loglogistic4_hessian <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xe + pe
-  g <- 1 / f
-  h <- xe * g
+  h <- xe / f
   d <- delta * h / f
 
   a <- pe * lr
@@ -264,13 +262,11 @@ loglogistic4_gradient_hessian <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xe + pe
-  g <- 1 / f
-  h <- xe * g
+  h <- xe / f
   d <- delta * h / f
 
   a <- pe * lr
   p <- pe - xe
-  r <- d / f
 
   G <- matrix(1, nrow = k, ncol = 4)
 
@@ -284,12 +280,12 @@ loglogistic4_gradient_hessian <- function(x, theta) {
   H[, 4, 2] <- -eta * pe * d / (delta * phi)
 
   H[, 2, 3] <- H[, 3, 2]
-  H[, 3, 3] <- lr * a * p * r
-  H[, 4, 3] <- -(pe * f + eta * a * p) * r / phi
+  H[, 3, 3] <- lr * a * p * d / f
+  H[, 4, 3] <- -(pe * f + eta * a * p) * d / (phi * f)
 
   H[, 2, 4] <- H[, 4, 2]
   H[, 3, 4] <- H[, 4, 3]
-  H[, 4, 4] <- eta * pe * (f + eta * p) * r / phi^2
+  H[, 4, 4] <- eta * pe * (f + eta * p) * d / (phi^2 * f)
 
   # gradient and Hessian might not be defined when we plug x = 0 directly into
   # the formula
@@ -367,13 +363,10 @@ loglogistic4_gradient_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- c1 + c2
-  g <- 1 / f
+  e <- log(x) - log(phi)
 
-  d <- g / f
-  e <- log(x) - log(theta[4])
-
-  p <- c1 * g
-  q <- c1 * d
+  p <- c1 / f
+  q <- (c1 / f) / f
   r <- eta * c2 * q
 
   G <- matrix(1, nrow = k, ncol = 4)
@@ -417,14 +410,11 @@ loglogistic4_hessian_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- c1 + c2
-  g <- 1 / f
-
-  d <- g / f
-  e <- log(x) - log(theta[4])
+  e <- log(x) - log(phi)
 
   l <- 2 * c2 / f
 
-  q <- c1 * d
+  q <- (c1 / f) / f
   r <- eta * c2 * q
 
   H <- array(0, dim = c(k, 4, 4))
@@ -474,15 +464,12 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- c1 + c2
-  g <- 1 / f
-
-  d <- g / f
-  e <- log(x) - log(theta[4])
+  e <- log(x) - log(phi)
 
   l <- 2 * c2 / f
 
-  p <- c1 * g
-  q <- c1 * d
+  p <- c1 / f
+  q <- (c1 / f) / f
   r <- eta * c2 * q
 
   G <- matrix(1, nrow = k, ncol = 4)

@@ -170,9 +170,8 @@ logistic5_gradient <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 5)
@@ -215,9 +214,8 @@ logistic5_hessian <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   H <- array(0, dim = c(k, 5, 5))
@@ -274,9 +272,8 @@ logistic5_gradient_hessian <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 5)
@@ -383,9 +380,8 @@ logistic5_gradient_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 5)
@@ -430,9 +426,8 @@ logistic5_hessian_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   H <- array(0, dim = c(k, 5, 5))
@@ -491,9 +486,8 @@ logistic5_gradient_hessian_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 5)

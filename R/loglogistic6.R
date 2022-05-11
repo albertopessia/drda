@@ -218,8 +218,7 @@ loglogistic6_gradient <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xi * xe + nu * pe
-  g <- 1 / f^(1 / nu)
-  h <- x^(eta / nu) * g
+  h <- (x^eta / f)^(1 / nu)
   d <- delta * h / f
 
   a <- pe * lr
@@ -271,14 +270,12 @@ loglogistic6_hessian <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xi * xe + nu * pe
-  g <- 1 / f^(1 / nu)
-  h <- x^(eta / nu) * g
+  h <- (x^eta / f)^(1 / nu)
   d <- delta * h / f
 
   a <- pe * lr
   p <- pe - xi * xe
   q <- (eta * log(x) - log(f)) * f / nu
-  r <- d / f
   s <- pe + q
 
   H <- array(0, dim = c(k, 6, 6))
@@ -289,28 +286,28 @@ loglogistic6_hessian <- function(x, theta) {
   H[, 6, 2] <- -xe * d / (delta * nu)
 
   H[, 2, 3] <- H[, 3, 2]
-  H[, 3, 3] <- lr * a * p * r
-  H[, 4, 3] <- -(pe * f + eta * a * p) * r / phi
-  H[, 5, 3] <- -(nu * pe + s) * a * r / nu
-  H[, 6, 3] <- -(nu + 1) * xe * a * r / nu
+  H[, 3, 3] <- lr * a * p * d / f
+  H[, 4, 3] <- -(pe * f + eta * a * p) * d / (phi * f)
+  H[, 5, 3] <- -(nu * pe + s) * a * d / (nu * f)
+  H[, 6, 3] <- -(nu + 1) * xe * a * d / (nu * f)
 
   H[, 2, 4] <- H[, 4, 2]
   H[, 3, 4] <- H[, 4, 3]
-  H[, 4, 4] <- eta * pe * (f + eta * p) * r / phi^2
-  H[, 5, 4] <- eta * pe * (nu * pe + s) * r / (nu * phi)
-  H[, 6, 4] <- (nu + 1) * eta * xe * pe * r / (nu * phi)
+  H[, 4, 4] <- eta * pe * (f + eta * p) * d / (phi^2 * f)
+  H[, 5, 4] <- eta * pe * (nu * pe + s) * d / (nu * phi * f)
+  H[, 6, 4] <- (nu + 1) * eta * xe * pe * d / (nu * phi * f)
 
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- (nu * pe^2 + (2 * f + s) * s) * r / nu^2
-  H[, 6, 5] <- xe * (nu * pe + f + s) * r / nu^2
+  H[, 5, 5] <- (nu * pe^2 + (2 * f + s) * s) * d / (nu^2 * f)
+  H[, 6, 5] <- xe * (nu * pe + f + s) * d / (nu^2 * f)
 
   H[, 2, 6] <- H[, 6, 2]
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- (nu + 1) * (xe / nu)^2 * r
+  H[, 6, 6] <- (nu + 1) * (xe / nu)^2 * d / f
 
   # Hessian might not be defined when we plug x = 0 directly into the formula
   # however, the limits for x -> 0 are zero
@@ -349,14 +346,12 @@ loglogistic6_gradient_hessian <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xi * xe + nu * pe
-  g <- 1 / f^(1 / nu)
-  h <- x^(eta / nu) * g
+  h <- (x^eta / f)^(1 / nu)
   d <- delta * h / f
 
   a <- pe * lr
   p <- pe - xi * xe
   q <- (eta * log(x) - log(f)) * f / nu
-  r <- d / f
   s <- pe + q
 
   G <- matrix(1, nrow = k, ncol = 6)
@@ -375,28 +370,28 @@ loglogistic6_gradient_hessian <- function(x, theta) {
   H[, 6, 2] <- -xe * d / (delta * nu)
 
   H[, 2, 3] <- H[, 3, 2]
-  H[, 3, 3] <- lr * a * p * r
-  H[, 4, 3] <- -(pe * f + eta * a * p) * r / phi
-  H[, 5, 3] <- -(nu * pe + s) * a * r / nu
-  H[, 6, 3] <- -(nu + 1) * xe * a * r / nu
+  H[, 3, 3] <- lr * a * p * d / f
+  H[, 4, 3] <- -(pe * f + eta * a * p) * d / (phi * f)
+  H[, 5, 3] <- -(nu * pe + s) * a * d / (nu * f)
+  H[, 6, 3] <- -(nu + 1) * xe * a * d / (nu * f)
 
   H[, 2, 4] <- H[, 4, 2]
   H[, 3, 4] <- H[, 4, 3]
-  H[, 4, 4] <- eta * pe * (f + eta * p) * r / phi^2
-  H[, 5, 4] <- eta * pe * (nu * pe + s) * r / (nu * phi)
-  H[, 6, 4] <- (nu + 1) * eta * xe * pe * r / (nu * phi)
+  H[, 4, 4] <- eta * pe * (f + eta * p) * d / (phi^2 * f)
+  H[, 5, 4] <- eta * pe * (nu * pe + s) * d / (nu * phi * f)
+  H[, 6, 4] <- (nu + 1) * eta * xe * pe * d / (nu * phi * f)
 
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- (nu * pe^2 + (2 * f + s) * s) * r / nu^2
-  H[, 6, 5] <- xe * (nu * pe + f + s) * r / nu^2
+  H[, 5, 5] <- (nu * pe^2 + (2 * f + s) * s) * d / (nu^2 * f)
+  H[, 6, 5] <- xe * (nu * pe + f + s) * d / (nu^2 * f)
 
   H[, 2, 6] <- H[, 6, 2]
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- (nu + 1) * (xe / nu)^2 * r
+  H[, 6, 6] <- (nu + 1) * (xe / nu)^2 * d / f
 
   # gradient and Hessian might not be defined when we plug x = 0 directly into
   # the formula
@@ -480,23 +475,15 @@ loglogistic6_gradient_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- xi * c1 + nu * c2
-  g <- f^(-1 / nu)
+  e <- log(x) - log(phi)
 
-  a <- x^k1
-  b <- eta * c2
-  c <- k2 * c1
-  d <- g / f
-
-  e <- log(x) - log(theta[4])
-
-  p <- a * g
-  q <- a * d
-  r <- b * q
+  p <- (x^eta / f)^(1 / nu)
+  r <- eta * c2 * p / f
   s <- f * log(f) / nu - c2
-  t <- log(a) * f
-  u <- q * s
-  v <- q * t
-  w <- q * c
+  t <- k1 * log(x) * f
+  u <- (p * s) / f
+  v <- (p * t) / f
+  w <- k2 * p * c1 / f
 
   G <- matrix(1, nrow = k, ncol = 6)
 
@@ -546,25 +533,18 @@ loglogistic6_hessian_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- xi * c1 + nu * c2
-  g <- f^(-1 / nu)
-
-  a <- x^k1
-  b <- eta * c2
-  c <- k2 * c1
-  d <- g / f
-
-  e <- log(x) - log(theta[4])
+  e <- log(x) - log(phi)
 
   l <- (1 + nu) * c2 / f
   m <- (1 + nu) * xi * c1 / (nu * f)
 
-  q <- a * d
-  r <- b * q
+  p <- (x^eta / f)^(1 / nu)
+  r <- eta * c2 * p / f
   s <- f * log(f) / nu - c2
-  t <- log(a) * f
-  u <- q * s
-  v <- q * t
-  w <- q * c
+  t <- k1 * log(x) * f
+  u <- (p * s) / f
+  v <- (p * t) / f
+  w <- k2 * p * c1 / f
   y <- eta * log(x) - log(f)
 
   H <- array(0, dim = c(k, 6, 6))
@@ -590,7 +570,7 @@ loglogistic6_hessian_2 <- function(x, theta) {
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
   H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * q
+    (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
   H[, 2, 6] <- H[, 6, 2]
@@ -638,26 +618,18 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- xi * c1 + nu * c2
-  g <- f^(-1 / nu)
-
-  a <- x^k1
-  b <- eta * c2
-  c <- k2 * c1
-  d <- g / f
-
-  e <- log(x) - log(theta[4])
+  e <- log(x) - log(phi)
 
   l <- (1 + nu) * c2 / f
   m <- (1 + nu) * xi * c1 / (nu * f)
 
-  p <- a * g
-  q <- a * d
-  r <- b * q
+  p <- (x^eta / f)^(1 / nu)
+  r <- eta * c2 * p / f
   s <- f * log(f) / nu - c2
-  t <- log(a) * f
-  u <- q * s
-  v <- q * t
-  w <- q * c
+  t <- k1 * log(x) * f
+  u <- (p * s) / f
+  v <- (p * t) / f
+  w <- k2 * p * c1 / f
   y <- eta * log(x) - log(f)
 
   G <- matrix(1, nrow = k, ncol = 6)
@@ -691,7 +663,7 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
   H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * q
+    (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
   H[, 2, 6] <- H[, 6, 2]

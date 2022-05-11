@@ -148,18 +148,16 @@ logistic4_gradient <- function(x, theta) {
   b <- exp(-eta * (x - phi))
 
   f <- 1 + b
-  g <- 1 / f
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 4)
 
-  G[, 2] <- g
+  G[, 2] <- 1 / f
   G[, 3] <- delta * t
   G[, 4] <- delta * u
 
@@ -190,14 +188,12 @@ logistic4_hessian <- function(x, theta) {
   b <- exp(-eta * (x - phi))
 
   f <- 1 + b
-  g <- 1 / f
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   H <- array(0, dim = c(k, 4, 4))
 
@@ -206,7 +202,7 @@ logistic4_hessian <- function(x, theta) {
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- delta * q * t * (2 / f - 1 / b)
-  H[, 4, 3] <- delta * (1 / eta + (2 - f / b) * t / g) * u
+  H[, 4, 3] <- delta * (1 / eta + (2 - f / b) * t * f) * u
 
   H[, 2, 4] <- H[, 4, 2]
   H[, 3, 4] <- H[, 4, 3]
@@ -243,9 +239,8 @@ logistic4_gradient_hessian <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 4)
 
@@ -339,9 +334,8 @@ logistic4_gradient_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 4)
 
@@ -382,9 +376,8 @@ logistic4_hessian_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   H <- array(0, dim = c(k, 4, 4))
 
@@ -432,9 +425,8 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 4)
 

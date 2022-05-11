@@ -201,9 +201,8 @@ logistic6_gradient <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 6)
@@ -212,7 +211,7 @@ logistic6_gradient <- function(x, theta) {
   G[, 3] <- delta * t
   G[, 4] <- delta * u
   G[, 5] <- delta * v / nu
-  G[, 6] <- -delta * s / nu
+  G[, 6] <- -(delta * g / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
@@ -248,9 +247,8 @@ logistic6_hessian <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   H <- array(0, dim = c(k, 6, 6))
@@ -258,7 +256,7 @@ logistic6_hessian <- function(x, theta) {
   H[, 3, 2] <- t
   H[, 4, 2] <- u
   H[, 5, 2] <- v / nu
-  H[, 6, 2] <- -s / nu
+  H[, 6, 2] <- -(g / nu) / f
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- delta * q * t * ((1 + nu) / f - 1 / b)
@@ -282,7 +280,7 @@ logistic6_hessian <- function(x, theta) {
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- delta * (1 + 1 / nu) * s / (nu * f)
+  H[, 6, 6] <- (delta * g * (1 + 1 / nu) / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(H)
@@ -318,9 +316,8 @@ logistic6_gradient_hessian <- function(x, theta) {
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 6)
@@ -329,14 +326,14 @@ logistic6_gradient_hessian <- function(x, theta) {
   G[, 3] <- delta * t
   G[, 4] <- delta * u
   G[, 5] <- delta * v / nu
-  G[, 6] <- -delta * s / nu
+  G[, 6] <- -(delta * g / nu) / f
 
   H <- array(0, dim = c(k, 6, 6))
 
   H[, 3, 2] <- t
   H[, 4, 2] <- u
   H[, 5, 2] <- v / nu
-  H[, 6, 2] <- -s / nu
+  H[, 6, 2] <- -(g / nu) / f
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- delta * q * t * ((1 + nu) / f - 1 / b)
@@ -360,7 +357,7 @@ logistic6_gradient_hessian <- function(x, theta) {
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- delta * (1 + 1 / nu) * s / (nu * f)
+  H[, 6, 6] <- (delta * g * (1 + 1 / nu) / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
@@ -439,9 +436,8 @@ logistic6_gradient_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 6)
@@ -450,7 +446,7 @@ logistic6_gradient_2 <- function(x, theta) {
   G[, 3] <- delta * eta * t
   G[, 4] <- delta * u
   G[, 5] <- delta * v
-  G[, 6] <- -delta * xi * s / nu
+  G[, 6] <- -(delta * xi * g / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)
@@ -488,9 +484,8 @@ logistic6_hessian_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   H <- array(0, dim = c(k, 6, 6))
@@ -498,7 +493,7 @@ logistic6_hessian_2 <- function(x, theta) {
   H[, 3, 2] <- eta * t
   H[, 4, 2] <- u
   H[, 5, 2] <- v
-  H[, 6, 2] <- -xi * s / nu
+  H[, 6, 2] <- -(xi * g / nu) / f
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- -delta * y * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
@@ -522,7 +517,7 @@ logistic6_hessian_2 <- function(x, theta) {
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- delta * xi * (xi * (1 + 1 / nu) / f - 1) * s / nu
+  H[, 6, 6] <- (delta * xi * g * (xi * (1 + 1 / nu) / f - 1) / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(H)
@@ -560,9 +555,8 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
   q <- y * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q * g) / f
+  u <- (r * g) / f
   v <- u / eta + g * log(f) / nu
 
   G <- matrix(1, nrow = k, ncol = 6)
@@ -571,14 +565,14 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
   G[, 3] <- delta * eta * t
   G[, 4] <- delta * u
   G[, 5] <- delta * v
-  G[, 6] <- -delta * xi * s / nu
+  G[, 6] <- -(delta * xi * g / nu) / f
 
   H <- array(0, dim = c(k, 6, 6))
 
   H[, 3, 2] <- eta * t
   H[, 4, 2] <- u
   H[, 5, 2] <- v
-  H[, 6, 2] <- -xi * s / nu
+  H[, 6, 2] <- -(xi * g / nu) / f
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- -delta * y * (1 + eta * ((1 + nu) / f - 1 / b) * q) * u
@@ -602,7 +596,7 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- delta * xi * (xi * (1 + 1 / nu) / f - 1) * s / nu
+  H[, 6, 6] <- (delta * xi * g * (xi * (1 + 1 / nu) / f - 1) / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)

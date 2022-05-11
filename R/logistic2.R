@@ -191,14 +191,12 @@ logistic2_gradient <- function(x, theta, delta) {
   b <- exp(-eta * (x - phi))
 
   f <- 1 + b
-  g <- 1 / f
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 2)
 
@@ -231,19 +229,17 @@ logistic2_hessian <- function(x, theta, delta) {
   b <- exp(-eta * (x - phi))
 
   f <- 1 + b
-  g <- 1 / f
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   H <- array(0, dim = c(k, 2, 2))
 
   H[, 1, 1] <- q * t * (2 / f - 1 / b)
-  H[, 2, 1] <- (1 / eta + (2 - f / b) * t / g) * u
+  H[, 2, 1] <- (1 / eta + f * (2 - f / b) * t) * u
 
   H[, 1, 2] <- H[, 2, 1]
   H[, 2, 2] <- (2 / f - 1 / b) * r * u
@@ -274,14 +270,12 @@ logistic2_gradient_hessian <- function(x, theta, delta) {
   b <- exp(-eta * (x - phi))
 
   f <- 1 + b
-  g <- 1 / f
 
   q <- (x - phi) * b
   r <- -eta * b
 
-  s <- g / f
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 2)
 
@@ -291,7 +285,7 @@ logistic2_gradient_hessian <- function(x, theta, delta) {
   H <- array(0, dim = c(k, 2, 2))
 
   H[, 1, 1] <- q * t * (2 / f - 1 / b)
-  H[, 2, 1] <- (1 / eta + (2 - f / b) * t / g) * u
+  H[, 2, 1] <- (1 / eta + f * (2 - f / b) * t) * u
 
   H[, 1, 2] <- H[, 2, 1]
   H[, 2, 2] <- (2 / f - 1 / b) * r * u
@@ -371,9 +365,8 @@ logistic2_gradient_2 <- function(x, theta, delta) {
   q <- y * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 2)
 
@@ -412,8 +405,7 @@ logistic2_hessian_2 <- function(x, theta, delta) {
   q <- y * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  u <- r * s
+  u <- (r / f) / f
 
   H <- array(0, dim = c(k, 2, 2))
 
@@ -455,9 +447,8 @@ logistic2_gradient_hessian_2 <- function(x, theta, delta) {
   q <- y * b
   r <- -eta * b
 
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
+  t <- (q / f) / f
+  u <- (r / f) / f
 
   G <- matrix(1, nrow = k, ncol = 2)
 

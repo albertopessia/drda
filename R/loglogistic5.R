@@ -183,8 +183,7 @@ loglogistic5_gradient <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xe + nu * pe
-  g <- 1 / f^(1 / nu)
-  h <- x^(eta / nu) * g
+  h <- (x^eta / f)^(1 / nu)
   d <- delta * h / f
 
   a <- pe * lr
@@ -234,8 +233,7 @@ loglogistic5_hessian <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xe + nu * pe
-  g <- 1 / f^(1 / nu)
-  h <- x^(eta / nu) * g
+  h <- (x^eta / f)^(1 / nu)
   d <- delta * h / f
 
   a <- pe * lr
@@ -301,8 +299,7 @@ loglogistic5_gradient_hessian <- function(x, theta) {
   lr <- log(x / phi)
 
   f <- xe + nu * pe
-  g <- 1 / f^(1 / nu)
-  h <- x^(eta / nu) * g
+  h <- (x^eta / f)^(1 / nu)
   d <- delta * h / f
 
   a <- pe * lr
@@ -418,19 +415,13 @@ loglogistic5_gradient_2 <- function(x, theta) {
   c2 <- phi^eta
 
   f <- c1 + nu * c2
-  g <- f^(-1 / nu)
+  e <- log(x) - log(phi)
 
-  a <- x^k1
-  b <- eta * c2
-  d <- g / f
-
-  e <- log(x) - log(theta[4])
-
-  p <- a * g
-  q <- a * d
-  r <- b * q
+  p <- (x^eta / f)^(1 / nu)
+  q <- p / f
+  r <- eta * c2 * q
   s <- f * log(f) / nu - c2
-  t <- log(a) * f
+  t <- k1 * log(x) * f
   u <- q * s
   v <- q * t
 
@@ -474,27 +465,20 @@ loglogistic5_hessian_2 <- function(x, theta) {
   nu <- theta[5]
 
   k1 <- eta / nu
-  k2 <- 1 / nu
 
   c1 <- x^eta
   c2 <- phi^eta
 
   f <- c1 + nu * c2
-  g <- f^(-1 / nu)
-
-  a <- x^k1
-  b <- eta * c2
-  c <- k2 * c1
-  d <- g / f
-
-  e <- log(x) - log(theta[4])
+  e <- log(x) - log(phi)
 
   l <- (1 + nu) * c2 / f
 
-  q <- a * d
-  r <- b * q
+  p <- (x^eta / f)^(1 / nu)
+  q <- p / f
+  r <- eta * c2 * q
   s <- f * log(f) / nu - c2
-  t <- log(a) * f
+  t <- k1 * log(x) * f
   u <- q * s
   v <- q * t
   y <- eta * log(x) - log(f)
@@ -553,28 +537,20 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
   nu <- theta[5]
 
   k1 <- eta / nu
-  k2 <- 1 / nu
 
   c1 <- x^eta
   c2 <- phi^eta
 
   f <- c1 + nu * c2
-  g <- f^(-1 / nu)
-
-  a <- x^k1
-  b <- eta * c2
-  c <- k2 * c1
-  d <- g / f
-
-  e <- log(x) - log(theta[4])
+  e <- log(x) - log(phi)
 
   l <- (1 + nu) * c2 / f
 
-  p <- a * g
-  q <- a * d
-  r <- b * q
+  p <- (x^eta / f)^(1 / nu)
+  q <- p / f
+  r <- eta * c2 * q
   s <- f * log(f) / nu - c2
-  t <- log(a) * f
+  t <- k1 * log(x) * f
   u <- q * s
   v <- q * t
   y <- eta * log(x) - log(f)

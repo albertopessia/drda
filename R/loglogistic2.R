@@ -218,8 +218,7 @@ loglogistic2_gradient <- function(x, theta, delta) {
   lr <- log(x / phi)
 
   f <- xe + pe
-  g <- 1 / f
-  h <- xe * g
+  h <- xe / f
   d <- h / f
 
   a <- pe * lr
@@ -263,8 +262,7 @@ loglogistic2_hessian <- function(x, theta, delta) {
   lr <- log(x / phi)
 
   f <- xe + pe
-  g <- 1 / f
-  h <- xe * g
+  h <- xe / f
   d <- h / f
 
   a <- pe * lr
@@ -313,8 +311,7 @@ loglogistic2_gradient_hessian <- function(x, theta, delta) {
   lr <- log(x / phi)
 
   f <- xe + pe
-  g <- 1 / f
-  h <- xe * g
+  h <- xe / f
   d <- h / f
 
   a <- pe * lr
@@ -412,12 +409,9 @@ loglogistic2_gradient_2 <- function(x, theta, delta) {
   c2 <- phi^eta
 
   f <- c1 + c2
-  g <- 1 / f
-
-  d <- g / f
   e <- log(x) - log(phi)
 
-  q <- c1 * d
+  q <- (c1 / f) / f
   r <- eta * c2 * q
 
   G <- matrix(0, nrow = k, ncol = 2)
@@ -459,14 +453,11 @@ loglogistic2_hessian_2 <- function(x, theta, delta) {
   c2 <- phi^eta
 
   f <- c1 + c2
-  g <- 1 / f
-
-  d <- g / f
   e <- log(x) - log(phi)
 
   l <- 2 * c2 / f
 
-  q <- c1 * d
+  q <- (c1 / f) / f
   r <- eta * c2 * q
 
   H <- array(0, dim = c(k, 2, 2))
@@ -510,14 +501,11 @@ loglogistic2_gradient_hessian_2 <- function(x, theta, delta) {
   c2 <- phi^eta
 
   f <- c1 + c2
-  g <- 1 / f
-
-  d <- g / f
   e <- log(x) - log(phi)
 
   l <- 2 * c2 / f
 
-  q <- c1 * d
+  q <- (c1 / f) / f
   r <- eta * c2 * q
 
   G <- matrix(0, nrow = k, ncol = 2)
