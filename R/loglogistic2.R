@@ -497,16 +497,16 @@ loglogistic2_gradient_hessian_2 <- function(x, theta, delta) {
   eta <- theta[1]
   phi <- theta[2]
 
-  c1 <- x^eta
-  c2 <- phi^eta
+  xe <- x^eta
+  pe <- phi^eta
 
-  f <- c1 + c2
+  f <- xe + pe
   e <- log(x) - log(phi)
 
-  l <- 2 * c2 / f
+  l <- 2 * pe / f
 
-  q <- (c1 / f) / f
-  r <- eta * c2 * q
+  q <- (xe / f) / f
+  r <- eta * pe * q
 
   G <- matrix(0, nrow = k, ncol = 2)
 
