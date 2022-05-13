@@ -4,12 +4,14 @@
 \alias{effective_dose}
 \title{Effective dose}
 \usage{
-effective_dose(object, y, type)
+effective_dose(object, y, level, type)
 }
 \arguments{
 \item{object}{fit object as returned by \code{\link[drda]{drda}}.}
 
 \item{y}{numeric vector with response levels.}
+
+\item{level}{level of confidence intervals.}
 
 \item{type}{character string with either "relative" (default) or "absolute".}
 }
