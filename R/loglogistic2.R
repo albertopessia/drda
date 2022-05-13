@@ -1030,7 +1030,7 @@ fisher_info.loglogistic2 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- fn(object, x, theta[3:4]) - y
 
   gh <- loglogistic2_gradient_hessian(x, theta[3:4], theta[2])
 
