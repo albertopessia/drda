@@ -1106,6 +1106,66 @@ curve_variance.loggompertz_fit <- function(object, x) {
 
 # log-Gompertz fit
 #
+# Find the dose that produced the observed response.
+#
+# @details
+# The log-Gompertz function `f(x; theta)` is defined here as
+#
+# `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
+#
+# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+# `phi > 0`. By convention we set
+# `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
+#
+# This function evaluates the inverse function of `f(x; theta)`, that is
+# if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+inverse_fn.loggompertz_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+
+  phi / log(delta / (y - alpha))^(1 / eta)
+}
+
+# log-Gompertz fit
+#
+# Evaluate at a particular point the gradient of the inverse log-Gompertz
+# function.
+#
+# @details
+# The log-Gompertz function `f(x; theta)` is defined here as
+#
+# `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
+#
+# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+# `phi > 0`. By convention we set
+# `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
+#
+# This function evaluates the gradient of the inverse function.
+inverse_fn_gradient.loggompertz_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+
+  h <- phi / eta
+  z <- delta / (y - alpha)
+  u <- 1 / log(z)
+  v <- u^(1 / eta)
+
+  G <- matrix(0, nrow = length(y), ncol = 5)
+
+  G[, 1] <- -h * u * z * v / delta
+  G[, 2] <- -h * u * v / delta
+  G[, 3] <- -h * log(u) * v / eta
+  G[, 4] <- v
+
+  G
+}
+
+# log-Gompertz fit
+#
 # Evaluate the normalized area under the curve (AUC) and area above the curve
 # (AAC).
 #
@@ -1268,17 +1328,21 @@ naac.loggompertz_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
 }
 
 #' @export
-effective_dose.loggompertz_fit <- function(object, y, type = "relative") {
+effective_dose.loggompertz_fit <- function(
+  object, y, level = 0.95, type = "relative"
+) {
+  if (level <= 0 || level >= 1) {
+    stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
+  }
+
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
 
   # value at -Inf is alpha
   # value at Inf is alpha + delta / xi^(1 / nu)
-  fv <- if (type == "relative") {
+  if (type == "relative") {
     y[y <= 0 | y >= 1] <- NA_real_
-    alpha + y * delta
+    y <- alpha + y * delta
   } else if (type == "absolute") {
     y1 <- alpha
     y2 <- alpha + delta
@@ -1288,15 +1352,37 @@ effective_dose.loggompertz_fit <- function(object, y, type = "relative") {
     } else {
       y[y < y2 | y > y1] <- NA_real_
     }
-
-    y
   } else {
     stop("invalid value for `type`", call. = FALSE)
   }
 
-  z <- (fv - alpha) / delta
-  x <- phi / (-log(z))^(1 / eta)
+  x <- inverse_fn(object, y)
   names(x) <- NULL
 
-  x
+  V <- object$vcov[seq_len(4), seq_len(4)]
+  G <- inverse_fn_gradient(object, y)
+
+  std_err <- if (any(is.na(V))) {
+    rep(NA_real_, length(y))
+  } else{
+    sqrt(diag(tcrossprod(crossprod(t(G), V), G)))
+  }
+  names(std_err) <- NULL
+
+  q <- qnorm((1 - level) / 2)
+  l <- round(level * 100)
+
+  matrix(
+    c(
+      x,
+      x + q * std_err,
+      x - q * std_err
+    ),
+    nrow = length(y),
+    ncol = 3,
+    dimnames = list(
+      round(y, digits = 2),
+      c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
+    )
+  )
 }

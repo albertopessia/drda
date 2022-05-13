@@ -1232,6 +1232,70 @@ curve_variance.loglogistic5_fit <- function(object, x) {
 
 # 5-parameter log-logistic fit
 #
+# Find the dose that produced the observed response.
+#
+# @details
+# The 5-parameter log-logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = x^(eta / nu) / (x^eta + nu * phi^eta)^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`,
+# `phi > 0`, and `nu > 0`.
+#
+# This function evaluates the inverse function of `f(x; theta)`, that is
+# if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+inverse_fn.loglogistic5_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+  nu <- object$coefficients[5]
+
+  phi / (((delta / (y - alpha))^nu - 1) / nu)^(1 / eta)
+}
+
+# 5-parameter log-logistic fit
+#
+# Evaluate at a particular point the gradient of the inverse log-logistic
+# function.
+#
+# @details
+# The 5-parameter log-logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = x^(eta / nu) / (x^eta + nu * phi^eta)^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`,
+# `phi > 0`, and `nu > 0`.
+#
+# This function evaluates the gradient of the inverse function.
+inverse_fn_gradient.loglogistic5_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+  nu <- object$coefficients[5]
+
+  h <- phi / eta
+  z <- delta / (y - alpha)
+  s <- z^nu
+  u <- nu / (z^nu - 1)
+  v <- u^(1 / eta)
+
+  G <- matrix(0, nrow = length(y), ncol = 5)
+
+  G[, 1] <- -h * z * s * u * v / delta
+  G[, 2] <- -h * s * u * v / delta
+  G[, 3] <- -h * log(u) * v / eta
+  G[, 4] <- v
+  G[, 5] <- -h * (log(z) * s * u - 1) * v / nu
+
+  G
+}
+
+# 5-parameter log-logistic fit
+#
 # Evaluate the normalized area under the curve (AUC) and area above the curve
 # (AAC).
 #
@@ -1282,12 +1346,9 @@ nauc.loglogistic5_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
 
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-  nu <- object$coefficients[5]
 
   # in case the curve intersect `ylim`, these are the values at which it happens
-  tmp <- phi / (((delta / (ylim - alpha))^nu - 1) / nu)^(1 / eta)
+  tmp <- inverse_fn(object, ylim)
 
   # value of the integral
   I <- 0
@@ -1386,18 +1447,21 @@ naac.loglogistic5_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
 }
 
 #' @export
-effective_dose.loglogistic5_fit <- function(object, y, type = "relative") {
+effective_dose.loglogistic5_fit <- function(
+  object, y, level = 0.95, type = "relative"
+) {
+  if (level <= 0 || level >= 1) {
+    stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
+  }
+
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-  nu <- object$coefficients[5]
 
   # value at -Inf is alpha
   # value at Inf is alpha + delta / xi^(1 / nu)
-  fv <- if (type == "relative") {
+  if (type == "relative") {
     y[y <= 0 | y >= 1] <- NA_real_
-    alpha + y * delta
+    y <- alpha + y * delta
   } else if (type == "absolute") {
     y1 <- alpha
     y2 <- alpha + delta
@@ -1407,15 +1471,37 @@ effective_dose.loglogistic5_fit <- function(object, y, type = "relative") {
     } else {
       y[y < y2 | y > y1] <- NA_real_
     }
-
-    y
   } else {
     stop("invalid value for `type`", call. = FALSE)
   }
 
-  z <- (fv - alpha) / delta
-  x <- phi * (nu * z^nu / (1 - z^nu))^(1 / eta)
+  x <- inverse_fn(object, y)
   names(x) <- NULL
 
-  x
+  V <- object$vcov[seq_len(5), seq_len(5)]
+  G <- inverse_fn_gradient(object, y)
+
+  std_err <- if (any(is.na(V))) {
+    rep(NA_real_, length(y))
+  } else{
+    sqrt(diag(tcrossprod(crossprod(t(G), V), G)))
+  }
+  names(std_err) <- NULL
+
+  q <- qnorm((1 - level) / 2)
+  l <- round(level * 100)
+
+  matrix(
+    c(
+      x,
+      x + q * std_err,
+      x - q * std_err
+    ),
+    nrow = length(y),
+    ncol = 3,
+    dimnames = list(
+      round(y, digits = 2),
+      c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
+    )
+  )
 }

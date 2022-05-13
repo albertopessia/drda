@@ -46,6 +46,14 @@ curve_variance <- function(object, x) {
   UseMethod("curve_variance", object)
 }
 
+inverse_fn <- function(object, y) {
+  UseMethod("inverse_fn", object)
+}
+
+inverse_fn_gradient <- function(object, y) {
+  UseMethod("inverse_fn_gradient", object)
+}
+
 plot_params <- function(object, base, xlim, ylim) {
   UseMethod("plot_params", object)
 }
@@ -163,10 +171,11 @@ naac <- function(object, xlim, ylim) {
 #'
 #' @param object fit object as returned by \code{\link[drda]{drda}}.
 #' @param y numeric vector with response levels.
+#' @param level level of confidence intervals.
 #' @param type character string with either "relative" (default) or "absolute".
 #'
 #' @return Numeric vector with the effective doses corresponding to each value
 #'   of `y`.
-effective_dose <- function(object, y, type) {
+effective_dose <- function(object, y, level, type) {
   UseMethod("effective_dose", object)
 }

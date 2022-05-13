@@ -1052,6 +1052,8 @@ naac.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 }
 
 #' @export
-effective_dose.logistic2_fit <- function(object, y, type = "relative") {
-  effective_dose.logistic4_fit(object, y, type)
+effective_dose.logistic2_fit <- function(
+    object, y, level = 0.95, type = "relative"
+) {
+  effective_dose.logistic4_fit(object, y, level, type)
 }

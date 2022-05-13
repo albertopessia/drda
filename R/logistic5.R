@@ -1131,6 +1131,66 @@ curve_variance.logistic5_fit <- function(object, x) {
 
 # 5-parameter logistic fit
 #
+# Find the dose that produced the observed response.
+#
+# @details
+# The 5-parameter logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
+#
+# This function evaluates the inverse function of `f(x; theta)`, that is
+# if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+inverse_fn.logistic5_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
+  nu <- object$coefficients[5]
+
+  x <- (delta / (y - alpha))^nu
+  x[x > 1] <- phi - log((x[x > 1] - 1) / nu) / eta
+
+  x
+}
+
+# 5-parameter logistic fit
+#
+# Evaluate at a particular point the gradient of the inverse logistic function.
+#
+# @details
+# The 5-parameter logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = 1 / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, and `nu > 0`.
+#
+# This function evaluates the gradient of the inverse function.
+inverse_fn_gradient.logistic5_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  nu <- object$coefficients[5]
+
+  z <- delta / (y - alpha)
+  s <- z^nu
+  u <- nu / (s - 1)
+
+  G <- matrix(1, nrow = length(y), ncol = 5)
+
+  G[, 1] <- -z * s * u / (delta * eta)
+  G[, 2] <- -s * u / (delta * eta)
+  G[, 3] <- -log(u) / eta^2
+  G[, 5] <- (1 - s * log(z) * u) / (eta * nu)
+
+  G
+}
+
+# 5-parameter logistic fit
+#
 # Evaluate the normalized area under the curve (AUC) and area above the curve
 # (AAC).
 #
@@ -1178,13 +1238,9 @@ nauc.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-  nu <- object$coefficients[5]
 
   # in case the curve intersect `ylim`, these are the values at which it happens
-  tmp <- (delta / (ylim - alpha))^nu
-  tmp[tmp > 1] <- phi - log((tmp[tmp > 1] - 1) / nu) / eta
+  tmp <- inverse_fn(object, ylim)
 
   # value of the integral
   I <- 0
@@ -1283,18 +1339,21 @@ naac.logistic5_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
 }
 
 #' @export
-effective_dose.logistic5_fit <- function(object, y, type = "relative") {
+effective_dose.logistic5_fit <- function(
+  object, y, level = 0.95, type = "relative"
+) {
+  if (level <= 0 || level >= 1) {
+    stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
+  }
+
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-  nu <- object$coefficients[5]
 
   # value at -Inf is alpha
-  # value at Inf is alpha + delta
-  fv <- if (type == "relative") {
+  # value at Inf is alpha + delta / xi^(1 / nu)
+  if (type == "relative") {
     y[y <= 0 | y >= 1] <- NA_real_
-    alpha + y * delta
+    y <- alpha + y * delta
   } else if (type == "absolute") {
     y1 <- alpha
     y2 <- alpha + delta
@@ -1304,14 +1363,37 @@ effective_dose.logistic5_fit <- function(object, y, type = "relative") {
     } else {
       y[y < y2 | y > y1] <- NA_real_
     }
-
-    y
   } else {
     stop("invalid value for `type`", call. = FALSE)
   }
 
-  x <- phi - log(((delta / (fv - alpha))^nu - 1) / nu) / eta
+  x <- inverse_fn(object, y)
   names(x) <- NULL
 
-  x
+  V <- object$vcov[seq_len(5), seq_len(5)]
+  G <- inverse_fn_gradient(object, y)
+
+  std_err <- if (any(is.na(V))) {
+    rep(NA_real_, length(y))
+  } else{
+    sqrt(diag(tcrossprod(crossprod(t(G), V), G)))
+  }
+  names(std_err) <- NULL
+
+  q <- qnorm((1 - level) / 2)
+  l <- round(level * 100)
+
+  matrix(
+    c(
+      x,
+      x + q * std_err,
+      x - q * std_err
+    ),
+    nrow = length(y),
+    ncol = 3,
+    dimnames = list(
+      round(y, digits = 2),
+      c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
+    )
+  )
 }
