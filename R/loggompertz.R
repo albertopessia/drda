@@ -1154,7 +1154,7 @@ inverse_fn_gradient.loggompertz_fit <- function(object, y) {
   u <- 1 / log(z)
   v <- u^(1 / eta)
 
-  G <- matrix(0, nrow = length(y), ncol = 5)
+  G <- matrix(0, nrow = length(y), ncol = 4)
 
   G[, 1] <- -h * u * z * v / delta
   G[, 2] <- -h * u * v / delta

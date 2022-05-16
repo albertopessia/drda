@@ -1158,7 +1158,7 @@ inverse_fn_gradient.loglogistic4_fit <- function(object, y) {
   u <- 1 / (z - 1)
   v <- u^(1 / eta)
 
-  G <- matrix(0, nrow = length(y), ncol = 5)
+  G <- matrix(0, nrow = length(y), ncol = 4)
 
   G[, 1] <- -h * z * z * u * v / delta
   G[, 2] <- -h * z * u * v / delta
