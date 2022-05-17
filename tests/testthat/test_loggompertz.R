@@ -1,27 +1,15 @@
 test_that("Constructor", {
-  x <- rep(c(0, 10^seq(-3, 2)), times = c(3, 2, 2, 5, 3, 4, 1))
+  x <- lltd$D$x
+  y <- lltd$D$y
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
-
+  m <- length(unique(x))
   n <- length(y)
 
   w <- rep(1, n)
 
   max_iter <- 10000
 
-  stats <- matrix(
-    c(
-      0, 0.001, 0.01, 0.1, 1, 10, 100, 3, 2, 2, 5, 3, 4, 1, 0.932, 0.902, 0.89,
-      0.5542, 0.2556666667, 0.16425, 0.092, 0.0014186667, 0.002116, 0.000049,
-      0.00160656, 0.0000862222, 0.0014676875, 0
-    ),
-    nrow = 7,
-    ncol = 4
-  )
-  colnames(stats) <- c("x", "n", "m", "v")
+  stats <- lltd$stats_1
 
   start <- c(0, 1, 1, 1)
 
@@ -35,7 +23,7 @@ test_that("Constructor", {
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_false(object$constrained)
   expect_equal(object$max_iter, max_iter)
@@ -45,35 +33,23 @@ test_that("Constructor", {
 
   object <- loggompertz_new(x, y, w, start, max_iter, lower_bound, upper_bound)
 
+  i <- c(1, 2)
+
   expect_true(inherits(object, "loggompertz"))
   expect_equal(object$x, x)
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_true(object$constrained)
   expect_equal(object$max_iter, max_iter)
-  expect_equal(object$start, c(0, 1, 0, 0))
-  expect_equal(object$lower_bound, c(0, -1, log(0.5), 0))
-  expect_equal(object$upper_bound, c(3, 2, log(2), log(5)))
+  expect_equal(object$start, c(start[i], log(start[-i])))
+  expect_equal(object$lower_bound, c(lower_bound[i], log(lower_bound[-i])))
+  expect_equal(object$upper_bound, c(upper_bound[i], log(upper_bound[-i])))
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
-
-  stats <- matrix(
-    c(
-      0, 0.001, 0.01, 0.1, 1, 10, 100, 4.549, 0.96, 1.126, 3.756, 1.797, 2.61,
-      0.157, 0.9353000659, 0.948, 0.8836838366, 0.55221459, 0.2606149137,
-      0.1807233716, 0.092, 0.0014467345, 0, 0.0000091061, 0.0007707846,
-      0.0000597738, 0.0014230308, 0
-    ),
-    nrow = 7,
-    ncol = 4
-  )
-  colnames(stats) <- c("x", "n", "m", "v")
+  w <- lltd$D$w
+  stats <- lltd$stats_2
 
   object <- loggompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
@@ -82,7 +58,7 @@ test_that("Constructor", {
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_false(object$constrained)
   expect_equal(object$max_iter, max_iter)
@@ -97,32 +73,28 @@ test_that("Constructor", {
   expect_equal(object$y, y)
   expect_equal(object$w, w)
   expect_equal(object$n, n)
-  expect_equal(object$m, 7)
+  expect_equal(object$m, m)
   expect_equal(object$stats, stats)
   expect_true(object$constrained)
   expect_equal(object$max_iter, max_iter)
-  expect_equal(object$start, c(0, 1, 0, 0))
-  expect_equal(object$lower_bound, c(0, -1, log(0.5), 0))
-  expect_equal(object$upper_bound, c(3, 2, log(2), log(5)))
+  expect_equal(object$start, c(start[i], log(start[-i])))
+  expect_equal(object$lower_bound, c(lower_bound[i], log(lower_bound[-i])))
+  expect_equal(object$upper_bound, c(upper_bound[i], log(upper_bound[-i])))
 })
 
 test_that("Constructor: errors", {
-  x <- rep(c(0, 10^seq(-3, 2)), times = c(3, 2, 2, 5, 3, 4, 1))
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
-
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
-
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
   max_iter <- 10000
 
   expect_error(
     loggompertz_new(x, y, w, c(0, 1, 1), max_iter, NULL, NULL),
+    "'start' must be of length 4"
+  )
+
+  expect_error(
+    loggompertz_new(x, y, w, c(0, 1, 1, 1, 1), max_iter, NULL, NULL),
     "'start' must be of length 4"
   )
 
@@ -162,177 +134,477 @@ test_that("Constructor: errors", {
   )
 
   expect_error(
-    loggompertz_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, 0, Inf)
-    ),
+    loggompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, 0, Inf)),
     "'upper_bound[3]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
-    loggompertz_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, -1, Inf)
-    ),
+    loggompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, -1, Inf)),
     "'upper_bound[3]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
-    loggompertz_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, 0)
-    ),
+    loggompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, 0)),
     "'upper_bound[4]' cannot be negative nor zero",
     fixed = TRUE
   )
 
   expect_error(
-    loggompertz_new(
-      x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, -1)
-    ),
+    loggompertz_new(x, y, w, NULL, max_iter, rep(-Inf, 4), c(1, 1, Inf, -1)),
     "'upper_bound[4]' cannot be negative nor zero",
     fixed = TRUE
   )
 })
 
 test_that("Function value", {
-  x <- c(0, 2, 4, 6, 8, 10)
-  theta <- c(4 / 100, -9 / 10, 3, 2)
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
+
+  m <- length(x)
 
   true_value <- c(
-    0.04, -0.29109149705429809, -0.75424721232613586, -0.82727639987115761,
-    -0.84604679330486757, -0.85282872335335457
+    1, 0.99835911398420645, 0.82183032092156685, 0.57555097969061526,
+    0.42486123076253040, 0.33801933438930586, 0.15212234596215889,
+    0.15002124973437721
   )
 
   value <- loggompertz_fn(x, theta)
 
   expect_type(value, "double")
-  expect_length(value, 6)
+  expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "loggompertz"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loggompertz")
 
   value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
-  expect_length(value, 6)
+  expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "loggompertz_fit"
-  )
+  object <- structure(list(stats = lltd$stats_1), class = "loggompertz_fit")
 
   value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
-  expect_length(value, 6)
+  expect_length(value, m)
   expect_equal(value, true_value)
 })
 
-test_that("Gradient and Hessian", {
-  x <- c(0, 2, 4, 6, 8, 10)
-  theta <- c(4 / 100, -9 / 10, 3, 2)
+test_that("Gradient (1)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
+
+  m <- length(x)
 
   true_gradient <- matrix(
     c(
       # alpha
-      rep(1, 6),
+      rep(1, m),
       # delta
-      0, 0.36787944117144232, 0.88249690258459540, 0.96364044430128623,
-      0.98449643700540841, 0.99203191483706063,
-      # log_eta
-      0, 0, -0.20644883095929649, -0.10586672339669901, -0.057577578433448398,
-      -0.034486857520200622,
-      # log_phi
-      0, 0.99327449116289427, 0.29784270462230095, 0.096364044430128623,
-      0.041533443436165667, 0.021427889360480510
+      0, 0.0019304541362277092, 0.20961138715109782, 0.49935178859927617,
+      0.67663384616172894, 0.77880078307140487, 0.99750312239746012,
+      0.99997500031249740,
+      # eta
+      0, 0.0093970540520846307, 0.062120960821991612, -0.053740420946163813,
+      -0.10559269877403762, -0.11471250798831215, -0.0063500361305660149,
+      -0.00011258642934322865,
+      # phi
+      0, 0.0041022150394838821, 0.11135604942402072, 0.11790250564149576,
+      0.089865432693354624, 0.066198066561069414, 0.00084787765403784111,
+      8.4997875026562279e-06
     ),
-    nrow = 6,
+    nrow = m,
+    ncol = 4
+  )
+
+  G <- loggompertz_gradient(x, theta)
+
+  expect_type(G, "double")
+  expect_length(G, m * 4)
+  expect_equal(G, true_gradient)
+})
+
+test_that("Hessian (1)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
+
+  m <- length(x)
+
+  true_hessian <- array(
+    c(
+      # (alpha, alpha)
+      rep(0, m),
+      # (alpha, delta)
+      rep(0, m),
+      # (alpha, eta)
+      rep(0, m),
+      # (alpha, phi)
+      rep(0, m),
+      # (delta, alpha)
+      rep(0, m),
+      # (delta, delta)
+      rep(0, m),
+      # (delta, eta)
+      0, -0.011055357708334860, -0.073083483319990132, 0.063224024642545663,
+      0.12422670444004426, 0.13495589175095547, 0.0074706307418423704,
+      0.00013245462275673958,
+      # (delta, phi)
+      0, -0.0048261353405692731, -0.13100711696943614, -0.13870883016646560,
+      -0.10572403846277015, -0.077880078307140487, -0.00099750312239746012,
+      -9.9997500031249740e-06,
+      # (eta, alpha)
+      rep(0, m),
+      # (eta, delta)
+      0, -0.011055357708334860, -0.073083483319990132, 0.063224024642545663,
+      0.12422670444004426, 0.13495589175095547, 0.0074706307418423704,
+      0.00013245462275673958,
+      # (eta, eta)
+      0, -0.045204776057939509, -0.0077973141424894308, 0.0029938447029538161,
+      0.030242642409067612, 0.059634488615294076, 0.018975450654134089,
+      0.00059650372086101613,
+      # (eta, phi)
+      0, -0.017682705989635783, 0.041700808527062246, 0.052382979149550082,
+      0.019194496020505641, -0.0013147191159589372, -0.0021097255890769194,
+      -0.000040783552121669912,
+      # (phi, alpha)
+      rep(0, m),
+      # (phi, delta)
+      0, -0.0048261353405692731, -0.13100711696943614, -0.13870883016646560,
+      -0.10572403846277015, -0.077880078307140487, -0.00099750312239746012,
+      -9.9997500031249740e-06,
+      # (phi, eta)
+      0, -0.017682705989635783, 0.041700808527062246, 0.052382979149550082,
+      0.019194496020505641, -0.0013147191159589372, -0.0021097255890769194,
+      -0.000040783552121669912,
+      # (phi, phi)
+      0, -0.0094350945908129289, -0.047326321005208805, -0.0091701948832274482,
+      0.0039316126803342648, 0.0066198066561069414, 0.00016872765315353038,
+      1.6998725026562190e-06
+    ),
+    dim = c(m, 4, 4)
+  )
+
+  H <- loggompertz_hessian(x, theta)
+
+  expect_type(H, "double")
+  expect_length(H, m * 4 * 4)
+  expect_equal(H, true_hessian)
+})
+
+test_that("Gradient and Hessian (1)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
+
+  m <- length(x)
+
+  true_gradient <- matrix(
+    c(
+      # alpha
+      rep(1, m),
+      # delta
+      0, 0.0019304541362277092, 0.20961138715109782, 0.49935178859927617,
+      0.67663384616172894, 0.77880078307140487, 0.99750312239746012,
+      0.99997500031249740,
+      # eta
+      0, 0.0093970540520846307, 0.062120960821991612, -0.053740420946163813,
+      -0.10559269877403762, -0.11471250798831215, -0.0063500361305660149,
+      -0.00011258642934322865,
+      # phi
+      0, 0.0041022150394838821, 0.11135604942402072, 0.11790250564149576,
+      0.089865432693354624, 0.066198066561069414, 0.00084787765403784111,
+      8.4997875026562279e-06
+    ),
+    nrow = m,
     ncol = 4
   )
 
   true_hessian <- array(
     c(
       # (alpha, alpha)
-      rep(0, 6),
+      rep(0, m),
       # (alpha, delta)
-      rep(0, 6),
-      # (alpha, log_eta)
-      rep(0, 6),
-      # (alpha, log_phi)
-      rep(0, 6),
+      rep(0, m),
+      # (alpha, eta)
+      rep(0, m),
+      # (alpha, phi)
+      rep(0, m),
       # (delta, alpha)
-      rep(0, 6),
+      rep(0, m),
       # (delta, delta)
-      rep(0, 6),
-      # (delta, log_eta)
-      0, 0, 0.22938758995477388, 0.11762969266299891, 0.063975087148275998,
-      0.038318730578000691,
-      # (delta, log_phi)
-      0, -1.1036383235143270, -0.33093633846922328, -0.10707116047792069,
-      -0.046148270484628519, -0.023808765956089455,
-      # (log_eta, alpha)
-      rep(0, 6),
-      # (log_eta, delta)
-      0, 0, 0.22938758995477388, 0.11762969266299891, 0.063975087148275998,
-      0.038318730578000691,
-      # (log_eta, log_eta)
-      0, 0, 0.16918715995270293, 0.23012978387004229, 0.17813930072973977,
-      0.13069440345760184,
-      # (log_eta, log_phi)
-      0, 0.99327449116289427, -0.24408547664585235, -0.20947315649366853,
-      -0.12850034287511163, -0.081204998619636540,
-      # (log_phi, alpha)
-      rep(0, 6),
-      # (log_phi, delta)
-      0, -1.1036383235143270, -0.33093633846922328, -0.10707116047792069,
-      -0.046148270484628519, -0.023808765956089455,
-      # (log_phi, log_eta)
-      0, 0.99327449116289427, -0.24408547664585235, -0.20947315649366853,
-      -0.12850034287511163, -0.081204998619636540,
-      # (log_phi, log_phi)
-      0, 0, 0.78183709963353999, 0.27838501724259380, 0.12265345014742674,
-      0.063769398736789997
+      rep(0, m),
+      # (delta, eta)
+      0, -0.011055357708334860, -0.073083483319990132, 0.063224024642545663,
+      0.12422670444004426, 0.13495589175095547, 0.0074706307418423704,
+      0.00013245462275673958,
+      # (delta, phi)
+      0, -0.0048261353405692731, -0.13100711696943614, -0.13870883016646560,
+      -0.10572403846277015, -0.077880078307140487, -0.00099750312239746012,
+      -9.9997500031249740e-06,
+      # (eta, alpha)
+      rep(0, m),
+      # (eta, delta)
+      0, -0.011055357708334860, -0.073083483319990132, 0.063224024642545663,
+      0.12422670444004426, 0.13495589175095547, 0.0074706307418423704,
+      0.00013245462275673958,
+      # (eta, eta)
+      0, -0.045204776057939509, -0.0077973141424894308, 0.0029938447029538161,
+      0.030242642409067612, 0.059634488615294076, 0.018975450654134089,
+      0.00059650372086101613,
+      # (eta, phi)
+      0, -0.017682705989635783, 0.041700808527062246, 0.052382979149550082,
+      0.019194496020505641, -0.0013147191159589372, -0.0021097255890769194,
+      -0.000040783552121669912,
+      # (phi, alpha)
+      rep(0, m),
+      # (phi, delta)
+      0, -0.0048261353405692731, -0.13100711696943614, -0.13870883016646560,
+      -0.10572403846277015, -0.077880078307140487, -0.00099750312239746012,
+      -9.9997500031249740e-06,
+      # (phi, eta)
+      0, -0.017682705989635783, 0.041700808527062246, 0.052382979149550082,
+      0.019194496020505641, -0.0013147191159589372, -0.0021097255890769194,
+      -0.000040783552121669912,
+      # (phi, phi)
+      0, -0.0094350945908129289, -0.047326321005208805, -0.0091701948832274482,
+      0.0039316126803342648, 0.0066198066561069414, 0.00016872765315353038,
+      1.6998725026562190e-06
     ),
-    dim = c(6, 4, 4)
+    dim = c(m, 4, 4)
   )
 
-  object <- structure(
-    list(stats = matrix(x, nrow = 6, ncol = 1)),
-    class = "loggompertz"
+  gh <- loggompertz_gradient_hessian(x, theta)
+
+  expect_type(gh, "list")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
+
+  expect_length(gh$G, m * 4)
+  expect_length(gh$H, m * 4 * 4)
+
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
+})
+
+test_that("Gradient (2)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
+
+  m <- length(x)
+
+  true_gradient <- matrix(
+    c(
+      # alpha
+      rep(1, m),
+      # delta
+      0, 0.0019304541362277092, 0.20961138715109782, 0.49935178859927617,
+      0.67663384616172894, 0.77880078307140487, 0.99750312239746012,
+      0.99997500031249740,
+      # log_eta
+      0, 0.018794108104169261, 0.12424192164398322, -0.10748084189232763,
+      -0.21118539754807525, -0.22942501597662429, -0.012700072261132030,
+      -0.00022517285868645729,
+      # log_phi
+      0, 0.020511075197419411, 0.55678024712010359, 0.58951252820747881,
+      0.44932716346677312, 0.33099033280534707, 0.0042393882701892055,
+      0.000042498937513281139
+    ),
+    nrow = m,
+    ncol = 4
   )
 
-  gradient_hessian <- gradient_hessian(object, theta)
+  G <- loggompertz_gradient_2(x, theta)
 
-  expect_type(gradient_hessian, "list")
-  expect_type(gradient_hessian$G, "double")
-  expect_type(gradient_hessian$H, "double")
+  expect_type(G, "double")
+  expect_length(G, m * 4)
+  expect_equal(G, true_gradient)
+})
 
-  expect_length(gradient_hessian$G, 6 * 4)
-  expect_length(gradient_hessian$H, 6 * 4 * 4)
+test_that("Hessian (2)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
 
-  expect_equal(gradient_hessian$G, true_gradient)
-  expect_equal(gradient_hessian$H, true_hessian)
+  m <- length(x)
+
+  true_hessian <- array(
+    c(
+      # (alpha, alpha)
+      rep(0, m),
+      # (alpha, delta)
+      rep(0, m),
+      # (alpha, log_eta)
+      rep(0, m),
+      # (alpha, log_phi)
+      rep(0, m),
+      # (delta, alpha)
+      rep(0, m),
+      # (delta, delta)
+      rep(0, m),
+      # (delta, log_eta)
+      0, -0.022110715416669719, -0.14616696663998026, 0.12644804928509133,
+      0.24845340888008853, 0.26991178350191093, 0.014941261483684741,
+      0.00026490924551347917,
+      # (delta, log_phi)
+      0, -0.024130676702846366, -0.65503558484718070, -0.69354415083232801,
+      -0.52862019231385073, -0.38940039153570243, -0.0049875156119873006,
+      -0.000049998750015624870,
+      # (log_eta, alpha)
+      rep(0, m),
+      # (log_eta, delta)
+      0, -0.022110715416669719, -0.14616696663998026, 0.12644804928509133,
+      0.24845340888008853, 0.26991178350191093, 0.014941261483684741,
+      0.00026490924551347917,
+      # (log_eta, log_eta)
+      0, -0.16202499612758877, 0.093052665074025501, -0.095505463080512362,
+      -0.090214827911804800, 0.0091129384845520113, 0.063201730355404326,
+      0.0021608420247576072,
+      # (log_eta, log_phi)
+      0, -0.17682705989635783, 0.41700808527062246, 0.52382979149550082,
+      0.19194496020505641, -0.013147191159589372, -0.021097255890769194,
+      -0.00040783552121669912,
+      # (log_phi, alpha)
+      rep(0, m),
+      # (log_phi, delta)
+      0, -0.024130676702846366, -0.65503558484718070, -0.69354415083232801,
+      -0.52862019231385073, -0.38940039153570243, -0.0049875156119873006,
+      -0.000049998750015624870,
+      # (log_phi, log_eta)
+      0, -0.17682705989635783, 0.41700808527062246, 0.52382979149550082,
+      0.19194496020505641, -0.013147191159589372, -0.021097255890769194,
+      -0.00040783552121669912,
+      # (log_phi, log_phi)
+      0, -0.21536628957290381, -0.62637777801011654, 0.36025765612679261,
+      0.54761748047512974, 0.49648549920802060, 0.0084575795990274650,
+      0.000084995750079686615
+    ),
+    dim = c(m, 4, 4)
+  )
+
+  H <- loggompertz_hessian_2(x, theta)
+
+  expect_type(H, "double")
+  expect_length(H, m * 4 * 4)
+  expect_equal(H, true_hessian)
+})
+
+test_that("Gradient and Hessian (2)", {
+  x <- lltd$stats_1[, 1]
+  theta <- lltd$theta_g
+
+  m <- length(x)
+
+  true_gradient <- matrix(
+    c(
+      # alpha
+      rep(1, m),
+      # delta
+      0, 0.0019304541362277092, 0.20961138715109782, 0.49935178859927617,
+      0.67663384616172894, 0.77880078307140487, 0.99750312239746012,
+      0.99997500031249740,
+      # log_eta
+      0, 0.018794108104169261, 0.12424192164398322, -0.10748084189232763,
+      -0.21118539754807525, -0.22942501597662429, -0.012700072261132030,
+      -0.00022517285868645729,
+      # log_phi
+      0, 0.020511075197419411, 0.55678024712010359, 0.58951252820747881,
+      0.44932716346677312, 0.33099033280534707, 0.0042393882701892055,
+      0.000042498937513281139
+    ),
+    nrow = m,
+    ncol = 4
+  )
+
+  true_hessian <- array(
+    c(
+      # (alpha, alpha)
+      rep(0, m),
+      # (alpha, delta)
+      rep(0, m),
+      # (alpha, log_eta)
+      rep(0, m),
+      # (alpha, log_phi)
+      rep(0, m),
+      # (delta, alpha)
+      rep(0, m),
+      # (delta, delta)
+      rep(0, m),
+      # (delta, log_eta)
+      0, -0.022110715416669719, -0.14616696663998026, 0.12644804928509133,
+      0.24845340888008853, 0.26991178350191093, 0.014941261483684741,
+      0.00026490924551347917,
+      # (delta, log_phi)
+      0, -0.024130676702846366, -0.65503558484718070, -0.69354415083232801,
+      -0.52862019231385073, -0.38940039153570243, -0.0049875156119873006,
+      -0.000049998750015624870,
+      # (log_eta, alpha)
+      rep(0, m),
+      # (log_eta, delta)
+      0, -0.022110715416669719, -0.14616696663998026, 0.12644804928509133,
+      0.24845340888008853, 0.26991178350191093, 0.014941261483684741,
+      0.00026490924551347917,
+      # (log_eta, log_eta)
+      0, -0.16202499612758877, 0.093052665074025501, -0.095505463080512362,
+      -0.090214827911804800, 0.0091129384845520113, 0.063201730355404326,
+      0.0021608420247576072,
+      # (log_eta, log_phi)
+      0, -0.17682705989635783, 0.41700808527062246, 0.52382979149550082,
+      0.19194496020505641, -0.013147191159589372, -0.021097255890769194,
+      -0.00040783552121669912,
+      # (log_phi, alpha)
+      rep(0, m),
+      # (log_phi, delta)
+      0, -0.024130676702846366, -0.65503558484718070, -0.69354415083232801,
+      -0.52862019231385073, -0.38940039153570243, -0.0049875156119873006,
+      -0.000049998750015624870,
+      # (log_phi, log_eta)
+      0, -0.17682705989635783, 0.41700808527062246, 0.52382979149550082,
+      0.19194496020505641, -0.013147191159589372, -0.021097255890769194,
+      -0.00040783552121669912,
+      # (log_phi, log_phi)
+      0, -0.21536628957290381, -0.62637777801011654, 0.36025765612679261,
+      0.54761748047512974, 0.49648549920802060, 0.0084575795990274650,
+      0.000084995750079686615
+    ),
+    dim = c(m, 4, 4)
+  )
+
+  gh <- loggompertz_gradient_hessian_2(x, theta)
+
+  expect_type(gh, "list")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
+
+  expect_length(gh$G, m * 4)
+  expect_length(gh$H, m * 4 * 4)
+
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
+
+  object <- structure(list(stats = lltd$stats_1), class = "loggompertz")
+
+  gh <- gradient_hessian(object, theta)
+
+  expect_type(gh, "list")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
+
+  expect_length(gh$G, m * 4)
+  expect_length(gh$H, m * 4 * 4)
+
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
 })
 
 test_that("Value of the RSS", {
-  x <- c(0, 2, 4, 6, 8)
-  n <- c(3, 3, 2, 4, 3)
-  m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-  v <- c(
-    643663 / 450000000, 31087 / 112500000, 961 / 160000,
-    177363 / 25000000, 560629 / 112500000
-  )
+  theta <- lltd$theta_g
+  theta[3:4] <- log(theta[3:4])
 
-  theta <- c(4 / 100, -9 / 10, log(3), log(2))
-
-  true_value <- 18.394916331375033
+  true_value <- 0.32075900098848013
 
   object <- structure(
-    list(stats = cbind(x, n, m, v), m = 5),
+    list(stats = lltd$stats_1, m = nrow(lltd$stats_1)),
     class = "loggompertz"
   )
 
@@ -346,12 +618,12 @@ test_that("Value of the RSS", {
   expect_length(value, 1)
   expect_equal(value, true_value)
 
-  known_param <- c(4 / 100, NA, NA, log(2))
+  known_param <- c(theta[1], NA, NA, theta[4])
   rss_fn <- rss_fixed(object, known_param)
 
   expect_type(rss_fn, "closure")
 
-  value <- rss_fn(c(-9 / 10, log(3)))
+  value <- rss_fn(theta[2:3])
 
   expect_type(value, "double")
   expect_length(value, 1)
@@ -359,41 +631,34 @@ test_that("Value of the RSS", {
 })
 
 test_that("Gradient and Hessian of the RSS", {
-  x <- c(0, 2, 4, 6, 8)
-  n <- c(3, 3, 2, 4, 3)
-  m <- c(376 / 375, 3091 / 3750, 8989 / 10000, 1447 / 10000, 11 / 120)
-  v <- c(
-    643663 / 450000000, 31087 / 112500000, 961 / 160000,
-    177363 / 25000000, 560629 / 112500000
-  )
-
-  theta <- c(4 / 100, -9 / 10, log(3), log(2))
+  theta <- lltd$theta_g
+  theta[3:4] <- log(theta[3:4])
 
   true_gradient <- c(
-    -16.241414895214399, -10.664816362826166, 1.2561542563386518,
-    -4.7998198260950907
+    2.2653108698938061, 0.73068466091804248, -0.075702268537242359,
+    0.57850423102806821
   )
 
   true_hessian <- matrix(
     c(
       # alpha
-      15, 9.6766832169048879, -1.0090972908057342, 4.0855653907622962,
+      19, 8.2261048577719928, -1.0136637259706368, 5.2206369313459388,
       # delta
-      9.6766832169048879, 8.5857187428544014, -2.3382324471552245,
-      7.4491492064911019,
+      8.2261048577719928, 6.0552995869783359, -0.70635145977914647,
+      1.9088026101488051,
       # log_eta
-      -1.0090972908057342, -2.3382324471552245, -1.8152174744087680,
-      -1.5116103497794037,
+      -1.0136637259706368, -0.70635145977914647, 0.17854179243952868,
+      -0.20592244468846133,
       # log_phi
-      4.0855653907622962, 7.4491492064911019, -1.5116103497794037,
-      -0.83283728941545387
+      5.2206369313459388, 1.9088026101488051, -0.20592244468846133,
+      2.7235196164555188
     ),
     nrow = 4,
     ncol = 4
   )
 
   object <- structure(
-    list(stats = cbind(x, n, m, v), m = 5),
+    list(stats = lltd$stats_1, m = nrow(lltd$stats_1)),
     class = "loggompertz"
   )
 
@@ -401,56 +666,49 @@ test_that("Gradient and Hessian of the RSS", {
 
   expect_type(rss_gh, "closure")
 
-  gradient_hessian <- rss_gh(theta)
+  gh <- rss_gh(theta)
 
-  expect_type(gradient_hessian$G, "double")
-  expect_type(gradient_hessian$H, "double")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
 
-  expect_length(gradient_hessian$G, 4)
-  expect_length(gradient_hessian$H, 4 * 4)
+  expect_length(gh$G, 4)
+  expect_length(gh$H, 4 * 4)
 
-  expect_equal(gradient_hessian$G, true_gradient)
-  expect_equal(gradient_hessian$H, true_hessian)
+  expect_equal(gh$G, true_gradient)
+  expect_equal(gh$H, true_hessian)
 
-  known_param <- c(4 / 100, NA, NA, log(2))
+  known_param <- c(theta[1], NA, NA, theta[4])
   rss_gh <- rss_gradient_hessian_fixed(object, known_param)
 
   expect_type(rss_gh, "closure")
 
-  gradient_hessian <- rss_gh(c(-9 / 10, log(3)))
+  gh <- rss_gh(theta[2:3])
 
-  expect_type(gradient_hessian$G, "double")
-  expect_type(gradient_hessian$H, "double")
+  expect_type(gh$G, "double")
+  expect_type(gh$H, "double")
 
-  expect_length(gradient_hessian$G, 2)
-  expect_length(gradient_hessian$H, 2 * 2)
+  expect_length(gh$G, 2)
+  expect_length(gh$H, 2 * 2)
 
-  expect_equal(gradient_hessian$G, true_gradient[c(2, 3)])
-  expect_equal(gradient_hessian$H, true_hessian[c(2, 3), c(2, 3)])
+  expect_equal(gh$G, true_gradient[2:3])
+  expect_equal(gh$H, true_hessian[2:3, 2:3])
 })
 
 test_that("mle_asy", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- rep(1, length(y))
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  max_iter <- 10000
 
-  n <- length(y)
-
-  w <- rep(1, n)
-
-  theta <- c(0, 1, 1.4803633738747118, 1.7465438898240248)
+  theta <- c(0, 1, 0.63524784841453301, 1.6101961281319852)
 
   true_value <- c(
-    0.91370245143275957, -0.82104372701784045, 1.4803633738747118,
-    1.7465438898240248
+    0.83777215113750696, -0.75729507682865963, 0.63524784841453301,
+    1.6101961281319852
   )
 
-  object <- loggompertz_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loggompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   result <- mle_asy(object, theta)
 
@@ -460,48 +718,45 @@ test_that("mle_asy", {
 })
 
 test_that("fit", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.073630385904407914
+
   theta <- c(
-    alpha = 0.91370245143275957,
-    delta = -0.82104372701784045,
-    eta = exp(1.4803633738747118),
-    phi = exp(1.7465438898240248)
+    alpha = 0.83777215113750696, delta = -0.75729507682865963,
+    eta = exp(0.63524784841453301), phi = exp(1.6101961281319852)
   )
 
-  rss_value <- 0.024834712402586844
-
-  fitted_values <- c(
-    rep(0.91370245143275957, 3), rep(0.91370245143275957, 2),
-    rep(0.9074034438609566, 2), rep(0.552014427473422, 5),
-    rep(0.2623699947389637, 3), rep(0.1609592835840543, 4),
-    0.0926615991940691
+  fitted_values <- rep(
+    c(
+      0.83777215113750696, 0.83509727314890451, 0.67312406791826807,
+      0.46539726317063078, 0.33641138140141234, 0.26005233684193214,
+      0.083128285791155688, 0.080511485993225808
+    ),
+    k
   )
 
   residuals <- c(
-    0.01429754856724043, -0.02570245143275957, 0.06629754856724043,
-    0.03429754856724043, -0.05770245143275957, -0.0104034438609566,
-    -0.0244034438609566, -0.064014427473422, -0.020014427473422,
-    0.033985572526578, 0.013985572526578, 0.046985572526578,
-    -0.0033699947389637, 0.0026300052610363, -0.0193699947389637,
-    -0.0439592835840543, -0.0179592835840543, 0.0170407164159457,
-    0.0580407164159457, -0.0006615991940691
+    0.014927848862493037, -0.080672151137506963, 0.099227848862493037,
+    -0.0075972731489045085, -0.057297273148904508, 0.049502726851095492,
+    -0.11702406791826807, 0.031675932081731933, 0.079902736829369223,
+    0.020602736829369223, 0.069702736829369223, -0.025497263170630777,
+    0.018888618598587661, -0.023211381401412339, 0.013488618598587661,
+    -0.11795233684193214, -0.066328285791155688, 0.055471714208844312,
+    0.042188514006774192
   )
 
-  object <- loggompertz_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loggompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -517,7 +772,7 @@ test_that("fit", {
   expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 
-  object <- loggompertz_new(x, y, w, c(0, 1, 1, 1), 10000, NULL, NULL)
+  object <- loggompertz_new(x, y, w, c(0, 1, 1, 1), max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -535,49 +790,47 @@ test_that("fit", {
 })
 
 test_that("fit_constrained: inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.073630385904407914
+
   theta <- c(
-    alpha = 0.91370245143275957,
-    delta = -0.82104372701784045,
-    eta = exp(1.4803633738747118),
-    phi = exp(1.7465438898240248)
+    alpha = 0.83777215113750696, delta = -0.75729507682865963,
+    eta = exp(0.63524784841453301), phi = exp(1.6101961281319852)
   )
 
-  rss_value <- 0.024834712402586844
-
-  fitted_values <- c(
-    rep(0.91370245143275957, 3), rep(0.91370245143275957, 2),
-    rep(0.9074034438609566, 2), rep(0.552014427473422, 5),
-    rep(0.2623699947389637, 3), rep(0.1609592835840543, 4),
-    0.0926615991940691
+  fitted_values <- rep(
+    c(
+      0.83777215113750696, 0.83509727314890451, 0.67312406791826807,
+      0.46539726317063078, 0.33641138140141234, 0.26005233684193214,
+      0.083128285791155688, 0.080511485993225808
+    ),
+    k
   )
 
   residuals <- c(
-    0.01429754856724043, -0.02570245143275957, 0.06629754856724043,
-    0.03429754856724043, -0.05770245143275957, -0.0104034438609566,
-    -0.0244034438609566, -0.064014427473422, -0.020014427473422,
-    0.033985572526578, 0.013985572526578, 0.046985572526578,
-    -0.0033699947389637, 0.0026300052610363, -0.0193699947389637,
-    -0.0439592835840543, -0.0179592835840543, 0.0170407164159457,
-    0.0580407164159457, -0.0006615991940691
+    0.014927848862493037, -0.080672151137506963, 0.099227848862493037,
+    -0.0075972731489045085, -0.057297273148904508, 0.049502726851095492,
+    -0.11702406791826807, 0.031675932081731933, 0.079902736829369223,
+    0.020602736829369223, 0.069702736829369223, -0.025497263170630777,
+    0.018888618598587661, -0.023211381401412339, 0.013488618598587661,
+    -0.11795233684193214, -0.066328285791155688, 0.055471714208844312,
+    0.042188514006774192
   )
 
   object <- loggompertz_new(
-    x, y, w, NULL, 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -596,7 +849,8 @@ test_that("fit_constrained: inequalities", {
 
   # initial values within the boundaries
   object <- loggompertz_new(
-    x, y, w, c(0, 0, 2, 2), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(0.6, -0.6, 4, 8), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -615,7 +869,8 @@ test_that("fit_constrained: inequalities", {
 
   # initial values outside the boundaries
   object <- loggompertz_new(
-    x, y, w, c(-2, -5, 0.5, 20), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(-2, 2, 7, 1), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -634,48 +889,46 @@ test_that("fit_constrained: inequalities", {
 })
 
 test_that("fit_constrained: equalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.17654034036023363
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.0663677629450972),
-    phi = exp(1.7022792018028630)
+    alpha = 0.8, delta = -0.9, eta = exp(0.34256135717772634),
+    phi = exp(1.8046122081510387)
   )
 
-  rss_value <- 0.069741177998016680
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.9999999928250493173528, 2), rep(0.9182398745646568, 2),
-    rep(0.5375009924562357, 5), rep(0.2841925412906962, 3),
-    rep(0.1604247796868143, 4), 0.0002176866854686176
+  fitted_values <- rep(
+    c(
+      0.8, 0.79248376718906222, 0.65161512055560499, 0.47490216690684499,
+      0.34359567627384339, 0.25186908386433202, -0.082746689754940315,
+      -0.099320242477951822
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.0519999928250493173528,
-    -0.1439999928250493173528, -0.0212398745646568, -0.0352398745646568,
-    -0.0495009924562357, -0.0055009924562357, 0.0484990075437643,
-    0.0284990075437643, 0.0614990075437643, -0.0251925412906962,
-    -0.0191925412906962, -0.0411925412906962, -0.0434247796868143,
-    -0.0174247796868143, 0.0175752203131857, 0.0585752203131857,
-    0.0917823133145313824
+    0.0527, -0.0429, 0.137, 0.035016232810937784, -0.014683767189062216,
+    0.092116232810937784, -0.095515120555604989, 0.053184879444395011,
+    0.070397833093155009, 0.011097833093155009, 0.060197833093155009,
+    -0.035002166906844991, 0.011704323726156605, -0.030395676273843395,
+    0.0063043237261566051, -0.10976908386433202, 0.099546689754940315,
+    0.22134668975494032, 0.22202024247795182
   )
 
   object <- loggompertz_new(
-    x, y, w, NULL, 10000, c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, NULL, max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -694,8 +947,8 @@ test_that("fit_constrained: equalities", {
 
   # initial values with same equalities
   object <- loggompertz_new(
-    x, y, w, c(1, -1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0.8, -0.9, 1, 1), max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -714,8 +967,8 @@ test_that("fit_constrained: equalities", {
 
   # initial values with different equalities
   object <- loggompertz_new(
-    x, y, w, c(0, 1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0, 1, 1, 1), max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -734,48 +987,46 @@ test_that("fit_constrained: equalities", {
 })
 
 test_that("fit_constrained: equalities and inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   n <- length(y)
-
   w <- rep(1, n)
+
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.17654034036023363
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.0663677629450972),
-    phi = exp(1.7022792018028630)
+    alpha = 0.8, delta = -0.9, eta = exp(0.34256135717772634),
+    phi = exp(1.8046122081510387)
   )
 
-  rss_value <- 0.069741177998016680
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.9999999928250493173528, 2), rep(0.9182398745646568, 2),
-    rep(0.5375009924562357, 5), rep(0.2841925412906962, 3),
-    rep(0.1604247796868143, 4), 0.0002176866854686176
+  fitted_values <- rep(
+    c(
+      0.8, 0.79248376718906222, 0.65161512055560499, 0.47490216690684499,
+      0.34359567627384339, 0.25186908386433202, -0.082746689754940315,
+      -0.099320242477951822
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.0519999928250493173528,
-    -0.1439999928250493173528, -0.0212398745646568, -0.0352398745646568,
-    -0.0495009924562357, -0.0055009924562357, 0.0484990075437643,
-    0.0284990075437643, 0.0614990075437643, -0.0251925412906962,
-    -0.0191925412906962, -0.0411925412906962, -0.0434247796868143,
-    -0.0174247796868143, 0.0175752203131857, 0.0585752203131857,
-    0.0917823133145313824
+    0.0527, -0.0429, 0.137, 0.035016232810937784, -0.014683767189062216,
+    0.092116232810937784, -0.095515120555604989, 0.053184879444395011,
+    0.070397833093155009, 0.011097833093155009, 0.060197833093155009,
+    -0.035002166906844991, 0.011704323726156605, -0.030395676273843395,
+    0.0063043237261566051, -0.10976908386433202, 0.099546689754940315,
+    0.22134668975494032, 0.22202024247795182
   )
 
   object <- loggompertz_new(
-    x, y, w, NULL, 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -794,7 +1045,8 @@ test_that("fit_constrained: equalities and inequalities", {
 
   # initial values within the boundaries
   object <- loggompertz_new(
-    x, y, w, c(1, -1, 2, 2), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0.8, -0.9, 3, 7), max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -813,7 +1065,8 @@ test_that("fit_constrained: equalities and inequalities", {
 
   # initial values outside the boundaries
   object <- loggompertz_new(
-    x, y, w, c(0, 1, 0.5, 0.5), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0, 1, 8, 1), max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -832,49 +1085,45 @@ test_that("fit_constrained: equalities and inequalities", {
 })
 
 test_that("fit (weighted)", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.035138156284360913
+
   theta <- c(
-    alpha = 0.93332069218009519,
-    delta = -0.85244786873956615,
-    eta = exp(1.3247858062455946),
-    phi = exp(1.7286245728947466)
+    alpha = 0.84575428432937011, delta = -0.76656134360156587,
+    eta = exp(0.89238310459026989), phi = exp(1.6622042309903930)
   )
 
-  rss_value <- 0.015372205748979479
-
-  fitted_values <- c(
-    rep(0.93332069218009519, 3), rep(0.93332069218009519, 2),
-    rep(0.9105855700196264, 2), rep(0.5459062976415841, 5),
-    rep(0.2807900729515784, 3), rep(0.1738223869604868, 4),
-    0.0808898721981491
+  fitted_values <- rep(
+    c(
+      0.84575428432937011, 0.84573608713048233, 0.73789083646643889,
+      0.47593010582855891, 0.31155933858113756, 0.22406801104864969,
+      0.079774485527624186, 0.079195048422139125
+    ),
+    k
   )
 
   residuals <- c(
-    -0.00532069218009519, -0.04532069218009519, 0.04667930781990481,
-    0.01467930781990481, -0.07732069218009519, -0.0135855700196264,
-    -0.0275855700196264, -0.0579062976415841, -0.0139062976415841,
-    0.0400937023584159, 0.0200937023584159, 0.0530937023584159,
-    -0.0217900729515784, -0.0157900729515784, -0.0377900729515784,
-    -0.0568223869604868, -0.0308223869604868, 0.0041776130395132,
-    0.0451776130395132, 0.0111101278018509
+    0.0069457156706298950, -0.088654284329370105, 0.091245715670629895,
+    -0.018236087130482331, -0.067936087130482331, 0.038863912869517669,
+    -0.18179083646643889, -0.033090836466438890, 0.069369894171441088,
+    0.010069894171441088, 0.059169894171441088, -0.036030105828558912,
+    0.043740661418862440, 0.0016406614188624399, 0.038340661418862440,
+    -0.081968011048649687, -0.062974485527624186, 0.058825514472375814,
+    0.043504951577860875
   )
 
-  object <- loggompertz_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loggompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -890,7 +1139,7 @@ test_that("fit (weighted)", {
   expect_equal(result$residuals, residuals, tolerance = 1.0e-7)
   expect_equal(result$weights, w)
 
-  object <- loggompertz_new(x, y, w, c(1, -1, 1, 1), 10000, NULL, NULL)
+  object <- loggompertz_new(x, y, w, c(0, 1, 1, 1), max_iter, NULL, NULL)
 
   result <- fit(object)
 
@@ -908,50 +1157,47 @@ test_that("fit (weighted)", {
 })
 
 test_that("fit_constrained (weighted): inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = TRUE, delta = TRUE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.035138156284360913
+
   theta <- c(
-    alpha = 0.93332069218009519,
-    delta = -0.85244786873956615,
-    eta = exp(1.3247858062455946),
-    phi = exp(1.7286245728947466)
+    alpha = 0.84575428432937011, delta = -0.76656134360156587,
+    eta = exp(0.89238310459026989), phi = exp(1.6622042309903930)
   )
 
-  rss_value <- 0.015372205748979479
-
-  fitted_values <- c(
-    rep(0.93332069218009519, 3), rep(0.93332069218009519, 2),
-    rep(0.9105855700196264, 2), rep(0.5459062976415841, 5),
-    rep(0.2807900729515784, 3), rep(0.1738223869604868, 4),
-    0.0808898721981491
+  fitted_values <- rep(
+    c(
+      0.84575428432937011, 0.84573608713048233, 0.73789083646643889,
+      0.47593010582855891, 0.31155933858113756, 0.22406801104864969,
+      0.079774485527624186, 0.079195048422139125
+    ),
+    k
   )
 
   residuals <- c(
-    -0.00532069218009519, -0.04532069218009519, 0.04667930781990481,
-    0.01467930781990481, -0.07732069218009519, -0.0135855700196264,
-    -0.0275855700196264, -0.0579062976415841, -0.0139062976415841,
-    0.0400937023584159, 0.0200937023584159, 0.0530937023584159,
-    -0.0217900729515784, -0.0157900729515784, -0.0377900729515784,
-    -0.0568223869604868, -0.0308223869604868, 0.0041776130395132,
-    0.0451776130395132, 0.0111101278018509
+    0.0069457156706298950, -0.088654284329370105, 0.091245715670629895,
+    -0.018236087130482331, -0.067936087130482331, 0.038863912869517669,
+    -0.18179083646643889, -0.033090836466438890, 0.069369894171441088,
+    0.010069894171441088, 0.059169894171441088, -0.036030105828558912,
+    0.043740661418862440, 0.0016406614188624399, 0.038340661418862440,
+    -0.081968011048649687, -0.062974485527624186, 0.058825514472375814,
+    0.043504951577860875
   )
 
   object <- loggompertz_new(
-    x, y, w, NULL, 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -970,7 +1216,8 @@ test_that("fit_constrained (weighted): inequalities", {
 
   # initial values within the boundaries
   object <- loggompertz_new(
-    x, y, w, c(0.3, 0.6, 2, 3), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(0.6, -0.6, 4, 8), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -989,7 +1236,8 @@ test_that("fit_constrained (weighted): inequalities", {
 
   # initial values outside the boundaries
   object <- loggompertz_new(
-    x, y, w, c(-2, -5, 0.5, 20), 10000, c(-1, -3, 1, 1), c(1, 3, 10, 10)
+    x, y, w, c(-2, 2, 7, 1), max_iter,
+    c(0.5, -1, 1, 3), c(1, -0.5, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1008,49 +1256,46 @@ test_that("fit_constrained (weighted): inequalities", {
 })
 
 test_that("fit_constrained (weighted): equalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.12152790634234742
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.0192530558433254),
-    phi = exp(1.6997766671166766)
+    alpha = 0.8, delta = -0.9, eta = exp(0.67344700327430744),
+    phi = exp(1.8267797417585254)
   )
 
-  rss_value <- 0.039862989913205782
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.999999914333498004037, 2), rep(0.9078010022598841, 2),
-    rep(0.5392949652230244, 5), rep(0.2947508809799500, 3),
-    rep(0.1715187409889579, 4), 0.0003186665179221630
+  fitted_values <- rep(
+    c(
+      0.8, 0.79991222146934487, 0.71604576658544182, 0.49162778848529489,
+      0.31063536742142226, 0.19268868846616760, -0.096135387777275743,
+      -0.099957631352575174
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.051999914333498004037,
-    -0.143999914333498004037, -0.0108010022598841, -0.0248010022598841,
-    -0.0512949652230244, -0.0072949652230244, 0.0467050347769756,
-    0.0267050347769756, 0.0597050347769756, -0.0357508809799500,
-    -0.0297508809799500, -0.0517508809799500, -0.0545187409889579,
-    -0.0285187409889579, 0.0064812590110421, 0.0474812590110421,
-    0.0916813334820778370
+    0.0527, -0.0429, 0.137, 0.027587778530655130, -0.022112221469344870,
+    0.084687778530655130, -0.15994576658544182, -0.011245766585441821,
+    0.053672211514705107, -0.0056277884852948934, 0.043472211514705107,
+    -0.051727788485294893, 0.044664632578577739, 0.0025646325785777394,
+    0.039264632578577739, -0.050588688466167597, 0.11293538777727574,
+    0.23473538777727574, 0.22265763135257517
   )
 
   object <- loggompertz_new(
-    x, y, w, NULL, 10000, c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, NULL, max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -1069,8 +1314,8 @@ test_that("fit_constrained (weighted): equalities", {
 
   # initial values with same equalities
   object <- loggompertz_new(
-    x, y, w, c(1, -1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0.8, -0.9, 1, 1), max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -1089,8 +1334,8 @@ test_that("fit_constrained (weighted): equalities", {
 
   # initial values with different equalities
   object <- loggompertz_new(
-    x, y, w, c(0, 1, 1, 1), 10000,
-    c(1, -1, rep(-Inf, 2)), c(1, -1, rep(Inf, 2))
+    x, y, w, c(0, 1, 1, 1), max_iter,
+    c(0.8, -0.9, rep(-Inf, 2)), c(0.8, -0.9, rep(Inf, 2))
   )
 
   result <- fit_constrained(object)
@@ -1109,49 +1354,46 @@ test_that("fit_constrained (weighted): equalities", {
 })
 
 test_that("fit_constrained (weighted): equalities and inequalities", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  n <- length(y)
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  k <- as.numeric(table(x))
+
+  max_iter <- 10000
 
   estimated <- c(alpha = FALSE, delta = FALSE, eta = TRUE, phi = TRUE)
 
+  rss_value <- 0.12152790634234742
+
   theta <- c(
-    alpha = 1,
-    delta = -1,
-    eta = exp(1.0192530558433254),
-    phi = exp(1.6997766671166766)
+    alpha = 0.8, delta = -0.9, eta = exp(0.67344700327430744),
+    phi = exp(1.8267797417585254)
   )
 
-  rss_value <- 0.039862989913205782
-
-  fitted_values <- c(
-    rep(1, 3), rep(0.999999914333498004037, 2), rep(0.9078010022598841, 2),
-    rep(0.5392949652230244, 5), rep(0.2947508809799500, 3),
-    rep(0.1715187409889579, 4), 0.0003186665179221630
+  fitted_values <- rep(
+    c(
+      0.8, 0.79991222146934487, 0.71604576658544182, 0.49162778848529489,
+      0.31063536742142226, 0.19268868846616760, -0.096135387777275743,
+      -0.099957631352575174
+    ),
+    k
   )
 
   residuals <- c(
-    -9 / 125, -14 / 125, -1 / 50, -0.051999914333498004037,
-    -0.143999914333498004037, -0.0108010022598841, -0.0248010022598841,
-    -0.0512949652230244, -0.0072949652230244, 0.0467050347769756,
-    0.0267050347769756, 0.0597050347769756, -0.0357508809799500,
-    -0.0297508809799500, -0.0517508809799500, -0.0545187409889579,
-    -0.0285187409889579, 0.0064812590110421, 0.0474812590110421,
-    0.0916813334820778370
+    0.0527, -0.0429, 0.137, 0.027587778530655130, -0.022112221469344870,
+    0.084687778530655130, -0.15994576658544182, -0.011245766585441821,
+    0.053672211514705107, -0.0056277884852948934, 0.043472211514705107,
+    -0.051727788485294893, 0.044664632578577739, 0.0025646325785777394,
+    0.039264632578577739, -0.050588688466167597, 0.11293538777727574,
+    0.23473538777727574, 0.22265763135257517
   )
 
   object <- loggompertz_new(
-    x, y, w, NULL, 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, NULL, max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1170,7 +1412,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
 
   # initial values within the boundaries
   object <- loggompertz_new(
-    x, y, w, c(1, -1, 2, 2), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0.8, -0.9, 3, 7), max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1189,7 +1432,8 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
 
   # initial values outside the boundaries
   object <- loggompertz_new(
-    x, y, w, c(0, 1, 0.5, 0.5), 10000, c(1, -1, 1, 1), c(1, -1, 10, 10)
+    x, y, w, c(0, 1, 8, 1), max_iter,
+    c(0.8, -0.9, 1, 3), c(0.8, -0.9, 5, 12)
   )
 
   result <- fit_constrained(object)
@@ -1208,40 +1452,33 @@ test_that("fit_constrained (weighted): equalities and inequalities", {
 })
 
 test_that("fisher_info", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  max_iter <- 10000
 
-  w <- c(
-    1.46, 1.385, 1.704, 0.96, 0, 0.055, 1.071, 0.134, 1.825, 0, 1.169, 0.628,
-    0.327, 1.201, 0.269, 0, 1.294, 0.038, 1.278, 0.157
-  )
+  theta <- lltd$theta_g
+  names(theta) <- c("alpha", "delta", "eta", "phi")
 
-  theta <- c(alpha = 4 / 100, delta = -9 / 10, eta = 3, phi = 2)
-
-  sigma <- 0.05
+  sigma <- lltd$sigma
 
   true_value <- matrix(c(
       # alpha
-      5982, 3792.6525694635765, -109.81168928761127, 356.28470561183336,
-      273978.10050068875,
+      6206.96, 2748.9449629599373, -189.18362192800753, 344.04436069543435,
+      -28355.127259362132,
       # delta
-      3792.6525694635765, 3584.7863935594863, -272.35268776124911,
-      751.68703757415076, 189464.87516122746,
+      2748.9449629599373, 2023.9485432497464, -124.69711327516109,
+      134.06347723771206, -10502.299351663864,
       # eta
-      -109.81168928761127, -272.35268776124911, -144.40272840427726,
-      47.656954802768353, -6063.1276169219224,
+      -189.18362192800753, -124.69711327516109, 23.773250144905426,
+      -11.783571918074014, 850.51618712697142,
       # phi
-      356.28470561183336, 751.68703757415076, 47.656954802768353,
-      15.642222155343835, 18964.339787363599,
+      344.04436069543435, 134.06347723771206, -11.783571918074014,
+      29.686894742510176, -1441.3142462178932,
       # sigma
-      273978.10050068875, 189464.87516122746, -6063.1276169219224,
-      18964.339787363599, 9799938.9220864622
+      -28355.127259362132, -10502.299351663864, 850.51618712697142,
+      -1441.3142462178932, 113909.14953385276
     ),
     nrow = 5,
     ncol = 5
@@ -1251,7 +1488,7 @@ test_that("fisher_info", {
     "alpha", "delta", "eta", "phi", "sigma"
   )
 
-  object <- loggompertz_new(x, y, w, NULL, 10000, NULL, NULL)
+  object <- loggompertz_new(x, y, w, NULL, max_iter, NULL, NULL)
 
   fim <- fisher_info(object, theta, sigma)
 
@@ -1261,18 +1498,13 @@ test_that("fisher_info", {
 })
 
 test_that("drda: 'lower_bound' argument errors", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", lower_bound = c("a", "b", "c", "d")
+      y ~ x, mean_function = "loggompertz",
+      lower_bound = c("a", "b", "c", "d")
     ),
     "'lower_bound' must be a numeric vector"
   )
@@ -1280,7 +1512,8 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loggompertz",
-      lower_bound = matrix(-Inf, nrow = 4, ncol = 2), upper_bound = rep(Inf, 4)
+      lower_bound = matrix(-Inf, nrow = 4, ncol = 2),
+      upper_bound = rep(Inf, 4)
     ),
     "'lower_bound' must be a numeric vector"
   )
@@ -1288,7 +1521,8 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loggompertz",
-      lower_bound = rep(-Inf, 5), upper_bound = rep(Inf, 4)
+      lower_bound = rep(-Inf, 5),
+      upper_bound = rep(Inf, 4)
     ),
     "'lower_bound' and 'upper_bound' must have the same length"
   )
@@ -1296,7 +1530,8 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loggompertz",
-      lower_bound = c( 0, -Inf, -Inf, -Inf), upper_bound = c(-1, Inf, Inf, Inf)
+      lower_bound = c( 0, -Inf, -Inf, -Inf),
+      upper_bound = c(-1, Inf, Inf, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
   )
@@ -1313,25 +1548,21 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loggompertz",
-      lower_bound = rep(-Inf, 5), upper_bound = rep(Inf, 5)
+      lower_bound = rep(-Inf, 5),
+      upper_bound = rep(Inf, 5)
     ),
     "'lower_bound' must be of length 4"
   )
 })
 
 test_that("drda: 'upper_bound' argument errors", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", upper_bound = c("a", "b", "c", "d")
+      y ~ x, mean_function = "loggompertz",
+      upper_bound = c("a", "b", "c", "d")
     ),
     "'upper_bound' must be a numeric vector"
   )
@@ -1339,7 +1570,8 @@ test_that("drda: 'upper_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loggompertz",
-      lower_bound = rep(-Inf, 4), upper_bound = matrix(Inf, nrow = 4, ncol = 2)
+      lower_bound = rep(-Inf, 4),
+      upper_bound = matrix(Inf, nrow = 4, ncol = 2)
     ),
     "'upper_bound' must be a numeric vector"
   )
@@ -1356,163 +1588,146 @@ test_that("drda: 'upper_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loggompertz",
-      lower_bound = rep(-Inf, 5), upper_bound = rep(Inf, 5)
+      lower_bound = rep(-Inf, 5),
+      upper_bound = rep(Inf, 5)
     ),
     "'lower_bound' must be of length 4"
   )
 })
 
 test_that("drda: 'start' argument errors", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
-
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c("a", "b", "c", "d")
+      y ~ x, mean_function = "loggompertz",
+      start = c("a", "b", "c", "d")
     ),
     "'start' must be a numeric vector"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(0, Inf, 1, 1)
+      y ~ x, mean_function = "loggompertz",
+      start = c(0, Inf, 1, 1)
     ),
     "'start' must be finite"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(-Inf, 1, 1, 1)
+      y ~ x, mean_function = "loggompertz",
+      start = c(-Inf, 1, 1, 1)
     ),
     "'start' must be finite"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(1, 1, 1, 1, 1)
+      y ~ x, mean_function = "loggompertz",
+      start = rep(1, 5)
     ),
     "'start' must be of length 4"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(0, 1, -1, 1)
+      y ~ x, mean_function = "loggompertz",
+      start = c(0, 1, -1, 1)
     ),
     "parameter 'eta' cannot be negative nor zero"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(0, 1, 0, 1)
+      y ~ x, mean_function = "loggompertz",
+      start = c(0, 1, 0, 1)
     ),
     "parameter 'eta' cannot be negative nor zero"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(0, 1, 1, -1)
+      y ~ x, mean_function = "loggompertz",
+      start = c(0, 1, 1, -1)
     ),
     "parameter 'phi' cannot be negative nor zero"
   )
 
   expect_error(
     drda(
-      y ~ x, mean_function = "loggompertz", start = c(0, 1, 1, 0)
+      y ~ x, mean_function = "loggompertz",
+      start = c(0, 1, 1, 0)
     ),
     "parameter 'phi' cannot be negative nor zero"
   )
 })
 
 test_that("nauc: decreasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  result <- drda(y ~ x, weights = w, mean_function = "loggompertz")
 
-  result <- drda(y ~ x, mean_function = "loggompertz")
-
-  expect_equal(nauc(result), 0.63548959655000862)
-  expect_equal(nauc(result, xlim = c(0, 2)), 0.91370245143275946)
-  expect_equal(nauc(result, ylim = c(0.2, 0.8)), 0.64363690292771473)
-  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(nauc(result), 0.58275565504274055)
+  expect_equal(nauc(result, xlim = c(0, 2)), 0.84575366076886644)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.59283502711447546)
+  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
-    nauc(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 0.46392060394389913
+    nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.33844687600885550
   )
-  expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(nauc(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 0.0)
 })
 
 test_that("naac: decreasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- lltd$D$y
+  w <- lltd$D$w
 
-  y <- c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  )
+  result <- drda(y ~ x, weights = w, mean_function = "loggompertz")
 
-  result <- drda(y ~ x, mean_function = "loggompertz")
-
-  expect_equal(naac(result), 1.0 - 0.63548959655000862)
-  expect_equal(naac(result, xlim = c(0, 2)), 1.0 - 0.91370245143275946)
-  expect_equal(naac(result, ylim = c(0.2, 0.8)), 1.0 - 0.64363690292771473)
-  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(naac(result), 1 - 0.58275565504274055)
+  expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.84575366076886644)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.59283502711447546)
+  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
-    naac(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 1.0 - 0.46392060394389913
+    naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.33844687600885550
   )
-  expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(naac(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 1.0)
 })
 
 test_that("nauc: increasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- rev(lltd$D$y)
+  w <- lltd$D$w
 
-  y <- rev(c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  ))
+  result <- drda(y ~ x, weights = w, mean_function = "loggompertz")
 
-  result <- drda(y ~ x, mean_function = "loggompertz")
-
-  expect_equal(nauc(result), 0.43541376016353408)
-  expect_equal(nauc(result, xlim = c(0, 2)), 0.17004252069434817)
-  expect_equal(nauc(result, ylim = c(0.2, 0.8)), 0.39856406583794775)
-  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(nauc(result), 0.48951238667412752)
+  expect_equal(nauc(result, xlim = c(0, 2)), 0.129049490857619206)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.55171417352992523)
+  expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
-    nauc(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 0.63687322049437206
+    nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.85655631688941921
   )
-  expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(nauc(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 1.0)
 })
 
 test_that("naac: increasing", {
-  x <- rep(
-    c(0, 2, 4, 6, 8, 10, 100), times = c(3, 2, 2, 5, 3, 4, 1)
-  )
+  x <- lltd$D$x
+  y <- rev(lltd$D$y)
+  w <- lltd$D$w
 
-  y <- rev(c(
-    0.928, 0.888, 0.98, 0.948, 0.856, 0.897, 0.883, 0.488, 0.532, 0.586, 0.566,
-    0.599, 0.259, 0.265, 0.243, 0.117, 0.143, 0.178, 0.219, 0.092
-  ))
+  result <- drda(y ~ x, weights = w, mean_function = "loggompertz")
 
-  result <- drda(y ~ x, mean_function = "loggompertz")
-
-  expect_equal(naac(result), 1.0 - 0.43541376016353408)
-  expect_equal(naac(result, xlim = c(0, 2)), 1.0 - 0.17004252069434817)
-  expect_equal(naac(result, ylim = c(0.2, 0.8)), 1.0 - 0.39856406583794775)
-  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.2, 0.8)), 1.0)
+  expect_equal(naac(result), 1 - 0.48951238667412752)
+  expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.129049490857619206)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.55171417352992523)
+  expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
-    naac(result, xlim = c(5, 8), ylim = c(0.2, 0.8)), 1.0 - 0.63687322049437206
+    naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.85655631688941921
   )
-  expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.2, 0.8)), 0.0)
+  expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 0.0)
 })
