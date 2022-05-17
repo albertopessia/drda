@@ -98,8 +98,9 @@ ltd <- list(
     )
   ),
   theta_6 = c(0.8, -1, 2, 2, 4, 3),
-  theta_5 = c(0.9, -0.8, 3, 1, 2),
+  theta_5 = c(0.9, -0.7, 0.1, -4, 2),
   theta_4 = c(0.9, -0.7, 0.1, -4),
+  theta_2 = c(1.0, -1.0, 0.1, -4),
   theta_g = c(0.9, -0.7, 0.1, -4),
   sigma = 0.05
 )
@@ -110,6 +111,18 @@ ltd$stats_1 <- matrix(
     as.numeric(table(ltd$D$x)),
     by(ltd$D$y, ltd$D$x, mean),
     by(ltd$D$y, ltd$D$x, function(z) sum((z - mean(z))^2) / length(z))
+  ),
+  nrow = length(unique(ltd$D$x)),
+  ncol = 4,
+  dimnames = list(NULL, c("x", "n", "m", "v"))
+)
+
+ltd$stats_1_i <- matrix(
+  c(
+    sort(unique(ltd$D$x)),
+    as.numeric(table(ltd$D$x)),
+    by(rev(ltd$D$y), ltd$D$x, mean),
+    by(rev(ltd$D$y), ltd$D$x, function(z) sum((z - mean(z))^2) / length(z))
   ),
   nrow = length(unique(ltd$D$x)),
   ncol = 4,
@@ -127,5 +140,24 @@ ltd$stats_2 <- matrix(
   ),
   nrow = length(unique(ltd$D$x)),
   ncol = 4,
+  dimnames = list(NULL, c("x", "n", "m", "v"))
+)
+
+ltd$stats_2_i <- matrix(
+  unlist(
+    by(
+      cbind(x = ltd$D$x, y = rev(ltd$D$y), w = ltd$D$w),
+      ltd$D$x,
+      function(z) {
+        c(
+          z$x[1], sum(z$w), sum(z$w * z$y) / sum(z$w),
+          sum(z$w * (z$y - sum(z$w * z$y) / sum(z$w))^2) / sum(z$w)
+        )
+      }
+    )
+  ),
+  nrow = length(unique(ltd$D$x)),
+  ncol = 4,
+  byrow = TRUE,
   dimnames = list(NULL, c("x", "n", "m", "v"))
 )
