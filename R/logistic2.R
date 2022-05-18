@@ -928,7 +928,7 @@ fit_constrained.logistic2 <- function(object) {
     converged = solution$converged,
     iterations = solution$iterations,
     constrained = !all(constraint[estimated, 1]),
-    estimated = estimated,
+    estimated = c(FALSE, FALSE, estimated),
     coefficients = theta,
     rss = sum(object$stats[, 2] * object$stats[, 4]) + solution$minimum,
     df.residual = length(object$y) - sum(estimated),
@@ -970,7 +970,7 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- fn(object, x, theta[3:4]) - y
 
   gh <- logistic2_gradient_hessian(x, theta[3:4], theta[2])
 
@@ -990,7 +990,7 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- fn(object, object$x, theta[3:4])
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
@@ -1030,6 +1030,47 @@ curve_variance.logistic2_fit <- function(object, x) {
   }
 
   variance
+}
+
+# 2-parameter logistic fit
+#
+# Find the dose that produced the observed response.
+#
+# @details
+# The 2-parameter logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name), while `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
+#
+# This function evaluates the inverse function of `f(x; theta)`, that is
+# if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+inverse_fn.logistic2_fit <- function(object, y) {
+  inverse_fn.logistic4_fit(object, y)
+}
+
+# 4-parameter logistic fit
+#
+# Evaluate at a particular point the gradient of the inverse logistic function.
+#
+# @details
+# The 2-parameter logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
+# are free to vary (therefore the name), while `c(alpha, delta)` is
+# constrained to be either `c(0, 1)` (monotonically increasing curve) or
+# `c(1, -1)` (monotonically decreasing curve).
+#
+# This function evaluates the gradient of the inverse function.
+inverse_fn_gradient.logistic2_fit <- function(object, y) {
+  inverse_fn_gradient.logistic4_fit(object, y)
 }
 
 # 2-parameter logistic fit

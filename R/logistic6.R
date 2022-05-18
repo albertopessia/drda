@@ -280,7 +280,7 @@ logistic6_hessian <- function(x, theta) {
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- (delta * g * (1 + 1 / nu) / nu) / f
+  H[, 6, 6] <- ((delta * g * (1 + 1 / nu) / nu) / f) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(H)
@@ -357,7 +357,7 @@ logistic6_gradient_hessian <- function(x, theta) {
   H[, 3, 6] <- H[, 6, 3]
   H[, 4, 6] <- H[, 6, 4]
   H[, 5, 6] <- H[, 6, 5]
-  H[, 6, 6] <- (delta * g * (1 + 1 / nu) / nu) / f
+  H[, 6, 6] <- ((delta * g * (1 + 1 / nu) / nu) / f) / f
 
   # any NaN is because of corner cases where the derivatives are zero
   is_nan <- is.nan(G)

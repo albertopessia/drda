@@ -152,7 +152,7 @@ plot.drda <- function(x, ...) {
 
     if (is.null(legend_location)) {
       legend_location <- if (params$mu[1] < params$mu[length(params$mu)]) {
-        "bottomleft"
+        "bottomright"
       } else {
         "topright"
       }
@@ -337,7 +337,7 @@ plot.drdalist <- function(x, ...) {
       v <- vapply(params, function(w) w$mu[1] < w$mu[length(w$mu)], FALSE)
 
       legend_location <- if (mean(v) < 0.5) {
-        "bottomleft"
+        "bottomright"
       } else {
         "topright"
       }

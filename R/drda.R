@@ -496,6 +496,12 @@ drda <- function(
   result$model <- model_frame
   result$na.action <- attr(model_frame, "na.action")
 
+  if (any(w_zero)) {
+    # fitting was done with only positive weights but we want to report all
+    # of them
+    result$weights <- model_frame[, 3]
+  }
+
   class(result) <- c(class(result), "drda")
 
   result
