@@ -115,7 +115,7 @@ test_that("ntrm_solve_tr_subproblem: various situations", {
 })
 
 test_that("ntrm: Rosenbrock function", {
-  set.seed(2823440)
+  set.seed(2823441)
 
   fn <- function(x) {
     (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
@@ -137,7 +137,7 @@ test_that("ntrm: Rosenbrock function", {
   }
 
   # try different random starting points
-  for (i in 1:5) {
+  for (i in 1:10) {
     result <- ntrm(fn, gh, rnorm(2, sd = 3), 1000)
     expect_equal(result$optimum, c(1, 1))
   }
