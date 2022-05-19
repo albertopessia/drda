@@ -229,6 +229,11 @@ logistic6_gradient <- function(x, theta) {
   G
 }
 
+# @rdname logistic6_gradient
+gradient.logistic6_fit <- function(object, x) {
+  logistic6_gradient(x, object$coefficients)
+}
+
 #' @rdname logistic6_gradient
 logistic6_hessian <- function(x, theta) {
   k <- length(x)
@@ -1233,35 +1238,6 @@ fisher_info.logistic6 <- function(object, theta, sigma) {
 
 # 6-parameter logistic fit
 #
-# Evaluate the variance of the maximum likelihood curve at different predictor
-# values.
-#
-# @param object object of class `logistic6_fit`.
-# @param x numeric vector at which to evaluate the variance.
-#
-# @return Numeric vector with the variances of the maximum likelihood curve.
-curve_variance.logistic6_fit <- function(object, x) {
-  m <- length(x)
-
-  V <- object$vcov[1:6, 1:6]
-
-  if (any(is.na(V))) {
-    return(rep(NA_real_, m))
-  }
-
-  G <- logistic6_gradient(x, object$coefficients)
-
-  variance <- rep(NA_real_, m)
-
-  for (i in seq_len(m)) {
-    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
-  }
-
-  variance
-}
-
-# 6-parameter logistic fit
-#
 # Find the dose that produced the observed response.
 #
 # @details
@@ -1284,7 +1260,9 @@ inverse_fn.logistic6_fit <- function(object, y) {
   xi <- object$coefficients[6]
 
   x <- (delta / (y - alpha))^nu
-  x[x > xi] <- phi - log((x[x > xi] - xi) / nu) / eta
+  x[!is.na(x) & (x > xi)] <- phi - log(
+    (x[!is.na(x) & (x > xi)] - xi) / nu
+  ) / eta
 
   x
 }
@@ -1323,219 +1301,4 @@ inverse_fn_gradient.logistic6_fit <- function(object, y) {
   G[, 6] <- u / (eta * nu)
 
   G
-}
-
-# 6-parameter logistic fit
-#
-# Evaluate the normalized area under the curve (AUC) and area above the curve
-# (AAC).
-#
-# @details
-# The 6-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`, `nu > 0`, and
-# `xi > 0`.
-#
-# The area under the curve (AUC) is simply the integral of `f(x; theta)` with
-# respect to `x`.
-#
-#' @importFrom stats integrate
-#'
-#' @export
-nauc.logistic6_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  if (length(xlim) != 2) {
-    stop("'xlim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector", call. = FALSE)
-  }
-
-  if (xlim[1] >= xlim[2]) {
-    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
-  }
-
-  if (length(ylim) != 2) {
-    stop("'ylim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(ylim)) {
-    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (ylim[1] >= ylim[2]) {
-    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
-  }
-
-  if (ylim[1] < 0) {
-    stop("'ylim[1]' cannot be negative", call. = FALSE)
-  }
-
-  alpha <- object$coefficients[1]
-  delta <- object$coefficients[2]
-  nu <- object$coefficients[5]
-  xi <- object$coefficients[6]
-
-  # in case the curve intersect `ylim`, these are the values at which it happens
-  tmp <- inverse_fn(object, ylim)
-
-  # value of the integral
-  I <- 0
-
-  # check if we really need to perform an integration
-  flag <- TRUE
-
-  # we might change the range of integration
-  xlim_new <- xlim
-
-  if (delta >= 0) {
-    # curve is monotonically increasing
-    lb <- alpha
-    ub <- alpha + delta / xi^(1 / nu)
-
-    if (lb < ylim[1]) {
-      # the curve in `c(-Inf, tmp[1])` is to be considered zero
-      if (tmp[1] > xlim[2]) {
-        # the integral is simply zero
-        flag <- FALSE
-      } else if (tmp[1] > xlim[1]) {
-        xlim_new[1] <- tmp[1]
-      }
-    }
-
-    if (ub > ylim[2]) {
-      # the curve in `c(tmp[2], Inf)` is equal to `ylim[2]`
-      if (tmp[2] < xlim[1]) {
-        # not much to do in this case, the curve in the requested range is flat
-        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # stop here
-        flag <- FALSE
-      } else if (tmp[2] < xlim[2]) {
-        # standard before `tmp[2]` and flat in c(tmp[2], xlim[2])
-        I <- I + (xlim[2] - tmp[2]) * (ylim[2] - ylim[1])
-
-        # modify the range of integration
-        xlim_new[2] <- tmp[2]
-      }
-    }
-  } else {
-    # curve is monotonically decreasing
-    lb <- alpha + delta / xi^(1 / nu)
-    ub <- alpha
-
-    if (ub > ylim[2]) {
-      # the first part of the curve in `c(-Inf, tmp[2])` is equal to `ylim[2]`
-      if (tmp[2] > xlim[2]) {
-        # not much to do in this case, the curve in the requested range is flat
-        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # stop here
-        flag <- FALSE
-      } else if (tmp[2] > xlim[1]) {
-        # flat in c(xlim[1], tmp[2]) and standard after `tmp[2]`
-        I <- I + (tmp[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # modify the range of integration
-        xlim_new[1] <- tmp[2]
-      }
-    }
-
-    if (lb < ylim[1]) {
-      # the curve after `tmp[1]` is to be considered zero
-      if (tmp[1] < xlim[1]) {
-        # the integral is simply zero
-        flag <- FALSE
-      } else if (tmp[1] < xlim[2]) {
-        xlim_new[2] <- tmp[1]
-      }
-    }
-  }
-
-  if (flag) {
-    # we remove `ylim[1]` to shift the curve to zero
-    f <- function(x) {
-      fn(object, x, object$coefficients) - ylim[1]
-    }
-
-    I <- I + integrate(
-      f, lower = xlim_new[1], upper = xlim_new[2],
-      rel.tol = sqrt(.Machine$double.eps)
-    )$value
-  }
-
-  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
-  names(nauc) <- NULL
-
-  nauc
-}
-
-#' @export
-naac.logistic6_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  1 - nauc.logistic6_fit(object, xlim, ylim)
-}
-
-#' @export
-effective_dose.logistic6_fit <- function(
-  object, y, level = 0.95, type = "relative"
-) {
-  if (level <= 0 || level >= 1) {
-    stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
-  }
-
-  alpha <- object$coefficients[1]
-  delta <- object$coefficients[2]
-  nu <- object$coefficients[5]
-  xi <- object$coefficients[6]
-
-  # value at -Inf is alpha
-  # value at Inf is alpha + delta / xi^(1 / nu)
-  if (type == "relative") {
-    y[y <= 0 | y >= 1] <- NA_real_
-    y <- alpha + y * delta / xi^(1 / nu)
-  } else if (type == "absolute") {
-    y1 <- alpha
-    y2 <- alpha + delta / xi^(1 / nu)
-
-    if (delta > 0) {
-      y[y < y1 | y > y2] <- NA_real_
-    } else {
-      y[y < y2 | y > y1] <- NA_real_
-    }
-  } else {
-    stop("invalid value for `type`", call. = FALSE)
-  }
-
-  x <- inverse_fn(object, y)
-  names(x) <- NULL
-
-  V <- object$vcov[seq_len(6), seq_len(6)]
-  G <- inverse_fn_gradient(object, y)
-
-  std_err <- if (any(is.na(V))) {
-    rep(NA_real_, length(y))
-  } else{
-    sqrt(diag(tcrossprod(crossprod(t(G), V), G)))
-  }
-  names(std_err) <- NULL
-
-  q <- qnorm((1 - level) / 2)
-  l <- round(level * 100)
-
-  matrix(
-    c(
-      x,
-      x + q * std_err,
-      x - q * std_err
-    ),
-    nrow = length(y),
-    ncol = 3,
-    dimnames = list(
-      round(y, digits = 2),
-      c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
-    )
-  )
 }

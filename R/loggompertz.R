@@ -188,6 +188,11 @@ loggompertz_gradient <- function(x, theta) {
   G
 }
 
+# @rdname loggompertz_gradient
+gradient.loggompertz_fit <- function(object, x) {
+  loggompertz_gradient(x, object$coefficients)
+}
+
 #' @rdname loggompertz_gradient
 loggompertz_hessian <- function(x, theta) {
   k <- length(x)
@@ -1093,35 +1098,6 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
 
 # log-Gompertz fit
 #
-# Evaluate the variance of the maximum likelihood curve at different predictor
-# values.
-#
-# @param object object of class `loggompertz_fit`.
-# @param x numeric vector at which to evaluate the variance.
-#
-# @return Numeric vector with the variances of the maximum likelihood curve.
-curve_variance.loggompertz_fit <- function(object, x) {
-  len <- length(x)
-
-  V <- object$vcov[seq_len(4), seq_len(4)]
-
-  if (any(is.na(V))) {
-    return(rep(NA_real_, len))
-  }
-
-  G <- loggompertz_gradient(x, object$coefficients)
-
-  variance <- rep(NA_real_, len)
-
-  for (i in seq_len(len)) {
-    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
-  }
-
-  variance
-}
-
-# log-Gompertz fit
-#
 # Find the dose that produced the observed response.
 #
 # @details
@@ -1141,7 +1117,10 @@ inverse_fn.loggompertz_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  phi / log(delta / (y - alpha))^(1 / eta)
+  x <- delta / (y - alpha)
+  x[!is.na(x) & (x > 0)] <- phi / log(x[!is.na(x) & (x > 0)])^(1 / eta)
+
+  x
 }
 
 # log-Gompertz fit
@@ -1178,227 +1157,4 @@ inverse_fn_gradient.loggompertz_fit <- function(object, y) {
   G[, 4] <- v
 
   G
-}
-
-# log-Gompertz fit
-#
-# Evaluate the normalized area under the curve (AUC) and area above the curve
-# (AAC).
-#
-# @details
-# The log-Gompertz function `f(x; theta)` is defined here as
-#
-# `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
-# `phi > 0`. By convention we set
-# `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
-#
-# The area under the curve (AUC) is the integral of `f(x; theta)` with respect
-# to `x`.
-#
-#' @importFrom stats integrate
-#'
-#' @export
-nauc.loggompertz_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  if (length(xlim) != 2) {
-    stop("'xlim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  # predictor cannot be negative, so we cannot integrate for x < 0
-  if (xlim[1] < 0) {
-    xlim[1] <- 0
-  }
-
-  if (xlim[1] >= xlim[2]) {
-    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
-  }
-
-  if (length(ylim) != 2) {
-    stop("'ylim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(ylim)) {
-    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (ylim[1] >= ylim[2]) {
-    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
-  }
-
-  alpha <- object$coefficients[1]
-  delta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-
-  # in case the curve intersect `ylim`, these are the values at which it happens
-  tmp <- c(NA_real_, NA_real_)
-  z <- (ylim - alpha) / delta
-
-  if (z[1] > 0 && z[1] < 1) {
-    tmp[1] <- phi * (-log(z[1]))^(-1 / eta)
-  }
-
-  if (z[2] > 0 && z[2] < 1) {
-    tmp[2] <- phi * (-log(z[2]))^(-1 / eta)
-  }
-
-  # value of the integral
-  I <- 0
-
-  # check if we really need to perform an integration
-  flag <- TRUE
-
-  # we might change the range of integration
-  xlim_new <- xlim
-
-  if (delta >= 0) {
-    # curve is monotonically increasing
-    lb <- alpha
-    ub <- alpha + delta
-
-    if (lb < ylim[1]) {
-      # the curve in `c(0, tmp[1])` is to be considered zero
-      if (tmp[1] > xlim[2]) {
-        # the integral is simply zero
-        flag <- FALSE
-      } else if (tmp[1] > xlim[1]) {
-        xlim_new[1] <- tmp[1]
-      }
-    }
-
-    if (ub > ylim[2]) {
-      # the curve in `c(tmp[2], Inf)` is equal to `ylim[2]`
-      if (tmp[2] < xlim[1]) {
-        # not much to do in this case, the curve in the requested range is flat
-        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # stop here
-        flag <- FALSE
-      } else if (tmp[2] < xlim[2]) {
-        # standard before `tmp[2]` and flat in c(tmp[2], xlim[2])
-        I <- I + (xlim[2] - tmp[2]) * (ylim[2] - ylim[1])
-
-        # modify the range of integration
-        xlim_new[2] <- tmp[2]
-      }
-    }
-  } else {
-    # curve is monotonically decreasing
-    lb <- alpha + delta
-    ub <- alpha
-
-    if (ub > ylim[2]) {
-      # the first part of the curve in `c(0, tmp[2])` is equal to `ylim[2]`
-      if (tmp[2] > xlim[2]) {
-        # not much to do in this case, the curve in the requested range is flat
-        I <- I + (xlim[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # stop here
-        flag <- FALSE
-      } else if (tmp[2] > xlim[1]) {
-        # flat in c(xlim[1], tmp[2]) and standard after `tmp[2]`
-        I <- I + (tmp[2] - xlim[1]) * (ylim[2] - ylim[1])
-
-        # modify the range of integration
-        xlim_new[1] <- tmp[2]
-      }
-    }
-
-    if (lb < ylim[1]) {
-      # the curve after `tmp[1]` is to be considered zero
-      if (tmp[1] < xlim[1]) {
-        # the integral is simply zero
-        flag <- FALSE
-      } else if (tmp[1] < xlim[2]) {
-        xlim_new[2] <- tmp[1]
-      }
-    }
-  }
-
-  if (flag) {
-    # we remove `ylim[1]` to shift the curve to zero
-    f <- function(x) {
-      fn(object, x, object$coefficients) - ylim[1]
-    }
-
-    I <- I + integrate(
-      f, lower = xlim_new[1], upper = xlim_new[2],
-      rel.tol = sqrt(.Machine$double.eps)
-    )$value
-  }
-
-  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
-  names(nauc) <- NULL
-
-  nauc
-}
-
-#' @export
-naac.loggompertz_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  1 - nauc.loggompertz_fit(object, xlim, ylim)
-}
-
-#' @export
-effective_dose.loggompertz_fit <- function(
-  object, y, level = 0.95, type = "relative"
-) {
-  if (level <= 0 || level >= 1) {
-    stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
-  }
-
-  alpha <- object$coefficients[1]
-  delta <- object$coefficients[2]
-
-  # value at -Inf is alpha
-  # value at Inf is alpha + delta / xi^(1 / nu)
-  if (type == "relative") {
-    y[y <= 0 | y >= 1] <- NA_real_
-    y <- alpha + y * delta
-  } else if (type == "absolute") {
-    y1 <- alpha
-    y2 <- alpha + delta
-
-    if (delta > 0) {
-      y[y < y1 | y > y2] <- NA_real_
-    } else {
-      y[y < y2 | y > y1] <- NA_real_
-    }
-  } else {
-    stop("invalid value for `type`", call. = FALSE)
-  }
-
-  x <- inverse_fn(object, y)
-  names(x) <- NULL
-
-  V <- object$vcov[seq_len(4), seq_len(4)]
-  G <- inverse_fn_gradient(object, y)
-
-  std_err <- if (any(is.na(V))) {
-    rep(NA_real_, length(y))
-  } else{
-    sqrt(diag(tcrossprod(crossprod(t(G), V), G)))
-  }
-  names(std_err) <- NULL
-
-  q <- qnorm((1 - level) / 2)
-  l <- round(level * 100)
-
-  matrix(
-    c(
-      x,
-      x + q * std_err,
-      x - q * std_err
-    ),
-    nrow = length(y),
-    ncol = 3,
-    dimnames = list(
-      round(y, digits = 2),
-      c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
-    )
-  )
 }

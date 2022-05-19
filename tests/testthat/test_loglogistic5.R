@@ -1883,9 +1883,9 @@ test_that("nauc: decreasing", {
 
   result <- drda(y ~ x, weights = w, mean_function = "loglogistic5")
 
-  expect_equal(nauc(result), 0.57634025113166049)
+  expect_equal(nauc(result), 0.097909681560146038)
   expect_equal(nauc(result, xlim = c(0, 2)), 0.87325260271259105)
-  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.61191350930729916)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.0061191350953578714)
   expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
     nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.41629510972061593
@@ -1900,9 +1900,9 @@ test_that("naac: decreasing", {
 
   result <- drda(y ~ x, weights = w, mean_function = "loglogistic5")
 
-  expect_equal(naac(result), 1 - 0.57634025113166049)
+  expect_equal(naac(result), 1 - 0.097909681560146038)
   expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.87325260271259105)
-  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.61191350930729916)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.0061191350953578714)
   expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
     naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.41629510972061593
@@ -1917,9 +1917,9 @@ test_that("nauc: increasing", {
 
   result <- drda(y ~ x, weights = w, mean_function = "loglogistic5")
 
-  expect_equal(nauc(result), 0.49315307829602008)
+  expect_equal(nauc(result), 0.84987748063201568)
   expect_equal(nauc(result, xlim = c(0, 2)), 0.16335338880480354)
-  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.49785365693991776)
+  expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.99497853656838019)
   expect_equal(nauc(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 0.0)
   expect_equal(
     nauc(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 0.79822066734103837
@@ -1934,9 +1934,9 @@ test_that("naac: increasing", {
 
   result <- drda(y ~ x, weights = w, mean_function = "loglogistic5")
 
-  expect_equal(naac(result), 1 - 0.49315307829602008)
+  expect_equal(naac(result), 1 - 0.84987748063201568)
   expect_equal(naac(result, xlim = c(0, 2)), 1 - 0.16335338880480354)
-  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.49785365693991776)
+  expect_equal(naac(result, ylim = c(0.3, 0.7)), 1 - 0.99497853656838019)
   expect_equal(naac(result, xlim = c(0, 2), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
     naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.79822066734103837

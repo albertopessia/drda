@@ -248,6 +248,12 @@ loglogistic2_gradient <- function(x, theta, delta) {
   sign(delta) * G
 }
 
+# @rdname loglogistic2_gradient
+gradient.loglogistic2_fit <- function(object, x) {
+  theta <- object$coefficients
+  loglogistic2_gradient(x, theta[3:4], theta[2])
+}
+
 #' @rdname loglogistic2_gradient
 loglogistic2_hessian <- function(x, theta, delta) {
   k <- length(x)
@@ -1080,38 +1086,7 @@ fisher_info.loglogistic2 <- function(object, theta, sigma) {
 
 # 2-parameter log-logistic fit
 #
-# Evaluate the variance of the maximum likelihood curve at different predictor
-# values.
-#
-# @param object object of class `loglogistic2_fit`.
-# @param x numeric vector at which to evaluate the variance.
-#
-# @return Numeric vector with the variances of the maximum likelihood curve.
-curve_variance.loglogistic2_fit <- function(object, x) {
-  len <- length(x)
-
-  V <- object$vcov[seq_len(2), seq_len(2)]
-
-  if (any(is.na(V))) {
-    return(rep(NA_real_, len))
-  }
-
-  theta <- object$coefficients
-  G <- loglogistic2_gradient(x, theta[3:4], theta[2])
-
-  variance <- rep(NA_real_, len)
-
-  for (i in seq_len(len)) {
-    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
-  }
-
-  variance
-}
-
-# 2-parameter log-logistic fit
-#
-# Evaluate the normalized area under the curve (AUC) and area above the curve
-# (AAC).
+# Find the dose that produced the observed response.
 #
 # @details
 # The 2-parameter log-logistic function `f(x; theta)` is defined here as
@@ -1124,22 +1099,43 @@ curve_variance.loglogistic2_fit <- function(object, x) {
 # `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
 # increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
-# The area under the curve (AUC) is the integral of `f(x; theta)` with respect
-# to `x`.
+# This function evaluates the inverse function of `f(x; theta)`, that is
+# if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+inverse_fn.loglogistic2_fit <- function(object, y) {
+  inverse_fn.loglogistic4_fit(object, y)
+}
+
+# 2-parameter log-logistic fit
 #
-#' @export
-nauc.loglogistic2_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  nauc.loglogistic4_fit(object, xlim, ylim)
-}
+# Evaluate at a particular point the gradient of the inverse logistic function.
+#
+# @details
+# The 2-parameter log-logistic function `f(x; theta)` is defined here as
+#
+# `g(x; theta) = x^eta / (x^eta + phi^eta)`
+# `f(x; theta) = alpha + delta g(x; theta)`
+#
+# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
+# `phi > 0`. Only `eta` and `phi` are free to vary (therefore the name), while
+# `c(alpha, delta)` are constrained to be either `c(0, 1)` (monotonically
+# increasing curve) or `c(1, -1)` (monotonically decreasing curve).
+#
+# This function evaluates the gradient of the inverse function.
+inverse_fn_gradient.loglogistic2_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+  phi <- object$coefficients[4]
 
-#' @export
-naac.loglogistic2_fit <- function(object, xlim = c(0, 10), ylim = c(0, 1)) {
-  1 - nauc.loglogistic4_fit(object, xlim, ylim)
-}
+  h <- phi / eta
+  z <- delta / (y - alpha)
+  u <- 1 / (z - 1)
+  v <- u^(1 / eta)
 
-#' @export
-effective_dose.loglogistic2_fit <- function(
-    object, y, level = 0.95, type = "relative"
-) {
-  effective_dose.loglogistic4_fit(object, y, level, type)
+  G <- matrix(0, nrow = length(y), ncol = 2)
+
+  G[, 1] <- -h * log(u) * v / eta
+  G[, 2] <- v
+
+  G
 }

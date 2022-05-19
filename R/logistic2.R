@@ -219,6 +219,12 @@ logistic2_gradient <- function(x, theta, delta) {
   sign(delta) * G
 }
 
+# @rdname logistic2_gradient
+gradient.logistic2_fit <- function(object, x) {
+  theta <- object$coefficients
+  logistic2_gradient(x, theta[3:4], theta[2])
+}
+
 #' @rdname logistic2_gradient
 logistic2_hessian <- function(x, theta, delta) {
   k <- length(x)
@@ -1010,36 +1016,6 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
 
 # 2-parameter logistic fit
 #
-# Evaluate the variance of the maximum likelihood curve at different predictor
-# values.
-#
-# @param object object of class `logistic2_fit`.
-# @param x numeric vector at which to evaluate the variance.
-#
-# @return Numeric vector with the variances of the maximum likelihood curve.
-curve_variance.logistic2_fit <- function(object, x) {
-  m <- length(x)
-
-  V <- object$vcov[1:2, 1:2]
-
-  if (any(is.na(V))) {
-    return(rep(NA_real_, m))
-  }
-
-  theta <- object$coefficients
-  G <- logistic2_gradient(x, theta[3:4], theta[2])
-
-  variance <- rep(NA_real_, m)
-
-  for (i in seq_len(m)) {
-    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
-  }
-
-  variance
-}
-
-# 2-parameter logistic fit
-#
 # Find the dose that produced the observed response.
 #
 # @details
@@ -1059,7 +1035,7 @@ inverse_fn.logistic2_fit <- function(object, y) {
   inverse_fn.logistic4_fit(object, y)
 }
 
-# 4-parameter logistic fit
+# 2-parameter logistic fit
 #
 # Evaluate at a particular point the gradient of the inverse logistic function.
 #
@@ -1076,41 +1052,15 @@ inverse_fn.logistic2_fit <- function(object, y) {
 #
 # This function evaluates the gradient of the inverse function.
 inverse_fn_gradient.logistic2_fit <- function(object, y) {
-  inverse_fn_gradient.logistic4_fit(object, y)
-}
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
 
-# 2-parameter logistic fit
-#
-# Evaluate the normalized area under the curve (AUC) and area above the curve
-# (AAC).
-#
-# @details
-# The 2-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
-# are free to vary (therefore the name), while `c(alpha, delta)` is
-# constrained to be either `c(0, 1)` (monotonically increasing curve) or
-# `c(1, -1)` (monotonically decreasing curve).
-#
-# The area under the curve (AUC) is simply the integral of `f(x; theta)` with
-# respect to `x`.
-#
-#' @export
-nauc.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  nauc.logistic4_fit(object, xlim, ylim)
-}
+  z <- delta / (y - alpha)
+  u <- 1 / (z - 1)
 
-#' @export
-naac.logistic2_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  1 - nauc.logistic4_fit(object, xlim, ylim)
-}
+  G <- matrix(1, nrow = length(y), ncol = 2)
+  G[, 1] <- -log(u) / eta^2
 
-#' @export
-effective_dose.logistic2_fit <- function(
-    object, y, level = 0.95, type = "relative"
-) {
-  effective_dose.logistic4_fit(object, y, level, type)
+  G
 }

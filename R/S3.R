@@ -2,6 +2,10 @@ fn <- function(object, x, theta) {
   UseMethod("fn", object)
 }
 
+gradient <- function(object, theta) {
+  UseMethod("gradient", object)
+}
+
 gradient_hessian <- function(object, theta) {
   UseMethod("gradient_hessian", object)
 }
