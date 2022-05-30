@@ -720,6 +720,19 @@ mle_asy.loglogistic4 <- function(object, theta) {
   # this is the limit for s1 -> Inf
   g[is.infinite(s1)] <- 1
 
+  # when eta is extremely large the ratio can also be NaN
+  # NaN happens when both x and phi are less than 1 and both s1 and s2 converge
+  # to 0, resulting in a 0 / 0 division.
+  # assuming both s1 and s2 are not really zero (numerical error), we can write
+  # g either as
+  # (1) `1 / (1 + (phi / x)^eta)` or
+  # (2) `(x / phi)^eta / (1 + (x / phi)^eta)`
+  #
+  # when x > phi then g is approximately 1 (case 1)
+  # when x < phi then g is approximately 0 (case 2)
+  g[is.nan(g) & x > phi] <- 1
+  g[is.nan(g) & x < phi] <- 0
+
   t1 <- 0
   t2 <- 0
   t3 <- 0
