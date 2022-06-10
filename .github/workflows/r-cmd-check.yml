@@ -35,16 +35,16 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: Install Ghostscript on Linux
-        if: startsWith(runner.os, "Linux")
+      - name: Install Ghostscript (Linux)
+        if: runner.os == 'Linux'
         run: sudo apt-get install --yes ghostscript
 
-      - name: Install Ghostscript on macOS
-        if: startsWith(runner.os, "macOS")
+      - name: Install Ghostscript ()macOS)
+        if: runner.os == 'macOS'
         run: brew install ghostscript
 
-      - name: Install Ghostscript on Windows
-        if: startsWith(runner.os, "Windows")
+      - name: Install Ghostscript (Windows)
+        if: runner.os == 'Windows'
         run: choco install ghostscript --no-progress
 
       - uses: r-lib/actions/setup-r@v2
