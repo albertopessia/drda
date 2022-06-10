@@ -4,20 +4,20 @@
 \alias{effective_dose}
 \title{Effective dose}
 \usage{
-effective_dose(object, y, level, type)
+effective_dose(object, y, type, level)
 }
 \arguments{
 \item{object}{fit object as returned by \code{\link[drda]{drda}}.}
 
-\item{y}{numeric vector with response levels.}
-
-\item{level}{level of confidence intervals.}
+\item{y}{numeric vector with response levels (default 0.5).}
 
 \item{type}{character string with either "relative" (default) or "absolute".}
+
+\item{level}{level of confidence intervals (default 0.95).}
 }
 \value{
-Numeric vector with the effective doses corresponding to each value
-of \code{y}.
+Numeric matrix with the effective doses and the corresponding
+confidence intervals. Each row is associated with each value of \code{y}.
 }
 \description{
 Estimate effective doses, that is the \code{x} values for which \code{f(x) = y}.

@@ -174,12 +174,14 @@ naac <- function(object, xlim, ylim) {
 #' does not exist when `y` is not in the image of the function.
 #'
 #' @param object fit object as returned by \code{\link[drda]{drda}}.
-#' @param y numeric vector with response levels.
-#' @param level level of confidence intervals.
+#' @param y numeric vector with response levels (default 0.5).
 #' @param type character string with either "relative" (default) or "absolute".
+#' @param level level of confidence intervals (default 0.95).
 #'
-#' @return Numeric vector with the effective doses corresponding to each value
-#'   of `y`.
-effective_dose <- function(object, y, level, type) {
+#' @return Numeric matrix with the effective doses and the corresponding
+#'   confidence intervals. Each row is associated with each value of `y`.
+#'
+#' @export
+effective_dose <- function(object, y, type, level) {
   UseMethod("effective_dose", object)
 }

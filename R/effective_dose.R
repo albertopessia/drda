@@ -1,5 +1,7 @@
 #' @export
-effective_dose.drda <- function(object, y, level = 0.95, type = "relative") {
+effective_dose.drda <- function(
+    object, y = 0.5, type = "relative", level = 0.95
+) {
   if (level <= 0 || level >= 1) {
     stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
   }
@@ -8,16 +10,21 @@ effective_dose.drda <- function(object, y, level = 0.95, type = "relative") {
 
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
-  nu <- object$coefficients[5]
-  xi <- object$coefficients[6]
-
+  nu <- 1
+  xi <- 1
   k <- 1
-  if (inherits(object, "loglogistic6") || inherits(object, "logistic6")) {
-    k <- 1 / xi^(1 / nu)
+
+  if (
+    inherits(object, "loglogistic5_fit") || inherits(object, "logistic5_fit")
+  ) {
+    nu <- object$coefficients[5]
+  } else if (
+    inherits(object, "loglogistic6_fit") || inherits(object, "logistic6_fit")
+  ) {
+    xi <- object$coefficients[6]
+    k <- xi^(-1 / nu)
   }
 
-  # value at -Inf is alpha
-  # value at Inf is alpha + delta / xi^(1 / nu)
   if (type == "relative") {
     y[y <= 0 | y >= 1] <- NA_real_
     y <- alpha + y * delta * k
@@ -38,7 +45,9 @@ effective_dose.drda <- function(object, y, level = 0.95, type = "relative") {
   names(x) <- NULL
 
   idx <- which(object$estimated)
-  if (inherits(object, "loglogistic2") || inherits(object, "logistic2")) {
+  if (
+    inherits(object, "loglogistic2_fit") || inherits(object, "logistic2_fit")
+  ) {
     idx <- idx - 2
   }
 
