@@ -336,7 +336,7 @@ plot.drdalist <- function(x, ...) {
     if (is.null(legend_location)) {
       v <- vapply(params, function(w) w$mu[1] < w$mu[length(w$mu)], FALSE)
 
-      legend_location <- if (mean(v) < 0.5) {
+      legend_location <- if (mean(v) > 0.5) {
         "bottomright"
       } else {
         "topright"
@@ -667,10 +667,30 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
       c(xv[1], xv[len] * 1.08)
     }
 
-    if (xlim[1] > exp(mp)) {
-      xlim[1] <- exp(mp - 3)
-    } else if (xlim[2] < exp(mp)) {
-      xlim[2] <- exp(mp + 3)
+    if (base == "n") {
+      if (xlim[1] > exp(mp)) {
+        xlim[1] <- exp(mp - 3)
+      } else if (xlim[2] < exp(mp)) {
+        xlim[2] <- exp(mp + 3)
+      }
+    } else {
+      if (xlim[1] > mp) {
+        xlim[1] <- mp - 3
+      } else if (xlim[2] < mp) {
+        xlim[2] <- mp + 3
+      }
+    }
+  } else {
+    if (xlim[1] < 0 || xlim[2] <= 0 || xlim[1] >= xlim[2]) {
+      stop("wrong 'xlim' values", call. = FALSE)
+    }
+
+    if (base != "n") {
+      if (xlim[1] == 0) {
+        xlim <- c(xv[1], log(xlim[2]))
+      } else {
+        xlim <- log(xlim)
+      }
     }
   }
 
