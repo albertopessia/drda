@@ -11,7 +11,9 @@ curve_variance.drda <- function(object, x) {
   len <- length(x)
 
   idx <- which(object$estimated)
-  if (inherits(object, "loglogistic2") || inherits(object, "logistic2")) {
+  if (
+    inherits(object, "loglogistic2_fit") || inherits(object, "logistic2_fit")
+  ) {
     idx <- idx - 2
   }
 
