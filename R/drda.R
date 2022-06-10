@@ -331,7 +331,7 @@
 #' # asymptotic assumptions do not hold anymore.
 drda <- function(
   formula, data, subset, weights, na.action, mean_function = "logistic4",
-  lower_bound = NULL, upper_bound = NULL, start = NULL, max_iter = 500
+  lower_bound = NULL, upper_bound = NULL, start = NULL, max_iter = 1000
 ) {
   # first, we expand the call to this function
   model_frame <- match.call(expand.dots = FALSE)
