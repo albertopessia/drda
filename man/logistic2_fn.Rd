@@ -9,7 +9,9 @@ logistic2_fn(x, theta)
 \arguments{
 \item{x}{numeric vector at which the logistic function is to be evaluated.}
 
-\item{theta}{numeric vector with the parameters in the form \code{c(eta, phi)}.}
+\item{theta}{numeric vector with the four parameters in the form
+\code{c(alpha, delta, eta, phi)}. \code{alpha} can only be equal to 0 or 1 while
+\code{delta} can only be equal to 1 or -1.}
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
@@ -21,9 +23,14 @@ Evaluate at a particular set of parameters the 2-parameter logistic function.
 \details{
 The 2-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{1 / (1 + exp(-eta * (x - phi)))}
+\verb{g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))}
+\verb{f(x; theta) = alpha + delta g(x; theta)}
 
-where \code{theta = c(eta, phi)}, \code{eta} is the steepness of the curve or growth
-rate (also known as the Hill coefficient), and \code{phi} is the value of \code{x} at
-which the curve is equal to its mid-point, i.e. 1 / 2.
+where \code{theta = c(alpha, delta, eta, phi)} and \code{eta > 0}. Only \code{eta} and \code{phi}
+are free to vary (therefore the name) while vector \code{c(alpha, delta)} is
+constrained to be either \code{c(0, 1)} (monotonically increasing curve) or
+\code{c(1, -1)} (monotonically decreasing curve).
+
+This function allows values other than {0, 1, -1} for \code{alpha} and \code{delta} but
+will coerce them to their proper constraints.
 }

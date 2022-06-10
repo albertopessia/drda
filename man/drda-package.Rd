@@ -20,6 +20,11 @@ Functions specific to \code{drda}:
 \item{\code{logistic5_fn}: 5-parameter logistic function.}
 \item{\code{logistic6_fn}: 6-parameter logistic function.}
 \item{\code{gompertz_fn}: Gompertz function.}
+\item{\code{loglogistic2_fn}: 2-parameter log-logistic function.}
+\item{\code{loglogistic4_fn}: 4-parameter log-logistic function.}
+\item{\code{loglogistic5_fn}: 5-parameter log-logistic function.}
+\item{\code{loglogistic6_fn}: 6-parameter log-logistic function.}
+\item{\code{loggompertz_fn}: log-Gompertz function.}
 \item{\code{nauc}: normalized area under the curve.}
 \item{\code{naac}: normalized area above the curve.}
 }
@@ -37,6 +42,7 @@ model fit.}
 \item{\code{residuals}: model residuals.}
 \item{\code{sigma}: residual standard deviation.}
 \item{\code{summary}: fit summaries.}
+\item{\code{vcov}: approximate variance-covariance matrix of model parameters.}
 \item{\code{weights}: model weights.}
 }
 }

@@ -53,3 +53,12 @@ area of the rectangle with width \code{xu - xl} and height \code{yu - yl}.
 
 The normalized area above the curve (NAAC) is simply \code{NAAC = 1 - NAUC}.
 }
+\examples{
+drda_fit <- drda(response ~ log_dose, data = voropm2)
+naac(drda_fit)
+naac(drda_fit, xlim = c(6, 8), ylim = c(0.2, 0.5))
+}
+\seealso{
+\code{\link[drda]{nauc}} for the Normalized Area Under the Curve
+(NAUC).
+}

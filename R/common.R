@@ -8,9 +8,9 @@
 # @param w numeric vector of weights.
 #
 # @return Numeric matrix where the first column are the sorted unique values of
-#   input vector `x`, second column are the total weights (sample size if no
-#   weights), third column are the (weighted) sample means, and fourth column
-#   are the uncorrected (weighted) sample variances.
+#   input vector `x`, second column are the total weights (sample size if all
+#   weights are 1), third column are the (weighted) sample means, and fourth
+#   column are the uncorrected (weighted) sample variances.
 suff_stats <- function(x, y, w) {
   unique_x <- sort(unique(x))
   k <- length(unique_x)
@@ -39,8 +39,7 @@ suff_stats <- function(x, y, w) {
 
 # Variance estimator
 #
-# Compute the corrected variance estimate associated with a Normal
-# distribution.
+# Compute the corrected variance estimate associated with a Normal distribution.
 #
 # @param rss value of the residual sum of squares.
 # @param df residual degrees of freedom.
@@ -73,36 +72,39 @@ loglik_normal <- function(deviance, n, log_w = 0) {
 #
 # @return Approximate variance-covariance matrix.
 approx_vcov <- function(fim) {
-  vcov <- tryCatch(
-    {
-      chol2inv(chol(fim))
-    },
-    error = function(e) {
-      NULL
-    }
-  )
-
-  if (is.null(vcov)) {
-    vcov <- tryCatch(
-      {
-        # sometimes `solve` succeeds where the previous one instead fails.
-        # However, if the Cholesky decomposition failed, it is most likely a
-        # sign that the solution is not admissible.
-        # We will check later if all variances are non-negative.
-        solve(fim)
-      },
-      error = function(e) {
-        NULL
-      }
-    )
-  }
-
   # total number of parameters (last one is always the standard deviation)
   p <- nrow(fim)
 
+  vcov <- tryCatch(chol2inv(chol(fim)), error = function(e) NULL)
+
   if (is.null(vcov)) {
-    vcov <- matrix(NA_real_, nrow = p, ncol = p)
-  } else {
+    # row/column associated to the standard deviation can create problems
+    vcov <- tryCatch(chol2inv(chol(fim[-p, -p])), error = function(e) NULL)
+
+    if (!is.null(vcov)) {
+      # we succeeded
+      vcov <- cbind(rbind(vcov, rep(NA_real_, p - 1)), rep(NA_real_, p))
+    }
+  }
+
+  if (is.null(vcov)) {
+    # sometimes `solve` succeeds where the previous one instead fails.
+    # However, if the Cholesky decomposition failed, it is most likely a
+    # sign that the solution is not admissible.
+    # We will check later if all variances are non-negative.
+    vcov <- tryCatch(solve(fim), error = function(e) NULL)
+
+    if (is.null(vcov)) {
+      vcov <- tryCatch(solve(fim[-p, -p]), error = function(e) NULL)
+
+      if (!is.null(vcov)) {
+        # we succeeded
+        vcov <- cbind(rbind(vcov, rep(NA_real_, p - 1)), rep(NA_real_, p))
+      }
+    }
+  }
+
+  if (!is.null(vcov)) {
     d <- diag(vcov)
 
     # variances cannot be negative, but small values within tolerable numerical
@@ -126,6 +128,8 @@ approx_vcov <- function(fim) {
         vcov <- matrix(NA_real_, nrow = p, ncol = p)
       }
     }
+  } else {
+    vcov <- matrix(NA_real_, nrow = p, ncol = p)
   }
 
   lab <- rownames(fim)
@@ -141,11 +145,10 @@ approx_vcov <- function(fim) {
 #
 # @param object object of some model class.
 # @param start matrix of candidate starting points.
+# @param niter maximum number of iterations
 #
 #' @importFrom stats nlminb
-fit_nlminb <- function(object, start) {
-  control <- list(eval.max = 1000L, iter.max = 1000L)
-
+fit_nlminb <- function(object, start, max_iter) {
   # define the objective function
   f <- rss(object)
 
@@ -162,9 +165,10 @@ fit_nlminb <- function(object, start) {
   }
 
   fit_fn <- if (!object$constrained) {
-    function(x) {
+    function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h, control = control
+        start = x, objective = f, gradient = g, hessian = h,
+        control = list(eval.max = k, iter.max = k)
       )
 
       list(
@@ -172,9 +176,10 @@ fit_nlminb <- function(object, start) {
       )
     }
   } else {
-    function(x) {
+    function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h, control = control,
+        start = x, objective = f, gradient = g, hessian = h,
+        control = list(eval.max = k, iter.max = k),
         lower = object$lower_bound, upper = object$upper_bound
       )
 
@@ -188,18 +193,23 @@ fit_nlminb <- function(object, start) {
   niter <- 0
   for (i in seq_len(ncol(start))) {
     tmp <- tryCatch(
-      suppressWarnings(fit_fn(start[, i])),
+      suppressWarnings(fit_fn(start[, i], max_iter)),
       error = function(e) NULL
     )
 
     if (!is.null(tmp)) {
       current_rss <- f(tmp$par)
+      max_iter <- max(0, max_iter - tmp$niter)
       niter <- niter + tmp$niter
 
       if (!is.nan(current_rss) && (current_rss < best_rss)) {
         best_par <- tmp$par
         best_rss <- current_rss
       }
+    }
+
+    if (max_iter == 0) {
+      break
     }
   }
 
@@ -225,11 +235,7 @@ fit_nlminb <- function(object, start) {
 #       optimization algorithm}
 #   }
 find_optimum <- function(object) {
-  start <- if (!is.null(object$start)) {
-    list(theta = object$start, niter = 0)
-  } else {
-    init(object)
-  }
+  start <- init(object)
 
   rss_fn <- rss(object)
   rss_gh <- rss_gradient_hessian(object)
@@ -238,7 +244,9 @@ find_optimum <- function(object) {
     mle_asy(object, theta)
   }
 
-  solution <- ntrm(rss_fn, rss_gh, start$theta, object$max_iter, update_fn)
+  max_iter <- max(0, object$max_iter - start$niter)
+
+  solution <- ntrm(rss_fn, rss_gh, start$theta, max_iter, update_fn)
   solution$iterations <- solution$iterations + start$niter
 
   solution
@@ -246,19 +254,12 @@ find_optimum <- function(object) {
 
 # @rdname find_optimum
 find_optimum_constrained <- function(object, constraint, known_param) {
-  start <- if (!is.null(object$start)) {
-    # equality constraints have the priority over the provided starting values
-    list(
-      theta = ifelse(is.na(known_param), object$start, known_param),
-      niter = 0
-    )
-  } else {
-    tmp <- init(object)
-    list(
-      theta = ifelse(is.na(known_param), tmp$theta, known_param),
-      niter = tmp$niter
-    )
-  }
+  start <- init(object)
+
+  max_iter <- max(0, object$max_iter - start$niter)
+
+  # equality constraints have the priority over the provided starting values
+  theta <- ifelse(is.na(known_param), start$theta, known_param)
 
   solution <- if (any(constraint[, 2])) {
     # there are equality constraints, so we must subset the gradient and Hessian
@@ -270,11 +271,11 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     if (all(constraint[idx, 1])) {
       # we only have equality constraints, so after fixing the parameters what
       # remains is an unconstrained optimization
-      ntrm(rss_fn, rss_gh, start$theta[idx], object$max_iter)
+      ntrm(rss_fn, rss_gh, theta[idx], max_iter)
     } else {
       ntrm_constrained(
-        rss_fn, rss_gh, start$theta[idx], object$max_iter,
-        object$lower_bound[idx], object$upper_bound[idx]
+        rss_fn, rss_gh, theta[idx], max_iter, object$lower_bound[idx],
+        object$upper_bound[idx]
       )
     }
   } else {
@@ -282,8 +283,7 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     rss_gh <- rss_gradient_hessian(object)
 
     ntrm_constrained(
-      rss_fn, rss_gh, start$theta, object$max_iter, object$lower_bound,
-      object$upper_bound
+      rss_fn, rss_gh, theta, max_iter, object$lower_bound, object$upper_bound
     )
   }
 

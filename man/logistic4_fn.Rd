@@ -10,7 +10,7 @@ logistic4_fn(x, theta)
 \item{x}{numeric vector at which the logistic function is to be evaluated.}
 
 \item{theta}{numeric vector with the four parameters in the form
-\code{c(alpha, beta, eta, phi)}.}
+\code{c(alpha, delta, eta, phi)}.}
 }
 \value{
 Numeric vector of the same length of \code{x} with the values of the
@@ -22,10 +22,18 @@ Evaluate at a particular set of parameters the 4-parameter logistic function.
 \details{
 The 4-parameter logistic function \verb{f(x; theta)} is defined here as
 
-\code{alpha + (beta - alpha) / (1 + exp(-eta * (x - phi)))}
+\verb{g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))}
+\verb{f(x; theta) = alpha + delta g(x; theta)}
 
-where \code{theta = c(alpha, beta, eta, phi)}, \code{alpha} is the lower horizontal
-asymptote, \code{beta > alpha} is the upper horizontal asymptote, \code{eta} is the
-steepness of the curve or growth rate (also known as the Hill coefficient),
-and \code{phi} is the value of \code{x} at which the curve is equal to its mid-point.
+where \code{theta = c(alpha, delta, eta, phi)}, \code{alpha} is the value of the
+function when \code{x -> -Inf}, \code{delta} is the (signed) height of the curve,
+\code{eta > 0} is the steepness of the curve or growth rate (also known as the
+Hill coefficient), and \code{phi} is the value of \code{x} at which the curve is equal
+to its mid-point.
+
+When \code{delta < 0} the curve is monotonically decreasing while it is
+monotonically increasing for \code{delta > 0}.
+
+The mid-point \verb{f(phi; theta)} is equal to \code{alpha + delta / 2} while the value
+of the function for \code{x -> Inf} is \code{alpha + delta}.
 }

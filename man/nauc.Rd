@@ -51,3 +51,12 @@ The integral calculated by this function is of the piece-wise function
 The AUC is finally normalized by its maximum possible value, that is the
 area of the rectangle with width \code{xu - xl} and height \code{yu - yl}.
 }
+\examples{
+drda_fit <- drda(response ~ log_dose, data = voropm2)
+nauc(drda_fit)
+nauc(drda_fit, xlim = c(6, 8), ylim = c(0.2, 0.5))
+}
+\seealso{
+\code{\link[drda]{naac}} for the Normalized Area Above the Curve
+(NAAC).
+}

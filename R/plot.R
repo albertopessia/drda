@@ -10,20 +10,23 @@
 #'
 #' This function provides a scatter plot of the observed data, overlaid with the
 #' maximum likelihood curve fit.
-#' If multiple fit objects are given, they will all be placed in the same plot.
+#' If multiple fit objects from the same family of models are given, they will
+#' all be placed in the same plot.
 #'
 #' Accepted plotting arguments are:
 #'
 #' \describe{
-#'   \item{base}{character string with the base used to print the values on the
-#'     x axis. Accepted values are `e` for the natural logarithm (the default),
-#'     `10` for base 10, and `2` for base 2.}
+#'   \item{base}{character string with the base used for printing the values on
+#'     the `x` axis. Accepted values are `10` for base 10, `2` for base 2, `e`
+#'     for base e, or `n` (default) for no log-scale printing.}
 #'   \item{col}{curve color(s). By default, up to 9 color-blind friendly
 #'     colors are provided.}
 #'   \item{xlab, ylab}{axis labels.}
 #'   \item{xlim, ylim}{the range of x and y values with sensible defaults.}
 #'   \item{level}{level of confidence intervals. Set to zero or a negative value
 #'     to disable confidence intervals.}
+#'   \item{midpoint}{if `FALSE` do not show guidelines associated with the
+#'     curve mid-point.}
 #'   \item{legend_show}{if `FALSE` do not show the legend.}
 #'   \item{legend_location}{character string with custom legend position. See
 #'     \code{link[graphics]{legend}} for possible keywords.}
@@ -34,7 +37,7 @@
 #'
 #' @importFrom graphics axis box curve legend lines par polygon points
 #' @importFrom graphics plot.default
-#' @importFrom grDevices col2rgb dev.flush dev.hold extendrange rgb
+#' @importFrom grDevices adjustcolor dev.flush dev.hold extendrange
 #' @importFrom stats qchisq
 #'
 #' @export
@@ -52,230 +55,110 @@ plot.drda <- function(x, ...) {
   is_drda <- vapply(fit_objects, function(x) inherits(x, "drda"), FALSE)
   fit_objects <- fit_objects[is_drda]
 
-  if (length(fit_objects)) {
+  if (length(fit_objects) > 0) {
     return(plot.drdalist(c(list(x), fit_objects), ...))
   }
 
-  col <- dotargs$col
+  col <- dotargs[["col"]]
   if (is.null(col)) {
     col <- "#EE6677FF"
   }
 
-  base <- dotargs$base
-  k <- 1
-  if (!is.null(base)) {
-    if (base == "10") {
-      k <- log(10)
-    } else if (base == "2") {
-      k <- log(2)
-    } else {
-      # if it's not 2 nor 10, we set by default "e"
-      base <- "e"
-    }
-  } else {
-    if (x$is_log) {
-      base <- "e"
-    } else {
-      # by default we use a log10 scale
-      base <- "10"
-      k <- log(10)
-    }
-  }
-
-  xlab <- dotargs$xlab
+  xlab <- dotargs[["xlab"]]
   if (is.null(xlab)) {
-    xlab <- if (base == "e") {
-      "log(Predictor)"
-    } else {
-      "Predictor"
-    }
+    xlab <- "Predictor"
   }
 
-  ylab <- dotargs$ylab
+  ylab <- dotargs[["ylab"]]
   if (is.null(ylab)) {
     ylab <- "Response"
   }
 
-  main <- dotargs$main
+  main <- dotargs[["main"]]
   if (is.null(main)) {
     main <- ""
   }
 
-  theta <- x$coefficients
-
-  alpha <- 0
-  beta <- 1
-  eta <- -1
-  phi <- 0
-
-  if (x$mean_function != "logistic2") {
-    alpha <- theta[1]
-    beta <- theta[2]
-    eta <- theta[3]
-    phi <- theta[4]
-  } else {
-    eta <- theta[1]
-    phi <- theta[2]
-  }
-
-  xv <- x$model[, 2]
-  yv <- x$model[, 1]
-  wv <- x$weights
-
-  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
-
-  if (sum(idx) != length(yv)) {
-    yv <- yv[idx]
-    xv <- xv[idx]
-    wv <- wv[idx]
-  }
-
-  if (!x$is_log) {
-    # our functions are defined with the natural logarithm in mind
-    # we will take care of the base later
-    xv <- log(xv)
-  }
-
-  xlim <- dotargs$xlim
-  if (is.null(xlim)) {
-    xlim <- extendrange(xv, f = 0.08)
-
-    if (xlim[1] > phi) {
-      xlim[1] <- phi - 50
-    } else if (xlim[2] < phi) {
-      xlim[2] <- phi + 50
-    }
-  }
-
-  ylim <- dotargs$ylim
-  if (is.null(ylim)) {
-    ylim <- extendrange(yv, f = 0.08)
-
-    if (ylim[1] > alpha) {
-      ylim[1] <- alpha - 0.5
-    }
-
-    if (ylim[2] < beta) {
-      ylim[2] < beta + 0.5
-    }
-
-    if ((ylim[1] > 0) && (ylim[1] < 1)) {
-      ylim[1] <- 0
-    }
-
-    if ((ylim[2] > 0) && (ylim[2] < 1)) {
-      ylim[2] <- 1
-    }
-  }
-
-  xx <- seq(xlim[1], xlim[2], length.out = 500)
-  mu <- fn(x, xx, theta)
-
-  level <- dotargs$level
+  level <- dotargs[["level"]]
   if (is.null(level)) {
     level <- 0.95
   }
 
-  if ((level > 0) && (level < 1)) {
-    q <- qchisq(level, sum(x$estimated))
-    cv <- curve_variance(x, xx)
-    cs <- sqrt(q * cv)
-
-    upper_bound <- mu + cs
-    lower_bound <- mu - cs
+  midpoint <- dotargs[["midpoint"]]
+  if (is.null(midpoint)) {
+    midpoint <- TRUE
   }
 
-  if (base == "e") {
-    x_axis_ticks <- pretty(xlim)
-    x_axis_labels <- TRUE
-  } else {
-    xlim <- xlim / k
-
-    xv <- xv / k
-    xx <- xx / k
-
-    x1 <- floor(xv[1])
-    x2 <- ceiling(xv[length(xv)])
-
-    x_axis_ticks <- seq(x1, x2, by = ceiling((x2 - x1) / 6))
-
-    x_axis_labels <- FALSE
-    if (base == "10" || base == "2") {
-      x_axis_labels <- str2expression(paste(base, "^", x_axis_ticks, sep = ""))
-    }
-
-    # the following is based on https://stackoverflow.com/a/6956596/7073122
-    x_axis_minor <- if (base == "10") {
-      log10(pretty(10^x_axis_ticks[1:2], 9)) - x_axis_ticks[1]
-    } else {
-      log2(pretty(2^x_axis_ticks[1:2], 9)) - x_axis_ticks[1]
-    }
-
-    x_axis_minor <- x_axis_minor[-c(1, length(x_axis_minor))]
-    x_axis_minor <- c(outer(x_axis_minor, x_axis_ticks, `+`))
-    x_axis_minor <- x_axis_minor[
-      x_axis_minor > xlim[1] & x_axis_minor < xlim[2]
-    ]
-  }
+  params <- plot_params(
+    x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+  )
 
   dev.hold()
 
   plot.default(
-    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE, main = main
+    params$xlim, params$ylim, type = "n", xlim = params$xlim,
+    ylim = params$ylim, xlab = xlab, ylab = ylab, axes = FALSE, main = main
   )
 
-  axis(1, at = x_axis_ticks, labels = x_axis_labels)
-  if (base != "e") {
-    axis(1, at = x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
-  }
-  axis(2, at = pretty(ylim))
-  box()
+  if (is.null(params$x_axis_ticks_1)) {
+    axis(1, at = params$x_axis_ticks, labels = params$x_axis_labels)
+  } else {
+    axis(1, at = params$x_axis_ticks_1, labels = params$x_axis_labels_1)
+    axis(1, at = params$x_axis_ticks_2, labels = params$x_axis_labels_2)
 
-  points(xv, yv, col = col)
-  lines(xx, mu, lty = 2, lwd = 2, col = col)
+    axis(1, at = params$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl"))
+    axis(1, at = params$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl"))
+
+    axis(1, at = params$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
+  }
+
+  axis(2, at = pretty(params$ylim))
+
+  box_x <- par("usr")[params$box$x]
+  box_y <- par("usr")[params$box$y]
+
+  if (!is.null(params$box$z)) {
+    box_x[1] <- params$box$z[1]
+    box_x[10] <- params$box$z[2]
+  }
+
+  lines(x = box_x, y = box_y)
 
   if ((level > 0) && (level < 1)) {
-    xci <- c(xx, rev(xx))
+    q <- qchisq(level, sum(x$estimated))
+    cs <- sqrt(q * params$cv)
+    upper_bound <- params$mu + cs
+    lower_bound <- params$mu - cs
+
+    xci <- c(params$xx, rev(params$xx))
     yci <- c(upper_bound, rev(lower_bound))
 
-    cc <- col2rgb(col) / 255
-    cc <- rgb(cc[1], cc[2], cc[3], 0.08)
+    yci[yci < par("usr")[3]] <- par("usr")[3]
+    yci[yci > par("usr")[4]] <- par("usr")[4]
 
-    polygon(xci, yci, col = cc, border = FALSE)
+    polygon(xci, yci, col = adjustcolor(col, 0.08), border = FALSE)
   }
 
-  if (x$mean_function == "logistic2" || x$mean_function == "logistic4") {
-    f <- fn(x, phi, theta)
+  points(params$xv, params$yv, col = col)
+  lines(params$xx, params$mu, lty = 2, lwd = 2, col = col)
 
-    if (base != "e") {
-      phi <- phi / k
-    }
-
-    if (phi > xlim[1] && phi < xlim[2]) {
-      lines(
-        x = rep(phi, 2), y = c(par("usr")[3], f), lty = 3, col = col
-      )
-
-      lines(
-        x = c(par("usr")[1], phi), y = rep(f, 2), lty = 3, col = col
-      )
-    }
+  if (midpoint && !is.null(params$midpoint_x)) {
+    lines(x = params$midpoint_x, y = params$midpoint_y, lty = 3, col = col)
   }
 
-  legend_show <- dotargs$legend_show
+  legend_show <- dotargs[["legend_show"]]
   if (is.null(legend_show) || legend_show) {
-    legend_location <- dotargs$legend_location
+    legend_location <- dotargs[["legend_location"]]
+
     if (is.null(legend_location)) {
-      v <- ((alpha <= beta) && (eta <= 0)) || ((alpha >= beta) && (eta >= 0))
-      legend_location <- if (v) {
-        "bottomleft"
+      legend_location <- if (params$mu[1] < params$mu[length(params$mu)]) {
+        "bottomright"
       } else {
-        "topleft"
+        "topright"
       }
     }
 
-    legend_labels <- dotargs$legend
+    legend_labels <- dotargs[["legend"]]
     if (is.null(legend_labels)) {
       legend_labels <- x$mean_function
     }
@@ -299,18 +182,13 @@ plot.drdalist <- function(x, ...) {
     return(plot.drda(x[[1L]], ...))
   }
 
-  M <- length(x)
-
-  # non-log fits get the precedence
-  is_log <- all(vapply(x, function(y) y$is_log, TRUE))
-
   dotargs <- list(...)
 
-  col <- dotargs$col
+  col <- dotargs[["col"]]
   if (is.null(col)) {
     # choose a colorblind friendly palette
     # https://personal.sron.nl/~pault/
-    col <- if (M <= 6) {
+    col <- if (n_curves <= 6) {
       # Paul Tol's bright palette
       c(
         "#EE6677FF", "#4477AAFF", "#228833FF",
@@ -326,140 +204,259 @@ plot.drdalist <- function(x, ...) {
     }
   }
 
-  if (length(col) < M) {
-    col <- c(col, rep("#000000FF", M - length(col)))
+  if (length(col) < n_curves) {
+    col <- c(col, rep("#000000FF", n_curves - length(col)))
   }
 
-  base <- dotargs$base
+  xlab <- dotargs[["xlab"]]
+  if (is.null(xlab)) {
+    xlab <- "Predictor"
+  }
+
+  ylab <- dotargs[["ylab"]]
+  if (is.null(ylab)) {
+    ylab <- "Response"
+  }
+
+  main <- dotargs[["main"]]
+  if (is.null(main)) {
+    main <- ""
+  }
+
+  level <- dotargs[["level"]]
+  if (is.null(level)) {
+    level <- 0.95
+  }
+
+  midpoint <- dotargs[["midpoint"]]
+  if (is.null(midpoint)) {
+    midpoint <- TRUE
+  }
+
+  params <- vector("list", n_curves)
+
+  plot_type <- 1
+  if (inherits(x[[n_curves]], "loglogistic")) {
+    plot_type <- 2
+  }
+
+  params[[n_curves]] <- plot_params(
+    x[[n_curves]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+  )
+
+  for (i in seq_len(n_curves - 1)) {
+    if (
+      (inherits(x[[i]], "logistic") && plot_type != 1) ||
+      (inherits(x[[i]], "loglogistic") && plot_type != 2)
+    ) {
+      stop("curves defined on different domains", call. = FALSE)
+    }
+
+    params[[i]] <- plot_params(
+      x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+    )
+  }
+
+  tmp <- vapply(params, function(w) w$xlim, numeric(2))
+
+  j <- which.max(tmp[2, ])
+  xlim <- c(min(tmp[1, ]), tmp[2, j])
+
+  tmp <- vapply(params, function(w) w$ylim, numeric(2))
+  ylim <- c(min(tmp[1, ]), max(tmp[2, ]))
+
+  dev.hold()
+
+  plot.default(
+    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+    axes = FALSE
+  )
+
+  if (plot_type == 1) {
+    axis(1, at = params[[j]]$x_axis_ticks, labels = params[[j]]$x_axis_labels)
+  } else if (plot_type == 2) {
+    axis(
+      1, at = params[[j]]$x_axis_ticks_1, labels = params[[j]]$x_axis_labels_1
+    )
+    axis(
+      1, at = params[[j]]$x_axis_ticks_2, labels = params[[j]]$x_axis_labels_2
+    )
+
+    axis(
+      1, at = params[[j]]$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl")
+    )
+    axis(
+      1, at = params[[j]]$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl")
+    )
+  }
+
+  axis(1, at = params[[j]]$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
+  axis(2, at = pretty(ylim))
+
+  box_x <- par("usr")[params[[j]]$box$x]
+  box_y <- par("usr")[params[[j]]$box$y]
+
+  if (!is.null(params[[j]]$box$z)) {
+    box_x[1] <- params[[j]]$box$z[1]
+    box_x[10] <- params[[j]]$box$z[2]
+  }
+
+  lines(x = box_x, y = box_y)
+
+  for (i in seq_len(n_curves)) {
+    if ((level > 0) && (level < 1)) {
+      q <- qchisq(level, sum(x[[i]]$estimated))
+      cs <- sqrt(q * params[[i]]$cv)
+      upper_bound <- params[[i]]$mu + cs
+      lower_bound <- params[[i]]$mu - cs
+
+      xci <- c(params[[i]]$xx, rev(params[[i]]$xx))
+      yci <- c(upper_bound, rev(lower_bound))
+
+      yci[yci < par("usr")[3]] <- par("usr")[3]
+      yci[yci > par("usr")[4]] <- par("usr")[4]
+
+      polygon(xci, yci, col = adjustcolor(col[i], 0.08), border = FALSE)
+    }
+
+    points(params[[i]]$xv, params[[i]]$yv, col = col[i])
+    lines(params[[i]]$xx, params[[i]]$mu, lty = 2, lwd = 2, col = col[i])
+
+    if (midpoint && !is.null(params[[i]]$midpoint_x)) {
+      midpoint_x <- c(xlim[1], params[[i]]$midpoint_x[-1])
+      midpoint_y <- c(params[[i]]$midpoint_y[-3], ylim[1])
+      lines(x = midpoint_x, y = midpoint_y, lty = 3, col = col[i])
+    }
+  }
+
+  legend_show <- dotargs[["legend_show"]]
+  if (is.null(legend_show) || legend_show) {
+    legend_location <- dotargs[["legend_location"]]
+
+    if (is.null(legend_location)) {
+      v <- vapply(params, function(w) w$mu[1] < w$mu[length(w$mu)], FALSE)
+
+      legend_location <- if (mean(v) > 0.5) {
+        "bottomright"
+      } else {
+        "topright"
+      }
+    }
+
+    legend_labels <- dotargs[["legend"]]
+    if (is.null(legend_labels)) {
+      legend_labels <- vapply(x, function(w) w$mean_function, "a")
+    }
+
+    legend(
+      legend_location, col = col, lty = 2, lwd = 2, bg = "white",
+      legend = legend_labels
+    )
+  }
+
+  dev.flush()
+
+  invisible(NULL)
+}
+
+# Initialize graphical parameters for a curve defined over the whole real line.
+#
+# @param x `drda` object.
+# @param base character string with the base used for printing the values on the
+#   `x` axis.
+# @param xlim the range of `x` values.
+# @param ylim the range of `y` values.
+#
+# @return List with processed graphical parameters.
+plot_params.logistic <- function(x, base, xlim, ylim) {
+  # these constants are used for proper scaling on the requested base
   k <- 1
+
   if (!is.null(base)) {
     if (base == "10") {
       k <- log(10)
     } else if (base == "2") {
       k <- log(2)
-    } else {
-      # if it's not 2 nor 10, we set by default "e"
-      base <- "e"
+    } else if (base != "e" && base != "n") {
+      # only "n", e", "2", and "10" are supported.
+      base <- "n"
     }
   } else {
-    if (is_log) {
-      base <- "e"
+    # by default we do not change the scale
+    base <- "n"
+  }
+
+  theta <- x$coefficients
+
+  lb <- theta[1]
+  ub <- theta[1]
+  mp <- 0
+
+  if (theta[2] >= 0) {
+    ub <- theta[1] + theta[2]
+  } else {
+    lb <- theta[1] + theta[2]
+  }
+
+  if (x$mean_function == "logistic4") {
+    mp <- theta[4]
+  } else if (x$mean_function == "logistic2") {
+    mp <- theta[4]
+  } else if (x$mean_function == "logistic5") {
+    mp <- theta[4] + (log(theta[5]) - log(2^theta[5] - 1)) / theta[3]
+  } else if (x$mean_function == "gompertz") {
+    mp <- theta[4] - log(log(2)) / theta[3]
+  } else if (x$mean_function == "logistic6") {
+    q <- theta[6]^(-1 / theta[5])
+
+    if (theta[2] >= 0) {
+      ub <- theta[1] + theta[2] * q
     } else {
-      # by default we use a log10 scale
-      base <- "10"
-      k <- log(10)
+      lb <- theta[1] + theta[2] * q
     }
+
+    mp <- theta[4] + (
+      log(theta[5]) - log(theta[6]) - log(2^theta[5] - 1)
+    ) / theta[3]
+  } else {
+    stop("model not supported", call. = FALSE)
   }
 
-  xlab <- dotargs$xlab
-  if (is.null(xlab)) {
-    xlab <- if (base == "e") {
-      "log(Predictor)"
-    } else {
-      "Predictor"
-    }
+  xv <- x$model[, 2]
+  yv <- x$model[, 1]
+  wv <- x$weights
+
+  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
+
+  if (sum(idx) != length(yv)) {
+    yv <- yv[idx]
+    xv <- xv[idx]
+    wv <- wv[idx]
   }
 
-  ylab <- dotargs$ylab
-  if (is.null(ylab)) {
-    ylab <- "Response"
-  }
-
-  # these values we need to decide the best xlim and ylim
-  alpha <- 0
-  beta <- 1
-  eta <- 0
-  phi_min <- 0
-  phi_max <- 0
-
-  xv <- vector("list", M)
-  yv <- vector("list", M)
-  wv <- vector("list", M)
-
-  for (i in seq_len(M)) {
-    theta <- x[[i]]$coefficients
-
-    if (x[[i]]$mean_function != "logistic2") {
-      if (theta[1] < alpha) {
-        alpha <- theta[1]
-      }
-
-      if (theta[2] > beta) {
-        beta <- theta[2]
-      }
-
-      if (theta[4] < phi_min) {
-        phi_min <- theta[4]
-      }
-
-      if (theta[3] <= 0) {
-        eta <- eta - 1
-      } else {
-        eta <- eta + 1
-      }
-
-      if (theta[4] > phi_max) {
-        phi_max <- theta[4]
-      }
-    } else {
-      if (theta[1] <= 0) {
-        eta <- eta - 1
-      } else {
-        eta <- eta + 1
-      }
-
-      if (theta[2] < phi_min) {
-        phi_min <- theta[2]
-      }
-
-      if (theta[2] > phi_max) {
-        phi_max <- theta[2]
-      }
-    }
-
-    xv[[i]] <- x[[i]]$model[, 2]
-    yv[[i]] <- x[[i]]$model[, 1]
-    wv[[i]] <- x[[i]]$weights
-
-    idx <- !is.na(yv[[i]]) & !is.na(xv[[i]]) & !is.na(wv[[i]]) & !(wv[[i]] == 0)
-
-    if (sum(idx) != length(yv[[i]])) {
-      yv[[i]] <- yv[[i]][idx]
-      xv[[i]] <- xv[[i]][idx]
-      wv[[i]] <- wv[[i]][idx]
-    }
-
-    if (!x[[i]]$is_log) {
-      # our functions are defined with the natural logarithm in mind
-      # we will take care of the base later
-      xv[[i]] <- log(xv[[i]])
-    }
-  }
-
-  # we use the average of eta to get an idea of the
-  xlim <- dotargs$xlim
   if (is.null(xlim)) {
-    # use all values to decide the best xlim
-    xlim <- extendrange(unlist(xv), f = 0.08)
+    xlim <- extendrange(xv, f = 0.08)
 
-    # check if some of the fits are bad
-    if (xlim[1] > phi_min) {
-      xlim[1] <- phi_min - 50
-    } else if (xlim[2] < phi_max) {
-      xlim[2] <- phi_max + 50
+    if (xlim[1] > mp) {
+      xlim[1] <- mp - 50
+    } else if (xlim[2] < mp) {
+      xlim[2] <- mp + 50
     }
   }
 
-  ylim <- dotargs$ylim
   if (is.null(ylim)) {
-    ylim <- extendrange(unlist(yv), f = 0.08)
-
-    if (ylim[1] > alpha) {
-      ylim[1] <- alpha - 0.5
+    ylim <- if (x$mean_function != "logistic2") {
+      extendrange(yv, f = 0.08)
+    } else {
+      c(0, 1)
     }
 
-    if (ylim[2] < beta) {
-      ylim[2] < beta + 0.5
+    if (ylim[1] > lb) {
+      ylim[1] <- lb - 0.5
+    }
+
+    if (ylim[2] < ub) {
+      ylim[2] <- ub + 0.5
     }
 
     if ((ylim[1] > 0) && (ylim[1] < 1)) {
@@ -472,51 +469,66 @@ plot.drdalist <- function(x, ...) {
   }
 
   xx <- seq(xlim[1], xlim[2], length.out = 500)
-  mu <- lapply(x, function(y) fn(y, xx, y$coefficients))
+  mu <- fn(x, xx, theta)
+  cv <- curve_variance(x, xx)
 
-  level <- dotargs$level
-  if (is.null(level)) {
-    level <- 0.95
-  }
+  x_axis_ticks <- pretty(xlim)
+  x_axis_labels <- TRUE
 
-  if ((level > 0) && (level < 1)) {
-    upper_bound <- vector("list", M)
-    lower_bound <- vector("list", M)
+  x_axis_minor <- NULL
 
-    for (i in seq_len(M)) {
-      q <- qchisq(level, sum(x[[i]]$estimated))
-      cv <- curve_variance(x[[i]], xx)
-      cs <- sqrt(q * cv)
+  x_axis_ticks_1 <- NULL
+  x_axis_labels_1 <- NULL
+  x_axis_ticks_2 <- NULL
+  x_axis_labels_2 <- NULL
 
-      upper_bound[[i]] <- mu[[i]] + cs
-      lower_bound[[i]] <- mu[[i]] - cs
-    }
-  }
+  box <- list(
+    x = c(
+      # bottom-left border
+      2, 1,
+      # left border
+      1, 1,
+      # top border
+      1, 2,
+      # right border
+      2, 2,
+      # bottom-right border
+      2, 2
+    ),
+    y = c(
+      # bottom-left border
+      3, 3,
+      # left border
+      3, 4,
+      # top border
+      4, 4,
+      # right border
+      3, 4,
+      # bottom-right border
+      3, 3
+    ),
+    z = NULL
+  )
 
-  if (base == "e") {
-    x_axis_ticks <- pretty(xlim)
-    x_axis_labels <- TRUE
-  } else {
+  if (base != "n") {
     xlim <- xlim / k
 
-    xv <- lapply(xv, function(y) y / k)
+    xv <- xv / k
     xx <- xx / k
 
-    x1 <- min(vapply(xv, function(y) floor(y[1]), 0))
-    x2 <- max(vapply(xv, function(y) ceiling(y[length(y)]), 0))
+    x1 <- floor(xv[1])
+    x2 <- ceiling(xv[length(xv)])
 
     x_axis_ticks <- seq(x1, x2, by = ceiling((x2 - x1) / 6))
-
-    x_axis_labels <- FALSE
-    if (base == "10" || base == "2") {
-      x_axis_labels <- str2expression(paste(base, "^", x_axis_ticks, sep = ""))
-    }
+    x_axis_labels <- str2expression(paste(base, "^", x_axis_ticks, sep = ""))
 
     # the following is based on https://stackoverflow.com/a/6956596/7073122
     x_axis_minor <- if (base == "10") {
       log10(pretty(10^x_axis_ticks[1:2], 9)) - x_axis_ticks[1]
-    } else {
+    } else if (base == "2") {
       log2(pretty(2^x_axis_ticks[1:2], 9)) - x_axis_ticks[1]
+    } else {
+      log(pretty(exp(x_axis_ticks[1:2]), 3)) - x_axis_ticks[1]
     }
 
     x_axis_minor <- x_axis_minor[-c(1, length(x_axis_minor))]
@@ -526,86 +538,316 @@ plot.drdalist <- function(x, ...) {
     ]
   }
 
-  dev.hold()
+  midpoint_x <- NULL
+  midpoint_y <- NULL
 
-  plot.default(
-    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE
+  f <- fn(x, mp, theta)
+
+  if (base != "n") {
+    mp <- mp / k
+  }
+
+  if (mp > xlim[1] && mp < xlim[2]) {
+    midpoint_x <- c(xlim[1], mp, mp)
+    midpoint_y <- c(f, f, ylim[1])
+  }
+
+  list(
+    xlim = xlim,
+    ylim = ylim,
+    xv = xv,
+    yv = yv,
+    xx = xx,
+    zz = xx,
+    mu = mu,
+    cv = cv,
+    x_axis_ticks = x_axis_ticks,
+    x_axis_labels = x_axis_labels,
+    x_axis_ticks_1 = x_axis_ticks_1,
+    x_axis_labels_1 = x_axis_labels_1,
+    x_axis_ticks_2 = x_axis_ticks_2,
+    x_axis_labels_2 = x_axis_labels_2,
+    x_axis_minor = x_axis_minor,
+    box = box,
+    midpoint_x = midpoint_x,
+    midpoint_y = midpoint_y
+  )
+}
+
+# Initialize graphical parameters for a curve defined only for positive values.
+#
+# @param x `drda` object.
+# @param base character string with the base used for printing the values on the
+#   `x` axis.
+# @param xlim the range of `x` values.
+# @param ylim the range of `y` values.
+#
+# @return List with processed graphical parameters.
+plot_params.loglogistic <- function(x, base, xlim, ylim) {
+  # these constants are used for proper scaling on the requested base
+  k <- 1
+  h <- exp(3)
+
+  if (!is.null(base)) {
+    if (base == "10") {
+      k <- log(10)
+      h <- exp(5)
+    } else if (base == "2") {
+      k <- log(2)
+      h <- exp(2)
+    } else if (base != "e" && base != "n") {
+      # only "n", e", "2", and "10" are supported.
+      base <- "n"
+    }
+  } else {
+    # by default we do not change the scale
+    base <- "n"
+  }
+
+  theta <- x$coefficients
+
+  lb <- theta[1]
+  ub <- theta[1]
+  mp <- 0
+
+  if (theta[2] >= 0) {
+    ub <- theta[1] + theta[2]
+  } else {
+    lb <- theta[1] + theta[2]
+  }
+
+  if (x$mean_function == "loglogistic4") {
+    mp <- log(theta[4])
+  } else if (x$mean_function == "loglogistic2") {
+    mp <- log(theta[4])
+  } else if (x$mean_function == "loglogistic5") {
+    mp <- log(theta[4]) + (log(theta[5]) - log(2^theta[5] - 1)) / theta[3]
+  } else if (x$mean_function == "loggompertz") {
+    mp <- log(theta[4]) - log(log(2)) / theta[3]
+  } else if (x$mean_function == "loglogistic6") {
+    q <- theta[6]^(-1 / theta[5])
+
+    if (theta[2] >= 0) {
+      ub <- theta[1] + theta[2] * q
+    } else {
+      lb <- theta[1] + theta[2] * q
+    }
+
+    mp <- log(theta[4]) + (
+      log(theta[5]) - log(theta[6]) - log(2^theta[5] - 1)
+    ) / theta[3]
+  } else {
+    stop("model not supported", call. = FALSE)
+  }
+
+  xv <- x$model[, 2]
+  yv <- x$model[, 1]
+  wv <- x$weights
+
+  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
+
+  if (sum(idx) != length(yv)) {
+    yv <- yv[idx]
+    xv <- xv[idx]
+    wv <- wv[idx]
+  }
+
+  len <- length(xv)
+  zero_x <- xv == 0
+
+  if (base != "n") {
+    xv[zero_x] <- min(xv[!zero_x]) / h
+    xv <- log(xv)
+  }
+
+  if (is.null(xlim)) {
+    xlim <- if (base == "n") {
+      c(0, xv[len] * 1.08)
+    } else {
+      c(xv[1], xv[len] * 1.08)
+    }
+
+    if (base == "n") {
+      if (xlim[1] > exp(mp)) {
+        xlim[1] <- exp(mp - 3)
+      } else if (xlim[2] < exp(mp)) {
+        xlim[2] <- exp(mp + 3)
+      }
+    } else {
+      if (xlim[1] > mp) {
+        xlim[1] <- mp - 3
+      } else if (xlim[2] < mp) {
+        xlim[2] <- mp + 3
+      }
+    }
+  } else {
+    if (xlim[1] < 0 || xlim[2] <= 0 || xlim[1] >= xlim[2]) {
+      stop("wrong 'xlim' values", call. = FALSE)
+    }
+
+    if (base != "n") {
+      if (xlim[1] == 0) {
+        xlim <- c(xv[1], log(xlim[2]))
+      } else {
+        xlim <- log(xlim)
+      }
+    }
+  }
+
+  if (is.null(ylim)) {
+    ylim <- if (x$mean_function != "loglogistic2") {
+      extendrange(yv, f = 0.08)
+    } else {
+      c(0, 1)
+    }
+
+    if (ylim[1] > lb) {
+      ylim[1] <- lb - 0.5
+    }
+
+    if (ylim[2] < ub) {
+      ylim[2] <- ub + 0.5
+    }
+
+    if ((ylim[1] > 0) && (ylim[1] < 1)) {
+      ylim[1] <- 0
+    }
+
+    if ((ylim[2] > 0) && (ylim[2] < 1)) {
+      ylim[2] <- 1
+    }
+  }
+
+  xx <- seq(xlim[1], xlim[2], length.out = 500)
+  zz <- if (base == "n") {
+    xx
+  } else {
+    exp(xx)
+  }
+
+  mu <- fn(x, zz, theta)
+  cv <- curve_variance(x, zz)
+
+  x_axis_ticks <- pretty(xlim)
+  x_axis_labels <- TRUE
+
+  x_axis_minor <- NULL
+
+  x_axis_ticks_1 <- NULL
+  x_axis_labels_1 <- NULL
+  x_axis_ticks_2 <- NULL
+  x_axis_labels_2 <- NULL
+
+  box <- list(
+    x = c(
+      # bottom-left border
+      2, 1,
+      # left border
+      1, 1,
+      # top border
+      1, 2,
+      # right border
+      2, 2,
+      # bottom-right border
+      2, 2
+    ),
+    y = c(
+      # bottom-left border
+      3, 3,
+      # left border
+      3, 4,
+      # top border
+      4, 4,
+      # right border
+      3, 4,
+      # bottom-right border
+      3, 3
+    ),
+    z = NULL
   )
 
-  axis(1, at = x_axis_ticks, labels = x_axis_labels)
-  if (base != "e") {
-    axis(1, at = x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
-  }
-  axis(2, at = pretty(ylim))
-  box()
+  f <- 0.0
 
-  for (i in seq_len(M)) {
-    points(xv[[i]], yv[[i]], col = col[i])
-    lines(xx, mu[[i]], lty = 2, lwd = 2, col = col[i])
+  if (base != "n") {
+    f <- fn(x, exp(mp), theta)
 
-    if ((level > 0) && (level < 1)) {
-      xci <- c(xx, rev(xx))
-      yci <- c(upper_bound[[i]], rev(lower_bound[[i]]))
+    mp <- mp / k
 
-      cc <- col2rgb(col[i]) / 255
-      cc <- rgb(cc[1], cc[2], cc[3], 0.08)
+    xlim <- xlim / k
 
-      polygon(xci, yci, col = cc, border = FALSE)
-    }
+    xv <- xv / k
+    xx <- xx / k
 
-    mean_fn <- x[[i]]$mean_function
-    phi <- if (mean_fn == "logistic4") {
-      x[[i]]$coefficients[4]
-    } else if (mean_fn == "logistic2") {
-      x[[i]]$coefficients[2]
-    } else {
-      NA_real_
-    }
+    x1 <- floor(xv[1])
+    x2 <- ceiling(xv[len])
 
-    if (!is.na(phi)) {
-      f <- fn(x[[i]], phi, x[[i]]$coefficients)
-
-      if (base != "e") {
-        phi <- phi / k
-      }
-
-      if (phi > xlim[1] && phi < xlim[2]) {
-        lines(
-          x = rep(phi, 2), y = c(par("usr")[3], f), lty = 3, col = col[i]
-        )
-
-        lines(
-          x = c(par("usr")[1], phi), y = rep(f, 2), lty = 3, col = col[i]
-        )
-      }
-    }
-  }
-
-  legend_show <- dotargs$legend_show
-  if (is.null(legend_show) || legend_show) {
-    legend_location <- dotargs$legend_location
-    if (is.null(legend_location)) {
-      v <- ((alpha <= beta) && (eta <= 0)) || ((alpha >= beta) && (eta >= 0))
-      legend_location <- if (v) {
-        "bottomleft"
-      } else {
-        "topleft"
-      }
-    }
-
-    legend_labels <- dotargs$legend
-    if (is.null(legend_labels)) {
-      legend_labels <- vapply(x, function(y) y$mean_function, "a")
-    }
-
-    legend(
-      legend_location, col = col[1:M], lty = 2, lwd = 2, bg = "white",
-      legend = legend_labels
+    x_axis_ticks <- seq(x1, x2, by = ceiling((x2 - x1) / 6))
+    x_axis_labels <- str2expression(
+      c("0", paste(base, "^", x_axis_ticks[-1], sep = ""))
     )
+
+    # the following is based on https://stackoverflow.com/a/6956596/7073122
+    x_axis_minor <- if (base == "10") {
+      log10(pretty(10^x_axis_ticks[1:2], 9)) - x_axis_ticks[1]
+    } else if (base == "2") {
+      log2(pretty(2^x_axis_ticks[1:2], 9)) - x_axis_ticks[1]
+    } else {
+      log(pretty(exp(x_axis_ticks[1:2]), 3)) - x_axis_ticks[1]
+    }
+
+    x_axis_minor <- x_axis_minor[-c(1, length(x_axis_minor))]
+    x_axis_minor <- c(outer(x_axis_minor, x_axis_ticks, `+`))
+    x_axis_minor <- x_axis_minor[
+      x_axis_minor > xlim[1] & x_axis_minor < xlim[2]
+    ]
+
+    x_axis_ticks[1] <- xv[1]
+
+    p1 <- 0.25 * (x_axis_ticks[2] - x_axis_ticks[1])
+    p2 <- 0.35 * (x_axis_ticks[2] - x_axis_ticks[1])
+
+    x1 <- x_axis_ticks[1] + p1
+    x2 <- x_axis_ticks[1] + p2
+
+    x_axis_minor <- x_axis_minor[x_axis_minor >= x2]
+
+    x_axis_ticks_1 <- c(x_axis_ticks[1], x1)
+    x_axis_labels_1 <- c(x_axis_labels[1], "")
+    x_axis_ticks_2 <- c(x2, x_axis_ticks[-1])
+    x_axis_labels_2 <- c("", x_axis_labels[-1])
+
+    box$z <- c(x1, x2)
+  } else {
+    mp <- exp(mp)
+    f <- fn(x, mp, theta)
   }
 
-  dev.flush()
+  midpoint_x <- NULL
+  midpoint_y <- NULL
 
-  invisible(NULL)
+  if (mp > xlim[1] && mp < xlim[2]) {
+    midpoint_x <- c(xlim[1], mp, mp)
+    midpoint_y <- c(f, f, ylim[1])
+  }
+
+  list(
+    xlim = xlim,
+    ylim = ylim,
+    xv = xv,
+    yv = yv,
+    xx = xx,
+    zz = zz,
+    mu = mu,
+    cv = cv,
+    x_axis_ticks = x_axis_ticks,
+    x_axis_labels = x_axis_labels,
+    x_axis_ticks_1 = x_axis_ticks_1,
+    x_axis_labels_1 = x_axis_labels_1,
+    x_axis_ticks_2 = x_axis_ticks_2,
+    x_axis_labels_2 = x_axis_labels_2,
+    x_axis_minor = x_axis_minor,
+    box = box,
+    midpoint_x = midpoint_x,
+    midpoint_y = midpoint_y
+  )
 }

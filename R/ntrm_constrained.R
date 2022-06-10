@@ -312,7 +312,10 @@ ntrm_lagrange_multiplier <- function(obj, mu) {
   # Lagrange multipliers cannot be negative
   idx_neg <- z < 0
   if (any(idx_neg)) {
-    z[idx_neg] <- pmin(1.0e-3, mu / obj$s[idx_neg])
+    s <- obj$s
+    s[s == 0] <- .Machine$double.eps
+
+    z[idx_neg] <- pmin(1.0e-3, mu / s[idx_neg])
   }
 
   z
@@ -1065,6 +1068,25 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     }
   }
 
+  # initial value should already be an optimum or close to it
+  obj <- ntrm_init_obj(
+    fn, gh, C, cur_optimum, C(cur_optimum), constraints$A, 0
+  )
+  error <- ntrm_error(obj, 0)
+
+  if (error < eps_2) {
+    return(
+      list(
+        optimum = obj$x,
+        minimum = obj$f,
+        converged = TRUE,
+        iterations = 0
+      )
+    )
+  }
+
+  # unfortunately the error is too high and we need to refine the solution
+  #
   # the algorithm is very sensitive to the initial slack variables
   #
   # we try to find a value for which the error is already small
@@ -1087,18 +1109,9 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
     }
   )
 
-  # if the starting point is way too far from the true solution, the previous
-  # strategy might not work
   obj <- ntrm_init_obj(
     fn, gh, C, cur_optimum, rep(s, nrow(constraints$A)), constraints$A, mu
   )
-
-  error <- ntrm_error(obj, mu)
-  if (error > 100) {
-    obj <- ntrm_init_obj(
-      fn, gh, C, cur_optimum, rep(1, nrow(constraints$A)), constraints$A, mu
-    )
-  }
 
   i <- 0
   repeat {

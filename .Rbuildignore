@@ -1,11 +1,13 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.vscode$
 ^\.gitattributes$
 ^\.github$
 ^\.gitignore$
 ^\.Rprofile$
 ^\.Rhistory$
 ^\.travis\.yml$
+^data-raw$
 ^cran-comments\.md$
 ^CRAN-RELEASE$
 ^LICENSE\.md$

@@ -21,20 +21,23 @@ Plot maximum likelihood curves fitted with \code{drda}.
 \details{
 This function provides a scatter plot of the observed data, overlaid with the
 maximum likelihood curve fit.
-If multiple fit objects are given, they will all be placed in the same plot.
+If multiple fit objects from the same family of models are given, they will
+all be placed in the same plot.
 
 Accepted plotting arguments are:
 
 \describe{
-\item{base}{character string with the base used to print the values on the
-x axis. Accepted values are \code{e} for the natural logarithm (the default),
-\code{10} for base 10, and \code{2} for base 2.}
+\item{base}{character string with the base used for printing the values on
+the \code{x} axis. Accepted values are \code{10} for base 10, \code{2} for base 2, \code{e}
+for base e, or \code{n} (default) for no log-scale printing.}
 \item{col}{curve color(s). By default, up to 9 color-blind friendly
 colors are provided.}
 \item{xlab, ylab}{axis labels.}
 \item{xlim, ylim}{the range of x and y values with sensible defaults.}
 \item{level}{level of confidence intervals. Set to zero or a negative value
 to disable confidence intervals.}
+\item{midpoint}{if \code{FALSE} do not show guidelines associated with the
+curve mid-point.}
 \item{legend_show}{if \code{FALSE} do not show the legend.}
 \item{legend_location}{character string with custom legend position. See
 \code{link[graphics]{legend}} for possible keywords.}

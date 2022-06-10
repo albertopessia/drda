@@ -2,6 +2,10 @@ fn <- function(object, x, theta) {
   UseMethod("fn", object)
 }
 
+gradient <- function(object, theta) {
+  UseMethod("gradient", object)
+}
+
 gradient_hessian <- function(object, theta) {
   UseMethod("gradient_hessian", object)
 }
@@ -46,6 +50,18 @@ curve_variance <- function(object, x) {
   UseMethod("curve_variance", object)
 }
 
+inverse_fn <- function(object, y) {
+  UseMethod("inverse_fn", object)
+}
+
+inverse_fn_gradient <- function(object, y) {
+  UseMethod("inverse_fn_gradient", object)
+}
+
+plot_params <- function(object, base, xlim, ylim) {
+  UseMethod("plot_params", object)
+}
+
 #' Area under the curve
 #'
 #' Evaluate the normalized area under the curve (NAUC).
@@ -86,9 +102,17 @@ curve_variance <- function(object, x) {
 #' @param ylim numeric vector of length 2 with the lower and upped bound of the
 #'  allowed function values. Default is `c(0, 1)`.
 #'
+#' @seealso \code{\link[drda]{naac}} for the Normalized Area Above the Curve
+#'   (NAAC).
+#'
 #' @return Numeric value representing the normalized area under the curve.
 #'
 #' @export
+#'
+#' @examples
+#' drda_fit <- drda(response ~ log_dose, data = voropm2)
+#' nauc(drda_fit)
+#' nauc(drda_fit, xlim = c(6, 8), ylim = c(0.2, 0.5))
 nauc <- function(object, xlim, ylim) {
   UseMethod("nauc", object)
 }
@@ -135,9 +159,58 @@ nauc <- function(object, xlim, ylim) {
 #' @param ylim numeric vector of length 2 with the lower and upped bound of the
 #'  allowed function values. Default is `c(0, 1)`.
 #'
+#' @seealso \code{\link[drda]{nauc}} for the Normalized Area Under the Curve
+#'   (NAUC).
+#'
 #' @return Numeric value representing the normalized area above the curve.
 #'
 #' @export
+#'
+#' @examples
+#' drda_fit <- drda(response ~ log_dose, data = voropm2)
+#' naac(drda_fit)
+#' naac(drda_fit, xlim = c(6, 8), ylim = c(0.2, 0.5))
 naac <- function(object, xlim, ylim) {
   UseMethod("naac", object)
+}
+
+#' Effective dose
+#'
+#' Estimate effective doses, that is the `x` values for which `f(x) = y`.
+#'
+#' @details
+#' Given a fitted model `f(x; theta)` we seek the values `x` at which the
+#' function is equal to the specified response values.
+#'
+#' If responses are given on a relative scale (`type = "relative"`), then `y` is
+#' expected to range in the interval `(0, 1)`.
+#'
+#' If responses are given on an absolute scale (`type = "absolute"`), then `y`
+#' is free to vary on the whole real line. Note, however, that the solution
+#' does not exist when `y` is not in the image of the function.
+#'
+#' @param object fit object as returned by \code{\link[drda]{drda}}.
+#' @param y numeric vector with response levels (default 0.5).
+#' @param type character string with either "relative" (default) or "absolute".
+#' @param level level of confidence intervals (default 0.95).
+#'
+#' @return Numeric matrix with the effective doses and the corresponding
+#'   confidence intervals. Each row is associated with each value of `y`.
+#'
+#' @export
+#'
+#' @examples
+#' drda_fit <- drda(response ~ log_dose, data = voropm2)
+#' effective_dose(drda_fit)
+#'
+#' # relative values are given on the (0, 1) range
+#' effective_dose(drda_fit, y = c(0.2, 0.8))
+#'
+#' # explicitly say when we are using actual response values
+#' effective_dose(drda_fit, y = c(0.2, 0.8), type = "absolute")
+#'
+#' # use a different confidence level
+#' effective_dose(drda_fit, y = 0.6, level = 0.8)
+effective_dose <- function(object, y, type, level) {
+  UseMethod("effective_dose", object)
 }

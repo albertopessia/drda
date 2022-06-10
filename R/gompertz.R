@@ -7,13 +7,11 @@ gompertz_new <-  function(
       stop("'start' must be of length 4", call. = FALSE)
     }
 
-    if (start[2] <= start[1]) {
-      stop("parameter 'beta' cannot be smaller than 'alpha'", call. = FALSE)
+    if (start[3] <= 0) {
+      stop("parameter 'eta' cannot be negative nor zero", call. = FALSE)
     }
 
-    if (start[3] == 0) {
-      stop("parameter 'eta' cannot be initialized to zero", call. = FALSE)
-    }
+    start[3] <- log(start[3])
   }
 
   object <- structure(
@@ -36,29 +34,31 @@ gompertz_new <-  function(
     object$constrained <- TRUE
 
     if (is.null(lower_bound)) {
-      rep(-Inf, 4)
+      lower_bound <- rep(-Inf, 4)
     } else {
       if (length(lower_bound) != 4) {
         stop("'lower_bound' must be of length 4", call. = FALSE)
       }
 
-      if (lower_bound[2] < lower_bound[1]) {
-        # lower bound on alpha is a stronger constraint because beta > alpha
-        lower_bound[2] <- lower_bound[1]
+      lower_bound[3] <- if (lower_bound[3] > 0) {
+        log(lower_bound[3])
+      } else {
+        -Inf
       }
     }
 
     if (is.null(upper_bound)) {
-      rep(Inf, 4)
+      upper_bound <- rep(Inf, 4)
     } else {
       if (length(upper_bound) != 4) {
         stop("'upper_bound' must be of length 4", call. = FALSE)
       }
 
-      if (upper_bound[1] > upper_bound[2]) {
-        # upper bound on beta is a stronger constraint because alpha < beta
-        upper_bound[1] <- upper_bound[2]
+      if (upper_bound[3] <= 0) {
+        stop("'upper_bound[3]' cannot be negative nor zero.", call. = FALSE)
       }
+
+      upper_bound[3] <- log(upper_bound[3])
     }
 
     object$lower_bound <- lower_bound
@@ -75,16 +75,20 @@ gompertz_new <-  function(
 #' @details
 #' The Gompertz function `f(x; theta)` is defined here as
 #'
-#' `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
+#' `g(x; theta) = exp(-exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
 #'
-#' where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-#' asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-#' steepness of the curve or growth rate, and `phi` related to the function
-#' value at `x = 0`.
+#' where `theta = c(alpha, delta, eta, phi)`, `alpha` is the value of the
+#' function when `x -> -Inf`, `delta` is the (signed) height of the curve,
+#' `eta > 0` is the steepness of the curve or growth rate, and `phi` is related
+#' with the value of function at `x = 0`.
+#'
+#' When `delta < 0` the curve is monotonically decreasing while it is
+#' monotonically increasing for `delta > 0`.
 #'
 #' @param x numeric vector at which the Gompertz function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
-#'   `c(alpha, beta, eta, phi)`.
+#'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   Gompertz function.
@@ -92,44 +96,378 @@ gompertz_new <-  function(
 #' @export
 gompertz_fn <- function(x, theta) {
   alpha <- theta[1]
-  beta <- theta[2]
+  delta <- theta[2]
   eta <- theta[3]
   phi <- theta[4]
 
-  alpha + (beta - alpha) * exp(-exp(-eta * (x - phi)))
+  alpha + delta * exp(-exp(-eta * (x - phi)))
 }
 
-# Gompertz function
-#
-# Evaluate at a particular set of parameters the Gompertz function.
-#
-# @details
-# The Gompertz function `f(x; theta)` is defined here as
-#
-# `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
-#
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate, and `phi` related to the function
-# value at `x = 0`.
-#
-# @param object object of class `gompertz`.
-# @param x numeric vector at which the Gompertz function is to be evaluated.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, beta, eta, phi)`.
-#
-# @return Numeric vector of the same length of `x` with the values of the
-#   Gompertz function.
+# @rdname gompertz_fn
 fn.gompertz <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
 
-# @rdname fn.gompertz
+# @rdname gompertz_fn
 fn.gompertz_fit <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
 
-# Gompertz function
+#' Gompertz function
+#'
+#' Evaluate at a particular set of parameters the Gompertz function.
+#'
+#' @details
+#' The Gompertz function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = exp(-exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. When `delta` is
+#' positive (negative) the curve is monotonically increasing (decreasing).
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#'
+#' @return Gradient or Hessian evaluated at the specified point.
+#'
+#' @export
+gompertz_gradient <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  z <- x - phi
+  y <- eta * z
+
+  b <- exp(-y)
+  g <- exp(-b)
+
+  u <- b * g
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- delta * z * u
+  G[, 4] <- -delta * eta * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+# @rdname gompertz_gradient
+gradient.gompertz_fit <- function(object, x) {
+  gompertz_gradient(x, object$coefficients)
+}
+
+#' @rdname gompertz_gradient
+gompertz_hessian <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  z <- x - phi
+  y <- eta * z
+
+  b <- exp(-y)
+  g <- exp(-b)
+
+  u <- b * g
+  v <- expm1(-y)
+  q <- 1 + y * v
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- z * u
+  H[, 4, 2] <- -eta * u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- delta * z^2 * v * u
+  H[, 4, 3] <- -delta * q * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * eta^2 * v * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname gompertz_gradient
+gompertz_gradient_hessian <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  z <- x - phi
+  y <- eta * z
+
+  b <- exp(-y)
+  g <- exp(-b)
+
+  u <- b * g
+  v <- expm1(-y)
+  q <- 1 + y * v
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- delta * z * u
+  G[, 4] <- -delta * eta * u
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- z * u
+  H[, 4, 2] <- -eta * u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- delta * z^2 * v * u
+  H[, 4, 3] <- -delta * q * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- delta * eta^2 * v * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+#' Gompertz function
+#'
+#' Evaluate at a particular set of parameters the Gompertz function.
+#'
+#' @details
+#' The Gompertz function `f(x; theta)` is defined here as
+#'
+#' `g(x; theta) = exp(-exp(-eta * (x - phi)))`
+#' `f(x; theta) = alpha + delta g(x; theta)`
+#'
+#' where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. When `delta` is
+#' positive (negative) the curve is monotonically increasing (decreasing).
+#'
+#' This set of functions use a different parameterization from
+#' \code{link[drda]{gompertz_gradient}}. To avoid the non-negative
+#' constraints of parameters, the gradient and Hessian computed here are for
+#' the function with `eta2 = log(eta)`.
+#'
+#' Note that argument `theta` is on the original scale and not on the log scale.
+#'
+#' @param x numeric vector at which the function is to be evaluated.
+#' @param theta numeric vector with the six parameters in the form
+#'   `c(alpha, delta, eta, phi)`.
+#'
+#' @return Gradient or Hessian of the alternative parameterization evaluated at
+#'   the specified point.
+#'
+#' @export
+gompertz_gradient_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  z <- x - phi
+  y <- eta * z
+
+  b <- exp(-y)
+  g <- exp(-b)
+
+  r <- -eta * b
+  u <- r * g
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- -delta * z * u
+  G[, 4] <- delta * u
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  G
+}
+
+#' @rdname gompertz_gradient_2
+gompertz_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  z <- x - phi
+  y <- eta * z
+
+  b <- exp(-y)
+  g <- exp(-b)
+
+  r <- -eta * b
+  u <- r * g
+  v <- expm1(-y)
+  q <- 1 + y * v
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- -z * u
+  H[, 4, 2] <- u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * z * q * u
+  H[, 4, 3] <- delta * q * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- -delta * eta * u * v
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  H
+}
+
+#' @rdname gompertz_gradient_2
+gompertz_gradient_hessian_2 <- function(x, theta) {
+  k <- length(x)
+
+  delta <- theta[2]
+  eta <- theta[3]
+  phi <- theta[4]
+
+  z <- x - phi
+  y <- eta * z
+
+  b <- exp(-y)
+  g <- exp(-b)
+
+  r <- -eta * b
+  u <- r * g
+  v <- expm1(-y)
+  q <- 1 + y * v
+
+  G <- matrix(1, nrow = k, ncol = 4)
+
+  G[, 2] <- g
+  G[, 3] <- -delta * z * u
+  G[, 4] <- delta * u
+
+  H <- array(0, dim = c(k, 4, 4))
+
+  H[, 3, 2] <- -z * u
+  H[, 4, 2] <- u
+
+  H[, 2, 3] <- H[, 3, 2]
+  H[, 3, 3] <- -delta * z * q * u
+  H[, 4, 3] <- delta * q * u
+
+  H[, 2, 4] <- H[, 4, 2]
+  H[, 3, 4] <- H[, 4, 3]
+  H[, 4, 4] <- -delta * eta * u * v
+
+  # any NaN is because of corner cases where the derivatives are zero
+  is_nan <- is.nan(G)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the gradient at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    G[is_nan] <- 0
+  }
+
+  is_nan <- is.nan(H)
+  if (any(is_nan)) {
+    warning(
+      paste0(
+        "issues while computing the Hessian at c(",
+        paste(theta, collapse = ", "),
+        ")"
+      )
+    )
+    H[is_nan] <- 0
+  }
+
+  list(G = G, H = H)
+}
+
+# Gompertz function gradient and Hessian
 #
 # Evaluate at a particular set of parameters the gradient and Hessian of the
 # Gompertz function.
@@ -137,80 +475,21 @@ fn.gompertz_fit <- function(object, x, theta) {
 # @details
 # The Gompertz function `f(x; theta)` is defined here as
 #
-# `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
+# `g(x; theta) = exp(-exp(-eta * (x - phi)))`
+# `f(x; theta) = alpha + delta g(x; theta)`
 #
-# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
-# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate, and `phi` related to the function
-# value at `x = 0`.
+# where `theta = c(alpha, delta, eta, phi)`, `alpha` is the value of the
+# function when `x -> -Inf`, `delta` is the (signed) height of the curve,
+# `eta > 0` is the steepness of the curve or growth rate, and `phi` is related
+# with the value of function at `x = 0`.
 #
 # @param object object of class `gompertz`.
 # @param theta numeric vector with the four parameters in the form
-#   `c(alpha, beta, eta, phi)`.
+#   `c(alpha, delta, eta, phi)`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
 gradient_hessian.gompertz <- function(object, theta) {
-  x <- object$stats[, 1]
-
-  alpha <- theta[1]
-  beta <- theta[2]
-  eta <- theta[3]
-  phi <- theta[4]
-
-  omega <- beta - alpha
-
-  b <- exp(-eta * (x - phi))
-
-  g <- exp(-b)
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  t <- q * g
-  u <- r * g
-
-  v <- expm1(-eta * (x - phi))
-
-  gradient <- matrix(0, nrow = object$m, ncol = 4)
-  hessian <- array(0, dim = c(object$m, 4, 4))
-
-  gradient[, 1] <- 1 - g
-  gradient[, 2] <- g
-  gradient[, 3] <- omega * t
-  gradient[, 4] <- omega * u
-
-  hessian[, 1, 1] <- 0
-  hessian[, 2, 1] <- 0
-  hessian[, 3, 1] <- -t
-  hessian[, 4, 1] <- -u
-
-  hessian[, 1, 2] <- 0
-  hessian[, 2, 2] <- 0
-  hessian[, 3, 2] <- t
-  hessian[, 4, 2] <- u
-
-  hessian[, 1, 3] <- hessian[, 3, 1]
-  hessian[, 2, 3] <- hessian[, 3, 2]
-  hessian[, 3, 3] <- omega * (x - phi) * t * v
-  hessian[, 4, 3] <- omega * (u / eta - eta * t * v)
-
-  hessian[, 1, 4] <- hessian[, 4, 1]
-  hessian[, 2, 4] <- hessian[, 4, 2]
-  hessian[, 3, 4] <- hessian[, 4, 3]
-  hessian[, 4, 4] <- -omega * eta * u * v
-
-  # When `b` is infinite, gradient and Hessian show NaNs
-  if (any(is.nan(gradient))) {
-    # these are the limits for b -> Inf
-    gradient[, 1][is.nan(gradient[, 1])] <- 1
-    gradient[, 2:4][is.nan(gradient[, 2:4])] <- 0
-  }
-
-  if (any(is.nan(hessian))) {
-    hessian[is.nan(hessian)] <- 0
-  }
-
-  list(G = gradient, H = hessian)
+  gompertz_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -236,6 +515,8 @@ gradient_hessian.gompertz <- function(object, theta) {
 #   particular parameter choice `theta`.
 rss.gompertz <- function(object) {
   function(theta) {
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
@@ -247,8 +528,10 @@ rss_fixed.gompertz <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 4)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[3] <- exp(theta[3])
 
     mu <- fn(object, object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
@@ -278,6 +561,8 @@ rss_fixed.gompertz <- function(object, known_param) {
 #   the RSS associated to a particular parameter choice `theta`.
 rss_gradient_hessian.gompertz <- function(object) {
   function(theta) {
+    theta[3] <- exp(theta[3])
+
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
 
@@ -304,8 +589,10 @@ rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 4)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
+
+    theta[3] <- exp(theta[3])
 
     mu <- fn(object, object$stats[, 1], theta)
     mu_gradient_hessian <- gradient_hessian(object, theta)
@@ -340,13 +627,13 @@ rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two asymptotes.
 mle_asy.gompertz <- function(object, theta) {
-  m <- object$m
+  names(theta) <- NULL
 
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
 
-  eta <- theta[3]
+  eta <- exp(theta[3])
   phi <- theta[4]
 
   g <- exp(-exp(-eta * (x - phi)))
@@ -357,24 +644,19 @@ mle_asy.gompertz <- function(object, theta) {
   t4 <- 0
   t5 <- 0
 
-  for (i in seq_len(m)) {
-    t1 <- t1 + w[i] * g[i] * (g[i] - 1)
-    t2 <- t2 + w[i] * (g[i] - 1)^2
+  for (i in seq_along(x)) {
+    t1 <- t1 + w[i]
+    t2 <- t2 + w[i] * g[i]
     t3 <- t3 + w[i] * g[i]^2
-    t4 <- t4 + w[i] * y[i] * (g[i] - 1)
-    t5 <- t5 + w[i] * y[i] * g[i]
+    t4 <- t4 + w[i] * y[i]
+    t5 <- t5 + w[i] * g[i] * y[i]
   }
 
-  denom <- t1^2 - t2 * t3
+  denom <- t2^2 - t1 * t3
 
   if (denom != 0) {
-    alpha <- -(t1 * t5 - t3 * t4) / denom
-    beta <- (t1 * t4 - t2 * t5) / denom
-
-    if (beta > alpha) {
-      theta[1] <- alpha
-      theta[2] <- beta
-    }
+    theta[1] <- (t2 * t5 - t3 * t4) / denom
+    theta[2] <- (t2 * t4 - t1 * t5) / denom
   }
 
   theta
@@ -395,98 +677,122 @@ init.gompertz <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
 
-  linear_fit <- summary(lm(stats[, 3] ~ stats[, 1], weights = stats[, 2]))
-  linear_coef <- linear_fit$coefficients
-
   min_value <- min(stats[, 3])
   max_value <- max(stats[, 3])
 
-  # y = a + (b - a) * exp(-exp(-e * (x - p)))
-  # w = (y - a) / (b - a)
-  # z = log(-log(w)) = -e * (x - p) = e * p - e * x
-  #
-  # fit a linear model `z ~ u0 + u1 x` and set `eta = -u1` and `phi = -u0 / u1`
-  # we add a small number to avoid the logarithm of zero
-  zv <- (stats[, 3] - min_value + 1.0e-5) / (max_value - min_value + 2.0e-5)
-  zv <- log(-log(zv))
-  tmp <- lm(zv ~ stats[, 1])
+  theta <- if (is.null(object$start)) {
+    # y = a + (b - a) * exp(-exp(-e * (x - p)))
+    # w = (y - a) / (b - a) = exp(-exp(-e * (x - p)))
+    #
+    # by construction w is defined in (0, 1).
+    #
+    # z = log(-log(w)) = -e * (x - p) = e * p - e * x
+    #
+    # fit `z ~ u0 + u1 x` and set `eta = -u1` and `phi = -u0 / u1`
+    #
+    # we add a very small number to avoid the logarithm of zero.
+    zv <- (stats[, 3] - min_value + 1.0e-8) / (max_value - min_value + 2.0e-8)
+    zv <- log(-log(zv))
+    tmp <- lm(zv ~ stats[, 1])
 
-  eta <- -tmp$coefficients[2]
-  phi <- -tmp$coefficients[1] / eta
+    log_eta <- log(abs(tmp$coefficients[2]))
+    phi <- -tmp$coefficients[1] / tmp$coefficients[2]
 
-  theta <- mle_asy(object, c(min_value, max_value, eta, phi))
-
-  best_rss <- rss_fn(theta)
-  niter <- 1
-
-  if (linear_coef[2, 4] > 0.2) {
-    # we are in big problems as a flat horizontal line is likely the best model
-    weighted_mean <- sum(object$w * object$y) / sum(object$w)
-
-    theta <- c(
-      0.9 * weighted_mean + 0.1 * min_value,
-      0.9 * weighted_mean + 0.1 * max_value,
-      if (linear_coef[2, 1] <= 0) -1.0e-3 else 1.0e-3,
-      object$stats[m, 1] + 100
-    )
-
-    best_rss <- rss_fn(theta)
+    # find the maximum likelihood estimates of the linear parameters
+    mle_asy(object, c(min_value, max_value, log_eta, phi))
+  } else {
+    mle_asy(object, object$start)
   }
 
-  delta <- mean(diff(stats[, 1]))
+  best_rss <- rss_fn(theta)
 
-  v1 <- 20L
-  v2 <- 20L
-  v <- v1 * v2
-  eta_set <- seq(-5, 5, length.out = v1)
-  phi_set <- seq(
-    stats[1, 1] - delta, stats[m, 1] + delta, length.out = v2
+  # this is a space-filling design using a max entropy grid
+  v <- 250
+  param_set <- matrix(
+    c(
+      # log_eta
+      -9.82, -9.78, -9.74, -9.71, -9.64, -9.55, -9.55, -9.51, -9.48, -9.46,
+      -9.25, -8.95, -8.83, -8.75, -8.73, -8.7, -8.6, -8.58, -8.57, -8.56, -8.55,
+      -8.34, -8.28, -8.19, -8.18, -8.08, -8.06, -8.01, -7.95, -7.8, -7.74,
+      -7.73, -7.67, -7.56, -7.5, -7.46, -7.4, -7.25, -7.18, -7.17, -7.17, -7.05,
+      -7.05, -7.04, -6.95, -6.92, -6.92, -6.92, -6.89, -6.66, -6.63, -6.56,
+      -6.54, -6.38, -6.32, -6.26, -6.26, -6.19, -6.14, -6.14, -6.08, -5.99,
+      -5.9, -5.89, -5.88, -5.88, -5.77, -5.75, -5.72, -5.65, -5.54, -5.51,
+      -5.36, -5.35, -5.32, -5.28, -5.1, -5.08, -5.03, -5, -4.98, -4.94, -4.93,
+      -4.92, -4.9, -4.9, -4.82, -4.73, -4.67, -4.48, -4.46, -4.43, -4.37, -4.32,
+      -4.29, -4.27, -4.23, -4.17, -4.17, -4.06, -4.02, -3.94, -3.94, -3.92,
+      -3.92, -3.87, -3.77, -3.7, -3.65, -3.59, -3.57, -3.57, -3.55, -3.3, -3.3,
+      -3.28, -3.27, -3.18, -3.15, -3.09, -3.04, -2.97, -2.93, -2.91, -2.88,
+      -2.88, -2.85, -2.82, -2.77, -2.72, -2.64, -2.64, -2.61, -2.61, -2.54,
+      -2.3, -2.25, -2.21, -2.18, -2.17, -2.15, -2.09, -2, -1.97, -1.93, -1.88,
+      -1.84, -1.83, -1.82, -1.79, -1.6, -1.6, -1.57, -1.56, -1.55, -1.52, -1.36,
+      -1.35, -1.23, -1.23, -1.14, -1.13, -1.11, -1.02, -1, -0.99, -0.95, -0.89,
+      -0.78, -0.73, -0.62, -0.61, -0.58, -0.5, -0.46, -0.41, -0.39, -0.23, -0.2,
+      -0.17, -0.15, -0.14, -0.1, -0.05, 0.03, 0.04, 0.1, 0.1, 0.16, 0.19, 0.31,
+      0.36, 0.36, 0.37, 0.49, 0.49, 0.51, 0.61, 0.63, 0.75, 0.81, 0.81, 0.84,
+      0.87, 0.93, 1.12, 1.24, 1.27, 1.32, 1.49, 1.52, 1.56, 1.58, 1.68, 1.72,
+      1.75, 1.92, 2, 2.09, 2.1, 2.1, 2.18, 2.19, 2.23, 2.23, 2.46, 2.53, 2.55,
+      2.67, 2.71, 2.72, 2.79, 2.86, 2.88, 2.94, 3.03, 3.04, 3.15, 3.21, 3.52,
+      3.54, 3.63, 3.66, 3.72, 3.74, 3.74, 3.75, 3.88, 3.9, 3.91,
+      # phi
+      -10.72, 7.43, -4.6, -6.85, -0.37, -2.6, -8.5, 3.38, 9.46, -13.59, -16.39,
+      -3.49, -14.78, 0.74, -10.22, -6.25, -1.7, -12.81, 4.79, -8.57, 3.19, 1.81,
+      -7.21, -4.09, -11.67, 0.15, -16.69, -2.81, -9.15, 6.01, -1.19, -5.17,
+      -14.25, -7.96, 2.49, -4.26, -6.55, -11.14, 1.26, 6.58, -12.95, -2.64,
+      4.84, -9.6, 8.9, 3.17, -7.53, -18.06, 0.26, -4.35, -10.42, -6.47, -13.03,
+      -1.33, -14.2, 2.12, 6.76, -8.75, 0.46, 4.01, -2.73, -11.54, -15.22, -4.41,
+      -17.91, -1.17, 9, -10.2, -6.52, 1.4, -7.86, -12.49, -2.92, -13.63, 5.29,
+      -0.02, -6.47, -15.27, -10.03, -8.35, 6.57, -1.93, 8.68, -4.72, 3.96, 2.14,
+      -17.65, -13.44, -11.54, -0.08, 5.82, -9.7, 8.17, -15.14, -3.17, -17.6,
+      1.89, -7.01, -3.98, -1.19, 3.47, 9.37, -5.03, -11.52, -14.03, 0.64, 6.51,
+      -8.92, 4.92, 7.72, -2.57, -18.31, -0.95, -11.32, -16.32, 1.84, -9.45,
+      -7.06, 2.95, 4.18, -4.35, 7.3, 9.69, -14.05, 8.25, -12.54, -8.7, -2.83,
+      -5.73, -0.28, 1.32, 6.36, -1.26, -11.39, -4.62, -9.87, -14.09, -18.06,
+      7.83, 4.47, -15.74, -8.37, -12.23, -2.55, 2.96, -5.32, 0.52, -4.18, -6.71,
+      5.89, -13.33, -1.48, -9.77, -18.29, 7.12, 9.22, -16.75, 2.13, -5.8, -7.78,
+      -14.42, 3.55, -2.58, -4.49, -11.28, -0.51, -9.87, 5.09, 7.42, -18.31,
+      -1.37, -12.31, 3.21, 0.9, -7.48, -2.86, -16.28, -11.05, 6.88, -5.19,
+      -14.1, -3.68, -9.66, 1.38, -15.52, 9.36, -1.68, 3.95, -6.08, -17.54, 5.98,
+      2.22, -0.54, -13.56, -7.35, -11.3, 0.78, -9.39, -3.76, -1.75, 9.39, -5.18,
+      8.01, 4.42, -15.16, -8.3, -6.64, -10.14, 2.86, -3.93, -12.67, 0.16,
+      -11.42, -14.22, -2.44, 6.6, 3.69, -6.1, 9.84, -17.15, -0.97, 1.77, -10.32,
+      -3.67, 8.7, 5.01, -4.73, -7.33, -8.86, -2.51, -13.49, 4.2, -1.12, -6.06,
+      -12.29, -15.43, -10.48, -16.71, 0.97, 2.51, 7.63, -3.8, -5.32, 5.64,
+      -7.34, -1.17, -10.01, -14.72, -13.37, -8.87
+    ),
+    ncol = v, byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
   rss_tmp <- rep(10000, v)
 
-  # we check extreme values in case of problematic data
-  theta_eta_1 <- matrix(nrow = 4, ncol = v2)
-  rss_eta_1 <- rep(10000, v2)
-
-  theta_eta_2 <- matrix(nrow = 4, ncol = v2)
-  rss_eta_2 <- rep(10000, v2)
-
-  i <- 0
-  j <- 0
-  for (phi in phi_set) {
-    j <- j + 1
-
-    for (eta in eta_set) {
-      i <- i + 1
-
-      current_par <- mle_asy(object, c(theta[1], theta[2], eta, phi))
-      current_rss <- rss_fn(current_par)
-      theta_tmp[, i] <- current_par
-      rss_tmp[i] <- current_rss
-    }
-
-    current_par <- mle_asy(object, c(theta[1], theta[2], -20, phi))
+  for (i in seq_len(v)) {
+    current_par <- mle_asy(object, c(theta[1], theta[2], param_set[, i]))
     current_rss <- rss_fn(current_par)
-    theta_eta_1[, j] <- current_par
-    rss_eta_1[j] <- current_rss
-
-    current_par <- mle_asy(object, c(theta[1], theta[2], 20, phi))
-    current_rss <- rss_fn(current_par)
-    theta_eta_2[, j] <- current_par
-    rss_eta_2[j] <- current_rss
+    theta_tmp[, i] <- current_par
+    rss_tmp[i] <- current_rss
   }
 
-  ord <- order(rss_tmp)
+  # update the total iteration count
+  # 1: initial crude estimation
+  # 2: flat line approximation
+  # v: total amount of grid points tested
+  niter <- 2 + v
 
+  # many points might have the same approximate RSS therefore we must choose the
+  # most likely ones
+  ord <- order(
+    round(rss_tmp, digits = 4),
+    apply(theta_tmp, 2, function(x) sqrt(crossprod(x)))
+  )
+
+  # select the best solution and other not so good solutions as starting points
   theta_1 <- theta_tmp[, ord[1]]
-  theta_2 <- theta_tmp[, ord[round(v / 3)]]
-  theta_3 <- theta_tmp[, ord[round(2 * v / 3)]]
-  theta_4 <- theta_eta_1[, order(rss_eta_1)[1]]
-  theta_5 <- theta_eta_2[, order(rss_eta_2)[1]]
+  theta_2 <- theta_tmp[, ord[5]]
+  theta_3 <- theta_tmp[, ord[8]]
 
   if (object$constrained) {
+    # fix the candidates to be within the constraints
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
       object$lower_bound, na.rm = TRUE
@@ -503,39 +809,21 @@ init.gompertz <- function(object) {
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
       object$lower_bound, na.rm = TRUE
     )
-    theta_4 <- pmax(
-      pmin(theta_4, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
-    )
-    theta_5 <- pmax(
-      pmin(theta_5, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
-    )
   }
 
-  start <- cbind(theta, theta_1, theta_2, theta_3, theta_4, theta_5)
+  start <- cbind(theta, theta_1, theta_2, theta_3)
 
-  tmp <- fit_nlminb(object, start)
+  tmp <- fit_nlminb(object, start, object$max_iter - niter)
 
   if (!is.infinite(tmp$rss) && (tmp$rss < best_rss)) {
     theta <- tmp$theta
     best_rss <- tmp$rss
-    niter <- niter + tmp$niter
   }
+
+  niter <- niter + tmp$niter
 
   names(theta) <- NULL
   names(niter) <- NULL
-
-  if (theta[2] < theta[1]) {
-    # this is the dual solution, not the one we want
-    # there is no easy formula to translate between the two, so we set the
-    # solution to a sub-optimal one and let `ntrm` do the rest
-    tmp <- theta[1]
-    theta[1] <- theta[2]
-    theta[2] <- tmp
-    theta[3] <- -theta[3]
-    theta[4] <- -theta[4]
-  }
 
   list(theta = theta, niter = niter)
 }
@@ -579,6 +867,7 @@ fit.gompertz <- function(object) {
 
   # bring the parameters back to their natural scale
   theta <- solution$optimum
+  theta[3] <- exp(theta[3])
 
   result <- list(
     converged = solution$converged,
@@ -594,12 +883,12 @@ fit.gompertz <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi")
+  param_names <- c("alpha", "delta", "eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "gompertz_fit"
+  class(result) <- c("gompertz_fit", "logistic")
 
   result
 }
@@ -632,6 +921,7 @@ fit_constrained.gompertz <- function(object) {
   # bring the parameters back to their natural scale
   theta <- object$lower_bound
   theta[!constraint[, 2]] <- solution$optimum
+  theta[3] <- exp(theta[3])
 
   estimated <- !constraint[, 2]
 
@@ -649,12 +939,12 @@ fit_constrained.gompertz <- function(object) {
 
   result$residuals <- object$y - result$fitted.values
 
-  param_names <- c("alpha", "beta", "eta", "phi")
+  param_names <- c("alpha", "delta", "eta", "phi")
 
   names(result$coefficients) <- param_names
   names(result$estimated) <- param_names
 
-  class(result) <- "gompertz_fit"
+  class(result) <- c("gompertz_fit", "logistic")
 
   result
 }
@@ -677,33 +967,35 @@ fit_constrained.gompertz <- function(object) {
 #
 # @return Fisher information matrix evaluated at `theta`.
 fisher_info.gompertz <- function(object, theta, sigma) {
+  x <- object$stats[, 1]
+  y <- object$stats[, 3]
   w <- object$stats[, 2]
-  d <- fn(object, object$stats[, 1], theta) - object$stats[, 3]
+  z <- fn(object, x, theta) - y
 
-  gh <- gradient_hessian(object, theta)
+  gh <- gompertz_gradient_hessian(x, theta)
 
   # in case of theta being the maximum likelihood estimator, this gradient G
   # should be zero. We compute it anyway because we likely have rounding errors
   # in our estimate.
   G <- matrix(0, nrow = object$m, ncol = 4)
-  G[, 1] <- w * d * gh$G[, 1]
-  G[, 2] <- w * d * gh$G[, 2]
-  G[, 3] <- w * d * gh$G[, 3]
-  G[, 4] <- w * d * gh$G[, 4]
+  G[, 1] <- w * z * gh$G[, 1]
+  G[, 2] <- w * z * gh$G[, 2]
+  G[, 3] <- w * z * gh$G[, 3]
+  G[, 4] <- w * z * gh$G[, 4]
 
   G <- apply(G, 2, sum)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
-  H[, , 1] <- w * (d * gh$H[, , 1] + gh$G[, 1] * gh$G)
-  H[, , 2] <- w * (d * gh$H[, , 2] + gh$G[, 2] * gh$G)
-  H[, , 3] <- w * (d * gh$H[, , 3] + gh$G[, 3] * gh$G)
-  H[, , 4] <- w * (d * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
   mu <- fn(object, object$x, theta)
-  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - object$n
+  z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
 
@@ -716,67 +1008,7 @@ fisher_info.gompertz <- function(object, theta, sigma) {
 
 # Gompertz fit
 #
-# Evaluate the variance of the maximum likelihood curve at different predictor
-# values.
-#
-# @param object object of class `gompertz_fit`.
-# @param x numeric vector at which to evaluate the variance.
-#
-# @return Numeric vector with the variances of the maximum likelihood curve.
-curve_variance.gompertz_fit <- function(object, x) {
-  m <- length(x)
-
-  V <- object$vcov[1:4, 1:4]
-
-  if (any(is.na(V))) {
-    return(rep(NA_real_, m))
-  }
-
-  alpha <- object$coefficients[1]
-  beta <- object$coefficients[2]
-  eta <- object$coefficients[3]
-  phi <- object$coefficients[4]
-
-  omega <- beta - alpha
-
-  b <- exp(-eta * (x - phi))
-
-  f <- 1 + b
-
-  q <- (x - phi) * b
-  r <- -eta * b
-
-  s <- 1 / f^2
-  t <- q * s
-  u <- r * s
-
-  G <- matrix(0, nrow = m, ncol = 4)
-
-  G[, 1] <- b / f
-  G[, 2] <- 1 / f
-  G[, 3] <- omega * t
-  G[, 4] <- omega * u
-
-  # When `b` is infinite, gradient shows NaNs
-  if (any(is.nan(G))) {
-    # these are the limits for b -> Inf
-    G[, 1][is.nan(G[, 1])] <- 1
-    G[, 2:4][is.nan(G[, 2:4])] <- 0
-  }
-
-  variance <- rep(NA_real_, m)
-
-  for (i in seq_len(m)) {
-    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
-  }
-
-  variance
-}
-
-# Gompertz fit
-#
-# Evaluate the normalized area under the curve (AUC) and area above the curve
-# (AAC).
+# Find the dose that produced the observed response.
 #
 # @details
 # The Gompertz function `f(x; theta)` is defined here as
@@ -785,105 +1017,50 @@ curve_variance.gompertz_fit <- function(object, x) {
 #
 # where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
 # asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
-# steepness of the curve or growth rate, and `phi` is related to the function
+# steepness of the curve or growth rate, and `phi` related to the function
 # value at `x = 0`.
 #
-# The area under the curve (AUC) is simply the integral of `f(x; theta)` with
-# respect to `x`.
-#
-#' @importFrom stats integrate
-#' @export
-nauc.gompertz_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  if (length(xlim) != 2) {
-    stop("'xlim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(xlim)) {
-    stop("'xlim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (xlim[1] >= xlim[2]) {
-    stop("'xlim[1]' cannot be larger or equal to 'xlim[2]'", call. = FALSE)
-  }
-
-  if (length(ylim) != 2) {
-    stop("'ylim' must be of length 2", call. = FALSE)
-  }
-
-  if (!is.numeric(ylim)) {
-    stop("'ylim' must be a numeric vector of length 2", call. = FALSE)
-  }
-
-  if (ylim[1] >= ylim[2]) {
-    stop("'ylim[1]' cannot be larger or equal to 'ylim[2]'", call. = FALSE)
-  }
-
-  if (ylim[1] < 0) {
-    stop("'ylim[1]' cannot be negative", call. = FALSE)
-  }
-
+# This function evaluates the inverse function of `f(x; theta)`, that is
+# if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+inverse_fn.gompertz_fit <- function(object, y) {
   alpha <- object$coefficients[1]
-  beta <- object$coefficients[2]
+  delta <- object$coefficients[2]
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  I <- 0
-  xlim_new <- xlim
+  x <- delta / (y - alpha)
+  x[!is.na(x) & (x > 1)] <- phi - log(log(x[!is.na(x) & (x > 1)])) / eta
 
-  if (alpha < ylim[1]) {
-    tmp <- phi - log(log((beta - alpha) / (ylim[1] - alpha))) / eta
-
-    # if the curve is decreasing we change the upper bound of integration,
-    # otherwise the lower bound
-    if (eta < 0) {
-      if (tmp < xlim[2]) {
-        xlim_new[2] <- tmp
-      }
-    } else {
-      if (tmp > xlim[1]) {
-        xlim_new[1] <- tmp
-      }
-    }
-  }
-
-  if (beta > ylim[2]) {
-    tmp <- phi - log(log((beta - alpha) / (ylim[2] - alpha))) / eta
-
-    # if the curve is decreasing we change the lower bound of integration,
-    # otherwise the upper bound
-    # in any case, we must now consider the area of the rectangle
-    if (eta < 0) {
-      if (tmp > xlim[1]) {
-        I <- I + (tmp - xlim[1]) * (ylim[2] - ylim[1])
-        xlim_new[1] <- tmp
-      }
-    } else {
-      if (tmp < xlim[2]) {
-        I <- I + (xlim[2] - tmp) * (ylim[2] - ylim[1])
-        xlim_new[2] <- tmp
-      }
-    }
-  }
-
-  f <- if (ylim[1] == 0) {
-    function(x) {
-      fn(object, x, object$coefficients)
-    }
-  } else {
-    function(x) {
-      fn(object, x, object$coefficients) - ylim[1]
-    }
-  }
-
-  I <- I + integrate(f, lower = xlim_new[1], upper = xlim_new[2])$value
-
-  nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))
-  names(nauc) <- NULL
-
-  nauc
+  x
 }
 
-#' @export
-naac.gompertz_fit <- function(object, xlim = c(-10, 10), ylim = c(0, 1)) {
-  1 - nauc(object, xlim, ylim)
+# Gompertz fit
+#
+# Evaluate at a particular point the gradient of the inverse Gompertz function.
+#
+# @details
+# The Gompertz function `f(x; theta)` is defined here as
+#
+# `alpha + (beta - alpha) exp(-exp(-eta * (x - phi)))`
+#
+# where `theta = c(alpha, beta, eta, phi)`, `alpha` is the lower horizontal
+# asymptote, `beta > alpha` is the upper horizontal asymptote, `eta` is the
+# steepness of the curve or growth rate, and `phi` related to the function
+# value at `x = 0`.
+#
+# This function evaluates the gradient of the inverse function.
+inverse_fn_gradient.gompertz_fit <- function(object, y) {
+  alpha <- object$coefficients[1]
+  delta <- object$coefficients[2]
+  eta <- object$coefficients[3]
+
+  z <- delta / (y - alpha)
+
+  G <- matrix(1, nrow = length(y), ncol = 4)
+
+  G[, 1] <- -z / (delta * eta * log(z))
+  G[, 2] <- -1 / (delta * eta * log(z))
+  G[, 3] <- log(log(z)) / eta^2
+
+  G
 }

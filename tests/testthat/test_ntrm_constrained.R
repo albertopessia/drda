@@ -1,7 +1,7 @@
 test_that("ntrm_constrained: Rosenbrock function", {
   set.seed(3470830)
 
-  max_iter <- 10000
+  max_iter <- 100000L
 
   fn <- function(x) {
     (1 - x[1])^2 + 100 * (x[2] - x[1]^2)^2
