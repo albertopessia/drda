@@ -102,9 +102,17 @@ plot_params <- function(object, base, xlim, ylim) {
 #' @param ylim numeric vector of length 2 with the lower and upped bound of the
 #'  allowed function values. Default is `c(0, 1)`.
 #'
+#' @seealso \code{\link[drda]{naac}} for the Normalized Area Above the Curve
+#'   (NAAC).
+#'
 #' @return Numeric value representing the normalized area under the curve.
 #'
 #' @export
+#'
+#' @examples
+#' drda_fit <- drda(response ~ log_dose, data = voropm2)
+#' nauc(drda_fit)
+#' nauc(drda_fit, xlim = c(6, 8), ylim = c(0.2, 0.5))
 nauc <- function(object, xlim, ylim) {
   UseMethod("nauc", object)
 }
@@ -151,9 +159,17 @@ nauc <- function(object, xlim, ylim) {
 #' @param ylim numeric vector of length 2 with the lower and upped bound of the
 #'  allowed function values. Default is `c(0, 1)`.
 #'
+#' @seealso \code{\link[drda]{nauc}} for the Normalized Area Under the Curve
+#'   (NAUC).
+#'
 #' @return Numeric value representing the normalized area above the curve.
 #'
 #' @export
+#'
+#' @examples
+#' drda_fit <- drda(response ~ log_dose, data = voropm2)
+#' naac(drda_fit)
+#' naac(drda_fit, xlim = c(6, 8), ylim = c(0.2, 0.5))
 naac <- function(object, xlim, ylim) {
   UseMethod("naac", object)
 }
@@ -182,6 +198,19 @@ naac <- function(object, xlim, ylim) {
 #'   confidence intervals. Each row is associated with each value of `y`.
 #'
 #' @export
+#'
+#' @examples
+#' drda_fit <- drda(response ~ log_dose, data = voropm2)
+#' effective_dose(drda_fit)
+#'
+#' # relative values are given on the (0, 1) range
+#' effective_dose(drda_fit, y = c(0.2, 0.8))
+#'
+#' # explicitly say when we are using actual response values
+#' effective_dose(drda_fit, y = c(0.2, 0.8), type = "absolute")
+#'
+#' # use a different confidence level
+#' effective_dose(drda_fit, y = 0.6, level = 0.8)
 effective_dose <- function(object, y, type, level) {
   UseMethod("effective_dose", object)
 }

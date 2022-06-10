@@ -18,7 +18,7 @@ drda(
 )
 }
 \arguments{
-\item{formula}{an object of class \code{link[stats]{formula}} (or one that
+\item{formula}{an object of class \code{\link[stats]{formula}} (or one that
 can be coerced to that class): a symbolic description of the model to be
 fitted. Currently supports only formulas of the type \code{y ~ x}.}
 
@@ -332,4 +332,37 @@ because asymptotic approximations might not be valid.
 }
 
 }
+}
+\examples{
+# by default `drda` uses a 4-parameter logistic function for model fitting
+fit_l4 <- drda(response ~ log_dose, data = voropm2)
+
+# get a general overview of the results
+summary(fit_l4)
+
+# compare the model against a flat horizontal line and the full model
+anova(fit_l4)
+
+# 5-parameter logistic curve appears to be a better model
+fit_l5 <- drda(response ~ log_dose, data = voropm2, mean_function = "l5")
+plot(fit_l4, fit_l5)
+
+# fit a 2-parameter logistic function
+fit_l2 <- drda(response ~ log_dose, data = voropm2, mean_function = "l2")
+
+# compare our models
+anova(fit_l2, fit_l4)
+
+# use log-logistic functions when utilizing doses (instead of log-doses)
+# here we show the use of other arguments as well
+fit_ll5 <- drda(
+  response ~ dose, weights = weight, data = voropm2,
+  mean_function = "loglogistic5", lower_bound = c(0.5, -1.5, 0, -Inf, 0.25),
+  upper_bound = c(1.5, 0.5, 5, Inf, 3), start = c(1, -1, 3, 100, 1),
+  max_iter = 10000
+)
+
+# note that the maximum likelihood estimate is outside the region of
+# optimization: not only the variance-covariance matrix is now singular but
+# asymptotic assumptions do not hold anymore.
 }

@@ -33,3 +33,16 @@ If responses are given on an absolute scale (\code{type = "absolute"}), then \co
 is free to vary on the whole real line. Note, however, that the solution
 does not exist when \code{y} is not in the image of the function.
 }
+\examples{
+drda_fit <- drda(response ~ log_dose, data = voropm2)
+effective_dose(drda_fit)
+
+# relative values are given on the (0, 1) range
+effective_dose(drda_fit, y = c(0.2, 0.8))
+
+# explicitly say when we are using actual response values
+effective_dose(drda_fit, y = c(0.2, 0.8), type = "absolute")
+
+# use a different confidence level
+effective_dose(drda_fit, y = 0.6, level = 0.8)
+}
