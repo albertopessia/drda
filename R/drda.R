@@ -578,6 +578,16 @@ anova.drda <- function(object, ...) {
     )
   }
 
+  s <- substr(object$mean_function, 1, 8)
+
+  model_type <- if (s == "logistic" || s == "gompertz") {
+    1
+  } else if (s == "loglogis" || s == "loggompe") {
+    2
+  } else {
+    stop("model not supported", call. = FALSE)
+  }
+
   y <- object$model[, 1]
   x <- object$model[, 2]
   w <- object$weights
@@ -641,17 +651,20 @@ anova.drda <- function(object, ...) {
   table <- data.frame(
     deviance_df, deviance_value, df - 1, aic, bic, dvn, c(NA_real_, lrt)
   )
-  table$pvalue <- c(NA_real_, pchisq(lrt, diff(df), lower.tail = FALSE))
 
-  rownames(table)[1:2] <- c("Constant model", "Estimated model")
-  if (k < 5) {
-    rownames(table)[3] <- "Full model (5-parameters)"
-  }
+  pvalue <- pchisq(lrt, diff(df), lower.tail = FALSE)
+  pvalue[pvalue == 0] <- NA_real_
+
+  table$pvalue <- c(NA_real_, pvalue)
+
   colnames(table) <- c(
     "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
   )
+  rownames(table) <- paste("Model", seq_len(l))
 
-  model <- switch(object$mean_function,
+  title <- "Analysis of Deviance Table\n"
+
+  str <- switch(object$mean_function,
     logistic2 = if (object$coefficients[2] >= 0) {
       "1 / (1 + exp(-e * (x - p)))"
     } else {
@@ -672,9 +685,44 @@ anova.drda <- function(object, ...) {
     loggompertz = "a + d * exp(-(p / x)^e)"
   )
 
-  title <- paste0("Analysis of Deviance Table\n\nModel: ", model, "\n")
+  topnote <- if (k >= 5) {
+    paste(
+      paste0(
+        c(
+          "Model 1: a", "\n",
+          "Model 2: ", str, " (Full)", "\n"
+        )
+      ),
+      collapse = ""
+    )
+  } else {
+    tmp <- if (model_type == 1) {
+      "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)"
+    } else {
+      "a + d * (x^e / (x^e + n * p^e))^(1 / n)"
+    }
 
-  structure(table, heading = title, class = c("anova", "data.frame"))
+    paste(
+      paste0(
+        c(
+          "Model 1: a", "\n",
+          "Model 2: ", str, " (Fit)", "\n",
+          "Model 3: ", tmp, " (Full)", "\n"
+        )
+      ),
+      collapse = ""
+    )
+  }
+
+  comment <- paste(
+    "Model", which.min(aic),
+    "is the best model according to the Akaike Information Criterion.\n"
+  )
+
+  structure(
+    table, heading = c(title, topnote, comment),
+    class = c("anova", "data.frame")
+  )
 }
 
 #' @importFrom stats anova pchisq var
@@ -864,7 +912,7 @@ anova.drdalist <- function(object, ...) {
   str <- paste0("Model ", 2:(n_models + 1), ": ", str)
 
   topnote <- if (k >= 5) {
-    str[n_models] <- paste(str[n_models], "(Full)")
+    str[n_models] <- paste(str[n_models], " (Full)")
     paste(c("Model 1: a", str, "\n"), collapse = "\n")
   } else {
     tmp <- if (model_type == 1) {
@@ -874,7 +922,7 @@ anova.drdalist <- function(object, ...) {
     }
 
     paste(
-      c("Model 1: a", str, paste0("Model ", l, ": ", tmp, "(Full)\n")),
+      c("Model 1: a", str, paste0("Model ", l, ": ", tmp, " (Full)\n")),
       collapse = "\n"
     )
   }
