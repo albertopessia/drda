@@ -7,7 +7,7 @@
 #' \describe{
 #'   \item{response}{viability measures normalized using positive and
 #'     negative controls}
-#'   \item{dose}{drug concentrantions (nM) used for testing}
+#'   \item{dose}{drug concentrations (nM) used for testing}
 #'   \item{log_dose}{natural logarithm of variable `dose`}
 #'   \item{weight}{random weights included only for package demonstration}
 #' }
