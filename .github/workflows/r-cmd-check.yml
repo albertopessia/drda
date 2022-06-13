@@ -46,7 +46,8 @@ jobs:
       - name: Install Ghostscript (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install ghostscript --no-progress;
+          choco install ghostscript --no-progress --version 9.56.1;
+          Add-Content $env:GITHUB_PATH "C:\Program Files\gs\gs9.56.1\bin\";
           refreshenv;
         shell: pwsh
 
