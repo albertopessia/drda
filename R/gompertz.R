@@ -103,19 +103,18 @@ gompertz_fn <- function(x, theta) {
   alpha + delta * exp(-exp(-eta * (x - phi)))
 }
 
-# @rdname gompertz_fn
 fn.gompertz <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
 
-# @rdname gompertz_fn
 fn.gompertz_fit <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
 
-#' Gompertz function
+#' Gompertz function gradient and Hessian
 #'
-#' Evaluate at a particular set of parameters the Gompertz function.
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' Gompertz function.
 #'
 #' @details
 #' The Gompertz function `f(x; theta)` is defined here as
@@ -127,7 +126,7 @@ fn.gompertz_fit <- function(object, x, theta) {
 #' positive (negative) the curve is monotonically increasing (decreasing).
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Gradient or Hessian evaluated at the specified point.
@@ -170,11 +169,12 @@ gompertz_gradient <- function(x, theta) {
   G
 }
 
-# @rdname gompertz_gradient
 gradient.gompertz_fit <- function(object, x) {
   gompertz_gradient(x, object$coefficients)
 }
 
+#' @export
+#'
 #' @rdname gompertz_gradient
 gompertz_hessian <- function(x, theta) {
   k <- length(x)
@@ -222,6 +222,8 @@ gompertz_hessian <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname gompertz_gradient
 gompertz_gradient_hessian <- function(x, theta) {
   k <- length(x)
@@ -287,9 +289,10 @@ gompertz_gradient_hessian <- function(x, theta) {
   list(G = G, H = H)
 }
 
-#' Gompertz function
+#' Gompertz function gradient and Hessian
 #'
-#' Evaluate at a particular set of parameters the Gompertz function.
+#' Evaluate at a particular set of parameters the gradient and Hessian of the
+#' Gompertz function.
 #'
 #' @details
 #' The Gompertz function `f(x; theta)` is defined here as
@@ -308,7 +311,7 @@ gompertz_gradient_hessian <- function(x, theta) {
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Gradient or Hessian of the alternative parameterization evaluated at
@@ -353,6 +356,8 @@ gompertz_gradient_2 <- function(x, theta) {
   G
 }
 
+#' @export
+#'
 #' @rdname gompertz_gradient_2
 gompertz_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -401,6 +406,8 @@ gompertz_hessian_2 <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname gompertz_gradient_2
 gompertz_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -672,6 +679,8 @@ mle_asy.gompertz <- function(object, theta) {
 # @return Numeric vector of length 4 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.gompertz <- function(object) {
   m <- object$m
   stats <- object$stats

@@ -148,6 +148,8 @@ approx_vcov <- function(fim) {
 # @param niter maximum number of iterations
 #
 #' @importFrom stats nlminb
+#'
+#' @noRd
 fit_nlminb <- function(object, start, max_iter) {
   # define the objective function
   f <- rss(object)

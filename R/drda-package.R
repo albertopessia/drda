@@ -1,8 +1,8 @@
 #' Dose-response data analysis
 #'
 #' @description
-#' `drda` is a package for fitting logistic curves and performing dose-response
-#' data analysis.
+#' `drda` is a package for fitting (log-)logistic curves and performing
+#' dose-response data analysis.
 #'
 #' @section Available functions:
 #'

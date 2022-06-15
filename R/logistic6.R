@@ -141,6 +141,8 @@ logistic6_new <-  function(
 #'   logistic function.
 #'
 #' @export
+#'
+#' @noRd
 logistic6_fn <- function(x, theta) {
   alpha <- theta[1]
   delta <- theta[2]
@@ -184,6 +186,8 @@ fn.logistic6_fit <- function(object, x, theta) {
 #' @return Gradient or Hessian evaluated at the specified point.
 #'
 #' @export
+#'
+#' @noRd
 logistic6_gradient <- function(x, theta) {
   k <- length(x)
 
@@ -229,12 +233,15 @@ logistic6_gradient <- function(x, theta) {
   G
 }
 
-# @rdname logistic6_gradient
 gradient.logistic6_fit <- function(object, x) {
   logistic6_gradient(x, object$coefficients)
 }
 
+#' @export
+#'
 #' @rdname logistic6_gradient
+#'
+#' @noRd
 logistic6_hessian <- function(x, theta) {
   k <- length(x)
 
@@ -303,7 +310,11 @@ logistic6_hessian <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname logistic6_gradient
+#'
+#' @noRd
 logistic6_gradient_hessian <- function(x, theta) {
   k <- length(x)
 
@@ -422,6 +433,8 @@ logistic6_gradient_hessian <- function(x, theta) {
 #'   the specified point.
 #'
 #' @export
+#'
+#' @noRd
 logistic6_gradient_2 <- function(x, theta) {
   k <- length(x)
 
@@ -469,7 +482,11 @@ logistic6_gradient_2 <- function(x, theta) {
   G
 }
 
+#' @export
+#'
 #' @rdname logistic6_gradient_2
+#'
+#' @noRd
 logistic6_hessian_2 <- function(x, theta) {
   k <- length(x)
 
@@ -540,7 +557,11 @@ logistic6_hessian_2 <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname logistic6_gradient_2
+#'
+#' @noRd
 logistic6_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
 
@@ -843,6 +864,8 @@ mle_asy.logistic6 <- function(object, theta) {
 # @return Numeric vector of length 6 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.logistic6 <- function(object) {
   m <- object$m
   stats <- object$stats

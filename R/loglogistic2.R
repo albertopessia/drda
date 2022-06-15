@@ -1,6 +1,8 @@
 # @rdname loglogistic6_new
 #
 #' @importFrom stats lowess
+#'
+#' @noRd
 loglogistic2_new <-  function(
   x, y, w, start, max_iter, lower_bound, upper_bound
 ) {
@@ -162,12 +164,10 @@ loglogistic2_fn <- function(x, theta) {
   alpha + delta * t1 / (t1 + t2)
 }
 
-# @rdname loglogistic2_fn
 fn.loglogistic2 <- function(object, x, theta) {
   loglogistic2_fn(x, c(object$start[1:2], theta))
 }
 
-# @rdname loglogistic2_fn
 fn.loglogistic2_fit <- function(object, x, theta) {
   # within a fit, parameter theta is known exactly
   alpha <- theta[1]
@@ -198,7 +198,7 @@ fn.loglogistic2_fit <- function(object, x, theta) {
 #' increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the five parameters in the form
+#' @param theta numeric vector with the two parameters in the form
 #'   `c(eta, phi)`.
 #' @param delta value of delta parameter (either 1 or -1).
 #'
@@ -248,12 +248,13 @@ loglogistic2_gradient <- function(x, theta, delta) {
   sign(delta) * G
 }
 
-# @rdname loglogistic2_gradient
 gradient.loglogistic2_fit <- function(object, x) {
   theta <- object$coefficients
   loglogistic2_gradient(x, theta[3:4], theta[2])
 }
 
+#' @export
+#'
 #' @rdname loglogistic2_gradient
 loglogistic2_hessian <- function(x, theta, delta) {
   k <- length(x)
@@ -303,6 +304,8 @@ loglogistic2_hessian <- function(x, theta, delta) {
   sign(delta) * H
 }
 
+#' @export
+#'
 #' @rdname loglogistic2_gradient
 loglogistic2_gradient_hessian <- function(x, theta, delta) {
   k <- length(x)
@@ -395,7 +398,7 @@ loglogistic2_gradient_hessian <- function(x, theta, delta) {
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the two parameters in the form
 #'   `c(eta, phi)`.
 #' @param delta value of delta parameter (either 1 or -1).
 #'
@@ -446,6 +449,8 @@ loglogistic2_gradient_2 <- function(x, theta, delta) {
   sign(delta) * G
 }
 
+#' @export
+#'
 #' @rdname loglogistic2_gradient_2
 loglogistic2_hessian_2 <- function(x, theta, delta) {
   k <- length(x)
@@ -494,6 +499,8 @@ loglogistic2_hessian_2 <- function(x, theta, delta) {
   sign(delta) * H
 }
 
+#' @export
+#'
 #' @rdname loglogistic2_gradient_2
 loglogistic2_gradient_hessian_2 <- function(x, theta, delta) {
   k <- length(x)
@@ -745,6 +752,8 @@ mle_asy.loglogistic2 <- function(object, theta) {
 # @return Numeric vector of length 2 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.loglogistic2 <- function(object) {
   m <- object$m
   stats <- object$stats

@@ -4,7 +4,7 @@
 \alias{loggompertz_gradient}
 \alias{loggompertz_hessian}
 \alias{loggompertz_gradient_hessian}
-\title{log-Gompertz function gradient and Hessian}
+\title{Log-Gompertz function gradient and Hessian}
 \usage{
 loggompertz_gradient(x, theta)
 
@@ -15,7 +15,7 @@ loggompertz_gradient_hessian(x, theta)
 \arguments{
 \item{x}{numeric vector at which the function is to be evaluated.}
 
-\item{theta}{numeric vector with the five parameters in the form
+\item{theta}{numeric vector with the four parameters in the form
 \code{c(alpha, delta, eta, phi)}.}
 }
 \value{

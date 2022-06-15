@@ -116,12 +116,10 @@ loglogistic4_fn <- function(x, theta) {
   alpha + delta * t1 / (t1 + t2)
 }
 
-# @rdname loglogistic4_fn
 fn.loglogistic4 <- function(object, x, theta) {
   loglogistic4_fn(x, theta)
 }
 
-# @rdname loglogistic4_fn
 fn.loglogistic4_fit <- function(object, x, theta) {
   loglogistic4_fn(x, theta)
 }
@@ -141,7 +139,7 @@ fn.loglogistic4_fit <- function(object, x, theta) {
 #' `phi > 0`.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the five parameters in the form
+#' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Gradient or Hessian evaluated at the specified point.
@@ -192,11 +190,12 @@ loglogistic4_gradient <- function(x, theta) {
   G
 }
 
-# @rdname loglogistic4_gradient
 gradient.loglogistic4_fit <- function(object, x) {
   loglogistic4_gradient(x, object$coefficients)
 }
 
+#' @export
+#'
 #' @rdname loglogistic4_gradient
 loglogistic4_hessian <- function(x, theta) {
   k <- length(x)
@@ -252,6 +251,8 @@ loglogistic4_hessian <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname loglogistic4_gradient
 loglogistic4_gradient_hessian <- function(x, theta) {
   k <- length(x)
@@ -348,7 +349,7 @@ loglogistic4_gradient_hessian <- function(x, theta) {
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Gradient or Hessian of the alternative parameterization evaluated at
@@ -401,6 +402,8 @@ loglogistic4_gradient_2 <- function(x, theta) {
   G
 }
 
+#' @export
+#'
 #' @rdname loglogistic4_gradient_2
 loglogistic4_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -455,6 +458,8 @@ loglogistic4_hessian_2 <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname loglogistic4_gradient_2
 loglogistic4_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -768,6 +773,8 @@ mle_asy.loglogistic4 <- function(object, theta) {
 # @return Numeric vector of length 4 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.loglogistic4 <- function(object) {
   m <- object$m
   stats <- object$stats

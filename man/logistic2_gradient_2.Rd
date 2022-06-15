@@ -15,8 +15,8 @@ logistic2_gradient_hessian_2(x, theta, delta)
 \arguments{
 \item{x}{numeric vector at which the function is to be evaluated.}
 
-\item{theta}{numeric vector with the six parameters in the form
-\code{c(alpha, delta, eta, phi)}.}
+\item{theta}{numeric vector with the two parameters in the form
+\code{c(eta, phi)}.}
 
 \item{delta}{value of delta parameter (either 1 or -1).}
 }

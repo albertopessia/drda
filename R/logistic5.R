@@ -122,12 +122,10 @@ logistic5_fn <- function(x, theta) {
   alpha + delta / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)
 }
 
-# @rdname logistic5_fn
 fn.logistic5 <- function(object, x, theta) {
   logistic5_fn(x, theta)
 }
 
-# @rdname logistic5_fn
 fn.logistic5_fit <- function(object, x, theta) {
   logistic5_fn(x, theta)
 }
@@ -148,7 +146,7 @@ fn.logistic5_fit <- function(object, x, theta) {
 #' (decreasing).
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the five parameters in the form
 #'   `c(alpha, delta, eta, phi, nu)`.
 #'
 #' @return Gradient or Hessian evaluated at the specified point.
@@ -197,11 +195,12 @@ logistic5_gradient <- function(x, theta) {
   G
 }
 
-# @rdname logistic5_gradient
 gradient.logistic5_fit <- function(object, x) {
   logistic5_gradient(x, object$coefficients)
 }
 
+#' @export
+#'
 #' @rdname logistic5_gradient
 logistic5_hessian <- function(x, theta) {
   k <- length(x)
@@ -260,6 +259,8 @@ logistic5_hessian <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname logistic5_gradient
 logistic5_gradient_hessian <- function(x, theta) {
   k <- length(x)
@@ -360,7 +361,7 @@ logistic5_gradient_hessian <- function(x, theta) {
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the five parameters in the form
 #'   `c(alpha, delta, eta, phi, nu)`.
 #'
 #' @return Gradient or Hessian of the alternative parameterization evaluated at
@@ -412,6 +413,8 @@ logistic5_gradient_2 <- function(x, theta) {
   G
 }
 
+#' @export
+#'
 #' @rdname logistic5_gradient_2
 logistic5_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -472,6 +475,8 @@ logistic5_hessian_2 <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname logistic5_gradient_2
 logistic5_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -758,6 +763,8 @@ mle_asy.logistic5 <- function(object, theta) {
 # @return Numeric vector of length 5 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.logistic5 <- function(object) {
   m <- object$m
   stats <- object$stats

@@ -1,4 +1,4 @@
-#' Vorinostat in OPM-2 cell-line
+#' Vorinostat in OPM-2 cell-line dataset
 #'
 #' A dataset containing dose-response data of drug Vorinostat tested ex-vivo on
 #' the OPM-2 cell-line.

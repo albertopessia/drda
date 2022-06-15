@@ -115,17 +115,15 @@ loggompertz_fn <- function(x, theta) {
   f
 }
 
-# @rdname loggompertz_fn
 fn.loggompertz <- function(object, x, theta) {
   loggompertz_fn(x, theta)
 }
 
-# @rdname loggompertz_fn
 fn.loggompertz_fit <- function(object, x, theta) {
   loggompertz_fn(x, theta)
 }
 
-#' log-Gompertz function gradient and Hessian
+#' Log-Gompertz function gradient and Hessian
 #'
 #' Evaluate at a particular set of parameters the gradient and Hessian of the
 #' log-Gompertz function.
@@ -140,7 +138,7 @@ fn.loggompertz_fit <- function(object, x, theta) {
 #' `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the five parameters in the form
+#' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Gradient or Hessian evaluated at the specified point.
@@ -188,11 +186,12 @@ loggompertz_gradient <- function(x, theta) {
   G
 }
 
-# @rdname loggompertz_gradient
 gradient.loggompertz_fit <- function(object, x) {
   loggompertz_gradient(x, object$coefficients)
 }
 
+#' @export
+#'
 #' @rdname loggompertz_gradient
 loggompertz_hessian <- function(x, theta) {
   k <- length(x)
@@ -245,6 +244,8 @@ loggompertz_hessian <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname loggompertz_gradient
 loggompertz_gradient_hessian <- function(x, theta) {
   k <- length(x)
@@ -339,7 +340,7 @@ loggompertz_gradient_hessian <- function(x, theta) {
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the four parameters in the form
 #'   `c(alpha, delta, eta, phi)`.
 #'
 #' @return Gradient or Hessian of the alternative parameterization evaluated at
@@ -389,6 +390,8 @@ loggompertz_gradient_2 <- function(x, theta) {
   G
 }
 
+#' @export
+#'
 #' @rdname loggompertz_gradient_2
 loggompertz_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -442,6 +445,8 @@ loggompertz_hessian_2 <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname loggompertz_gradient_2
 loggompertz_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -729,6 +734,8 @@ mle_asy.loggompertz <- function(object, theta) {
 # @return Numeric vector of length 4 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.loggompertz <- function(object) {
   m <- object$m
   stats <- object$stats

@@ -3,7 +3,7 @@
 \docType{data}
 \name{voropm2}
 \alias{voropm2}
-\title{Vorinostat in OPM-2 cell-line}
+\title{Vorinostat in OPM-2 cell-line dataset}
 \format{
 A data frame with 45 rows and 4 variables:
 \describe{

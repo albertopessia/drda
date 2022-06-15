@@ -96,34 +96,11 @@ to observed data.
 }
 \details{
 \subsection{Available models}{
-\subsection{Generalized logistic function}{
-
-The generalized logistic function is selected by setting
-\code{mean_function = "logistic6"} or \code{mean_function = "l6"}. It is defined in
-this package as the 6-parameter function
-
-\code{alpha + delta / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)}
-
-where \code{eta > 0}, \code{nu > 0}, and \code{xi > 0}. When \code{delta} is positive (negative)
-the curve is monotonically increasing (decreasing).
-
-Parameter \code{alpha} is the value of the function when \code{x -> -Inf}.
-Parameter \code{delta} affects the value of the function when \code{x -> Inf}.
-Parameter \code{eta} represents the steepness (growth rate) of the curve.
-Parameter \code{phi} is related to the mid-value of the function.
-Parameter \code{nu} affects near which asymptote maximum growth occurs.
-Parameter \code{xi} affects the value of the function when \code{x -> Inf}.
-
-\strong{Note}: the 6-parameter logistic function is non-identifiable from data and
-should not be used in real applications. It is available only for theoretical
-research convenience.
-}
-
-\subsection{5-parameter logistic function}{
+\subsection{Generalized (5-parameter) logistic function}{
 
 The 5-parameter logistic function can be selected by choosing
 \code{mean_function = "logistic5"} or \code{mean_function = "l5"}. The function is
-obtained by setting \code{xi = 1} in the generalized logistic function, that is
+defined here as
 
 \code{alpha + delta / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)}
 
@@ -145,8 +122,8 @@ achievable effect.
 
 The 4-parameter logistic function is the default model of \code{drda}. It can be
 explicitly selected by choosing \code{mean_function = "logistic4"} or
-\code{mean_function = "l4"}. The function is obtained by setting \code{xi = 1} and
-\code{nu = 1} in the generalized logistic function, that is
+\code{mean_function = "l4"}. The function is obtained by setting \code{nu = 1} in the
+generalized logistic function, that is
 
 \code{alpha + delta / (1 + exp(-eta * (x - phi)))}
 
@@ -168,11 +145,11 @@ achievable effect.
 
 The 2-parameter logistic function can be selected by choosing
 \code{mean_function = "logistic2"} or \code{mean_function = "l2"}. For a monotonically
-increasing curve set \code{xi = 1}, \code{nu = 1}, \code{alpha = 0}, and \code{delta = 1}:
+increasing curve set \code{nu = 1}, \code{alpha = 0}, and \code{delta = 1}:
 
 \code{1 / (1 + exp(-eta * (x - phi)))}
 
-For a monotonically decreasing curve set \code{xi = 1}, \code{nu = 1}, \code{alpha = 1}, and
+For a monotonically decreasing curve set \code{nu = 1}, \code{alpha = 1}, and
 \code{delta = -1}:
 
 \code{1 - 1 / (1 + exp(-eta * (x - phi)))}
@@ -208,32 +185,11 @@ The mid-point of the function, that is \code{alpha + delta / 2}, is achieved at
 \code{x = phi - log(log(2)) / eta}.
 }
 
-\subsection{Generalized log-logistic function}{
-
-The generalized log-logistic function is selected by setting
-\code{mean_function = "loglogistic6"} or \code{mean_function = "ll6"}. It is defined in
-this package as the 6-parameter function
-
-\code{alpha + delta * (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)}
-
-where \code{x >= 0}, \code{eta > 0}, \code{phi > 0}, \code{nu > 0}, and \code{xi > 0}. When \code{delta} is
-positive (negative) the curve is monotonically increasing (decreasing). The
-function is defined only for positive values of the predictor variable \code{x}.
-
-Parameter \code{alpha} is the value of the function at \code{x = 0}.
-Parameter \code{delta} affects the value of the function when \code{x -> Inf}.
-Parameter \code{eta} represents the steepness (growth rate) of the curve.
-Parameter \code{phi} is related to the mid-value of the function.
-Parameter \code{nu} affects near which asymptote maximum growth occurs.
-Parameter \code{xi} affects the value of the function when \code{x -> Inf}.
-}
-
-\subsection{5-parameter log-logistic function}{
+\subsection{Generalized (5-parameter) log-logistic function}{
 
 The 5-parameter log-logistic function is selected by setting
 \code{mean_function = "loglogistic5"} or \code{mean_function = "ll5"}. The function is
-obtained by setting \code{xi = 1} in the generalized log-logistic function, that
-is
+defined here as
 
 \code{alpha + delta * (x^eta / (x^eta + nu * phi^eta))^(1 / nu)}
 
@@ -256,8 +212,8 @@ achievable effect.
 
 The 4-parameter log-logistic function is selected by setting
 \code{mean_function = "loglogistic4"} or \code{mean_function = "ll4"}. The function is
-obtained by setting \code{xi = 1} and \code{nu = 1} in the generalized log-logistic
-function, that is
+obtained by setting \code{nu = 1} in the generalized log-logistic function, that
+is
 
 \code{alpha + delta * x^eta / (x^eta + phi^eta)}
 
@@ -280,12 +236,11 @@ achievable effect.
 
 The 2-parameter log-logistic function is selected by setting
 \code{mean_function = "loglogistic2"} or \code{mean_function = "ll2"}. For a
-monotonically increasing curve set \code{xi = 1}, \code{nu = 1}, \code{alpha = 0}, and
-\code{delta = 1}:
+monotonically increasing curve set \code{nu = 1}, \code{alpha = 0}, and \code{delta = 1}:
 
 \code{x^eta / (x^eta + phi^eta)}
 
-For a monotonically decreasing curve set \code{xi = 1}, \code{nu = 1}, \code{alpha = 1}, and
+For a monotonically decreasing curve set \code{nu = 1}, \code{alpha = 1}, and
 \code{delta = -1}:
 
 \code{1 - x^eta / (x^eta + phi^eta)}

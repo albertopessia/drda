@@ -15,7 +15,7 @@ logistic5_gradient_hessian(x, theta)
 \arguments{
 \item{x}{numeric vector at which the function is to be evaluated.}
 
-\item{theta}{numeric vector with the six parameters in the form
+\item{theta}{numeric vector with the five parameters in the form
 \code{c(alpha, delta, eta, phi, nu)}.}
 }
 \value{

@@ -217,11 +217,12 @@ loglogistic5_gradient <- function(x, theta) {
   G
 }
 
-# @rdname loglogistic5_gradient
 gradient.loglogistic5_fit <- function(object, x) {
   loglogistic5_gradient(x, object$coefficients)
 }
 
+#' @export
+#'
 #' @rdname loglogistic5_gradient
 loglogistic5_hessian <- function(x, theta) {
   k <- length(x)
@@ -288,6 +289,8 @@ loglogistic5_hessian <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname loglogistic5_gradient
 loglogistic5_gradient_hessian <- function(x, theta) {
   k <- length(x)
@@ -397,7 +400,7 @@ loglogistic5_gradient_hessian <- function(x, theta) {
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
-#' @param theta numeric vector with the six parameters in the form
+#' @param theta numeric vector with the five parameters in the form
 #'   `c(alpha, delta, eta, phi, nu)`.
 #'
 #' @return Gradient or Hessian of the alternative parameterization evaluated at
@@ -458,6 +461,8 @@ loglogistic5_gradient_2 <- function(x, theta) {
   G
 }
 
+#' @export
+#'
 #' @rdname loglogistic5_gradient_2
 loglogistic5_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -530,6 +535,8 @@ loglogistic5_hessian_2 <- function(x, theta) {
   H
 }
 
+#' @export
+#'
 #' @rdname loglogistic5_gradient_2
 loglogistic5_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
@@ -864,6 +871,8 @@ mle_asy.loglogistic5 <- function(object, theta) {
 # @return Numeric vector of length 5 with a (hopefully) good starting point.
 #
 #' @importFrom stats lm
+#'
+#' @noRd
 init.loglogistic5 <- function(object) {
   m <- object$m
   stats <- object$stats

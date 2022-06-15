@@ -4,7 +4,7 @@
 \alias{gompertz_gradient_2}
 \alias{gompertz_hessian_2}
 \alias{gompertz_gradient_hessian_2}
-\title{Gompertz function}
+\title{Gompertz function gradient and Hessian}
 \usage{
 gompertz_gradient_2(x, theta)
 
@@ -15,7 +15,7 @@ gompertz_gradient_hessian_2(x, theta)
 \arguments{
 \item{x}{numeric vector at which the function is to be evaluated.}
 
-\item{theta}{numeric vector with the six parameters in the form
+\item{theta}{numeric vector with the four parameters in the form
 \code{c(alpha, delta, eta, phi)}.}
 }
 \value{
@@ -23,7 +23,8 @@ Gradient or Hessian of the alternative parameterization evaluated at
 the specified point.
 }
 \description{
-Evaluate at a particular set of parameters the Gompertz function.
+Evaluate at a particular set of parameters the gradient and Hessian of the
+Gompertz function.
 }
 \details{
 The Gompertz function \verb{f(x; theta)} is defined here as

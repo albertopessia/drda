@@ -35,33 +35,11 @@
 #'
 #' ## Available models
 #'
-#' ### Generalized logistic function
-#'
-#' The generalized logistic function is selected by setting
-#' `mean_function = "logistic6"` or `mean_function = "l6"`. It is defined in
-#' this package as the 6-parameter function
-#'
-#' `alpha + delta / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-#'
-#' where `eta > 0`, `nu > 0`, and `xi > 0`. When `delta` is positive (negative)
-#' the curve is monotonically increasing (decreasing).
-#'
-#' Parameter `alpha` is the value of the function when `x -> -Inf`.
-#' Parameter `delta` affects the value of the function when `x -> Inf`.
-#' Parameter `eta` represents the steepness (growth rate) of the curve.
-#' Parameter `phi` is related to the mid-value of the function.
-#' Parameter `nu` affects near which asymptote maximum growth occurs.
-#' Parameter `xi` affects the value of the function when `x -> Inf`.
-#'
-#' **Note**: the 6-parameter logistic function is non-identifiable from data and
-#' should not be used in real applications. It is available only for theoretical
-#' research convenience.
-#'
-#' ### 5-parameter logistic function
+#' ### Generalized (5-parameter) logistic function
 #'
 #' The 5-parameter logistic function can be selected by choosing
 #' `mean_function = "logistic5"` or `mean_function = "l5"`. The function is
-#' obtained by setting `xi = 1` in the generalized logistic function, that is
+#' defined here as
 #'
 #' `alpha + delta / (1 + nu * exp(-eta * (x - phi)))^(1 / nu)`
 #'
@@ -82,8 +60,8 @@
 #'
 #' The 4-parameter logistic function is the default model of `drda`. It can be
 #' explicitly selected by choosing `mean_function = "logistic4"` or
-#' `mean_function = "l4"`. The function is obtained by setting `xi = 1` and
-#' `nu = 1` in the generalized logistic function, that is
+#' `mean_function = "l4"`. The function is obtained by setting `nu = 1` in the
+#' generalized logistic function, that is
 #'
 #' `alpha + delta / (1 + exp(-eta * (x - phi)))`
 #'
@@ -104,11 +82,11 @@
 #'
 #' The 2-parameter logistic function can be selected by choosing
 #' `mean_function = "logistic2"` or `mean_function = "l2"`. For a monotonically
-#' increasing curve set `xi = 1`, `nu = 1`, `alpha = 0`, and `delta = 1`:
+#' increasing curve set `nu = 1`, `alpha = 0`, and `delta = 1`:
 #'
 #' `1 / (1 + exp(-eta * (x - phi)))`
 #'
-#' For a monotonically decreasing curve set `xi = 1`, `nu = 1`, `alpha = 1`, and
+#' For a monotonically decreasing curve set `nu = 1`, `alpha = 1`, and
 #' `delta = -1`:
 #'
 #' `1 - 1 / (1 + exp(-eta * (x - phi)))`
@@ -142,31 +120,11 @@
 #' The mid-point of the function, that is `alpha + delta / 2`, is achieved at
 #' `x = phi - log(log(2)) / eta`.
 #'
-#' ### Generalized log-logistic function
-#'
-#' The generalized log-logistic function is selected by setting
-#' `mean_function = "loglogistic6"` or `mean_function = "ll6"`. It is defined in
-#' this package as the 6-parameter function
-#'
-#' `alpha + delta * (x^eta / (xi * x^eta + nu * phi^eta))^(1 / nu)`
-#'
-#' where `x >= 0`, `eta > 0`, `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is
-#' positive (negative) the curve is monotonically increasing (decreasing). The
-#' function is defined only for positive values of the predictor variable `x`.
-#'
-#' Parameter `alpha` is the value of the function at `x = 0`.
-#' Parameter `delta` affects the value of the function when `x -> Inf`.
-#' Parameter `eta` represents the steepness (growth rate) of the curve.
-#' Parameter `phi` is related to the mid-value of the function.
-#' Parameter `nu` affects near which asymptote maximum growth occurs.
-#' Parameter `xi` affects the value of the function when `x -> Inf`.
-#'
-#' ### 5-parameter log-logistic function
+#' ### Generalized (5-parameter) log-logistic function
 #'
 #' The 5-parameter log-logistic function is selected by setting
 #' `mean_function = "loglogistic5"` or `mean_function = "ll5"`. The function is
-#' obtained by setting `xi = 1` in the generalized log-logistic function, that
-#' is
+#' defined here as
 #'
 #' `alpha + delta * (x^eta / (x^eta + nu * phi^eta))^(1 / nu)`
 #'
@@ -188,8 +146,8 @@
 #'
 #' The 4-parameter log-logistic function is selected by setting
 #' `mean_function = "loglogistic4"` or `mean_function = "ll4"`. The function is
-#' obtained by setting `xi = 1` and `nu = 1` in the generalized log-logistic
-#' function, that is
+#' obtained by setting `nu = 1` in the generalized log-logistic function, that
+#' is
 #'
 #' `alpha + delta * x^eta / (x^eta + phi^eta)`
 #'
@@ -211,12 +169,11 @@
 #'
 #' The 2-parameter log-logistic function is selected by setting
 #' `mean_function = "loglogistic2"` or `mean_function = "ll2"`. For a
-#' monotonically increasing curve set `xi = 1`, `nu = 1`, `alpha = 0`, and
-#' `delta = 1`:
+#' monotonically increasing curve set `nu = 1`, `alpha = 0`, and `delta = 1`:
 #'
 #' `x^eta / (x^eta + phi^eta)`
 #'
-#' For a monotonically decreasing curve set `xi = 1`, `nu = 1`, `alpha = 1`, and
+#' For a monotonically decreasing curve set `nu = 1`, `alpha = 1`, and
 #' `delta = -1`:
 #'
 #' `1 - x^eta / (x^eta + phi^eta)`

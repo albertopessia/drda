@@ -15,7 +15,7 @@ loglogistic4_gradient_hessian_2(x, theta)
 \arguments{
 \item{x}{numeric vector at which the function is to be evaluated.}
 
-\item{theta}{numeric vector with the six parameters in the form
+\item{theta}{numeric vector with the four parameters in the form
 \code{c(alpha, delta, eta, phi)}.}
 }
 \value{
