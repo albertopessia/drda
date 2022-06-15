@@ -12,3 +12,4 @@
 ^CRAN-RELEASE$
 ^LICENSE\.md$
 ^README\.md$
+^revdep$

@@ -43,3 +43,6 @@ docs/
 
 # translation temp files
 po/*~
+
+# revdep reports and summaries
+revdep/
