@@ -1,5 +1,9 @@
 # cran-comments
 
+## 2022-06-16
+
+- Initiating submission process
+
 ## drda 2.0.0
 
 This release extends the available models by implementing the log-logistic
@@ -12,10 +16,6 @@ New features also included in this release:
 - Exported functions for evaluating gradient and Hessian
 - New function `effective_dose`
 - Added examples in the docs
-
-### 2022-06-15
-
-- Initiating submission process
 
 ## Test environments
 

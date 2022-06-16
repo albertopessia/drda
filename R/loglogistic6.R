@@ -148,6 +148,9 @@ loglogistic6_new <-  function(
 #' Parameter `nu` affects near which asymptote maximum growth occurs.
 #' Parameter `xi` affects the value of the function when `x -> Inf`.
 #'
+#' **Note**: The 6-parameter log-logistic function is over-parameterized and
+#' non-identifiable from data. It is available only for theoretical research.
+#'
 #' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
 #'   `c(alpha, delta, eta, phi, nu, xi)`.
@@ -156,8 +159,6 @@ loglogistic6_new <-  function(
 #'   log-logistic function.
 #'
 #' @export
-#'
-#' @noRd
 loglogistic6_fn <- function(x, theta) {
   alpha <- theta[1]
   delta <- theta[2]
@@ -197,6 +198,9 @@ fn.loglogistic6_fit <- function(object, x, theta) {
 #' `phi > 0`, `nu > 0`, and `xi > 0`. When `delta` is positive (negative) the
 #' curve is monotonically increasing (decreasing).
 #'
+#' **Note**: The 6-parameter log-logistic function is over-parameterized and
+#' non-identifiable from data. It is available only for theoretical research.
+#'
 #' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
 #'   `c(alpha, delta, eta, phi, nu, xi)`.
@@ -204,8 +208,6 @@ fn.loglogistic6_fit <- function(object, x, theta) {
 #' @return Gradient or Hessian evaluated at the specified point.
 #'
 #' @export
-#'
-#' @noRd
 loglogistic6_gradient <- function(x, theta) {
   k <- length(x)
 
@@ -264,8 +266,6 @@ gradient.loglogistic6_fit <- function(object, x) {
 #' @export
 #'
 #' @rdname loglogistic6_gradient
-#'
-#' @noRd
 loglogistic6_hessian <- function(x, theta) {
   k <- length(x)
 
@@ -344,8 +344,6 @@ loglogistic6_hessian <- function(x, theta) {
 #' @export
 #'
 #' @rdname loglogistic6_gradient
-#'
-#' @noRd
 loglogistic6_gradient_hessian <- function(x, theta) {
   k <- length(x)
 
@@ -465,6 +463,9 @@ loglogistic6_gradient_hessian <- function(x, theta) {
 #'
 #' Note that argument `theta` is on the original scale and not on the log scale.
 #'
+#' **Note**: The 6-parameter log-logistic function is over-parameterized and
+#' non-identifiable from data. It is available only for theoretical research.
+#'
 #' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the six parameters in the form
 #'   `c(alpha, delta, eta, phi, nu, xi)`.
@@ -473,8 +474,6 @@ loglogistic6_gradient_hessian <- function(x, theta) {
 #'   the specified point.
 #'
 #' @export
-#'
-#' @noRd
 loglogistic6_gradient_2 <- function(x, theta) {
   k <- length(x)
 
@@ -535,8 +534,6 @@ loglogistic6_gradient_2 <- function(x, theta) {
 #' @export
 #'
 #' @rdname loglogistic6_gradient_2
-#'
-#' @noRd
 loglogistic6_hessian_2 <- function(x, theta) {
   k <- length(x)
 
@@ -624,8 +621,6 @@ loglogistic6_hessian_2 <- function(x, theta) {
 #' @export
 #'
 #' @rdname loglogistic6_gradient_2
-#'
-#' @noRd
 loglogistic6_gradient_hessian_2 <- function(x, theta) {
   k <- length(x)
 
