@@ -862,24 +862,24 @@ For practical purposes small absolute relative errors can be considered equivale
     \begin{tabular}{@{}lllllll@{}}
       \toprule
       Package & Mean & Minimum & First quartile & Median & Third quartile & Maximum \\ \midrule
-      \pkg{DoseFinding} & 1.593 & 0.000 & \(2.91\,10^{-10}\) & 0.012 & 0.632 & 53.807 \\
-      \pkg{drc} & 0.016 & 0.000 & \(1.65\,10^{-5}\) & \(2.32\,10^{-4}\) & 0.004 & 1.532 \\
-      \pkg{drda} & \(3.31\,10^{-6}\) & 0.000 & 0.000 & 0.000 & 0.000 & 0.033 \\
-      \pkg{nplr} & 1.85 & 0.000 & \(1.21\,10^{-9}\) & 0.029 & 1.534 & 32.575 \\ \bottomrule
+      \pkg{DoseFinding} & 1.593 & 0.000 & \(2.92\,10^{-10}\) & 0.012 & 0.632 & 53.807 \\
+      \pkg{drc} & 0.016 & 0.000 & \(1.65\,10^{-5}\) & \(2.31\,10^{-4}\) & 0.004 & 1.532 \\
+      \pkg{drda} & \(8.45\,10^{-7}\) & 0.000 & 0.000 & 0.000 & 0.000 & 0.004 \\
+      \pkg{nplr} & 1.85 & 0.000 & \(1.20\,10^{-9}\) & 0.029 & 1.534 & 32.575 \\ \bottomrule
     \end{tabular}%
   }
   \caption{Summary statistics of the RSS relative error for simulated models. A total of 162 vector parameters were analysed. For each parameter, 100 datasets with 7 doses and 3 replicates per dose were simulated.}\label{tab:l4sim}
 \end{table}
 
-According to our simulation results (Table~\ref{tab:l4sim}), \pkg{drda} provides the most accurate estimates: in its worst performance \pkg{drda} achieved a relative error of just 3.3\% from the best solution.
+According to our simulation results (Table~\ref{tab:l4sim}), \pkg{drda} provides the most accurate estimates: in its worst performance \pkg{drda} achieved a relative error of just 0.4\% from the best solution.
 \pkg{DoseFinding}, \pkg{drda}, and \pkg{nplr} always returned a result, however \pkg{drc} produced errors in 16.29\% of the times.
 Overall, \pkg{drda} converged to a solution 100\% of the times.
 We cannot provide an accurate convergence rate for the other three packages because the information is missing from their returned fit object.
 
 The higher accuracy comes obviously at a small computational cost as more steps are usually needed for exploring the parameter space.
-Our data analysis reveals that \fct{fitMOD} and \fct{nplr} are the fastest functions to complete the fit (mean elapsed time of 0.028s and 0.043s respectively).
-\pkg{drda} found the global optimum in 1.824 seconds on average.
-For completeness, \fct{drm} had an average of 0.131 seconds.
+Our data analysis reveals that \fct{fitMOD} and \fct{nplr} are the fastest functions to complete the fit (mean elapsed time of 0.028s and 0.045s respectively).
+\pkg{drda} found the global optimum in 1.7 seconds on average.
+For completeness, \fct{drm} had an average of 0.137 seconds.
 
 We further tested \pkg{drda} on a real large-scale drug sensitivity dataset downloaded from the Cancer Therapeutics Response Portal (CTRP) \citep{rees_2016_ncb_correlating, seashore-ludlow_2015_cd_harnessing, basu_2013_cell_interactive}.
 The data contains cell viability measures for 379533 cell line/drug pairs (887 unique cell lines, 545 unique drugs).
@@ -896,21 +896,21 @@ For each cell line-drug-package triple we performed the benchmark and summarized
     \begin{tabular}{@{}lllllll@{}}
       \toprule
       Package & Mean & Minimum & First quartile & Median & Third quartile & Maximum \\ \midrule
-      \pkg{DoseFinding} & 0.459 & 0.000 & 0.000 & \(3.28\,10^{-4}\) & 0.019 & 625.753 \\
-      \pkg{drc} & 0.072 & 0.000 & \(2.54\,10^{-7}\) & \(7.55\,10^{-4}\) & 0.033 & 80.569 \\
-      \pkg{drda} & \(3.80\,10^{-4}\) & 0.000 & 0.000 & 0.000 & 0.000 & 0.289 \\
-      \pkg{nplr} & 0.641 & 0.000 & \(1.02\,10^{-10}\) & \(9.49\,10^{-9}\) & 0.006 & 367.589 \\ \bottomrule
+      \pkg{DoseFinding} & 0.459 & 0.000 & 0.000 & \(3.44\,10^{-4}\) & 0.019 & 625.753 \\
+      \pkg{drc} & 0.072 & 0.000 & \(2.54\,10^{-7}\) & \(7.56\,10^{-4}\) & 0.033 & 80.569 \\
+      \pkg{drda} & \(2.57\,10^{-4}\) & 0.000 & 0.000 & 0.000 & 0.000 & 0.289 \\
+      \pkg{nplr} & 0.641 & 0.000 & \(1.01\,10^{-10}\) & \(9.45\,10^{-9}\) & 0.006 & 367.589 \\ \bottomrule
     \end{tabular}%
   }
   \caption{Summary statistics of the RSS relative error as measured on the CTRPv2 data.}\label{tab:ctrpv2}
 \end{table}
 
-Overall, \pkg{drda} converged to a solution 100\% of the times and is flagged as the absolute best fit in 96.74\% of the cases.
-When we only consider relative errors greater than 1\%, the percentage raises to 99.37\% (70.57\% for \pkg{DoseFinding}, 64.78\% for \pkg{drc}, and 76.79\% for \pkg{nplr}).
-When compared directly against the other packages, \pkg{drda} outperforms \pkg{DoseFinding} in 29.41\% of the cases (worse for 0.63\%), \pkg{drc} in 34.82\% of cases (worse for 0.03\%), and \pkg{nplr} in 22.8\% of the cases (worse for 0.033\%).
+Overall, \pkg{drda} converged to a solution 100\% of the times and is flagged as the absolute best fit in 97\% of the cases.
+When we only consider relative errors greater than 1\%, the percentage raises to 99.6\% (70.55\% for \pkg{DoseFinding}, 64.78\% for \pkg{drc}, and 76.79\% for \pkg{nplr}).
+When compared directly against the other packages, \pkg{drda} outperforms \pkg{DoseFinding} in 29.43\% of the cases (worse for 0.35\%), \pkg{drc} in 35\% of cases (worse for 0.02\%), and \pkg{nplr} in 23\% of the cases (worse for 0.07\%).
 
-Similar to the simulation study results, \fct{fitMod} and \fct{nplr} are again the fastest functions to complete the fit (mean elapsed time of 0.029s and 0.042s respectively).
-On average \pkg{drda} found the global optimum (or a very close solution) in 1.291 seconds while \fct{drm} had an average of 0.315 seconds.
+Similar to the simulation study results, \fct{fitMod} and \fct{nplr} are again the fastest functions to complete the fit (mean elapsed time of 0.028s and 0.04s respectively).
+On average \pkg{drda} found the global optimum (or a very close solution) in 1 second while \fct{drm} in 0.3 seconds.
 
 \section{Summary and discussion}\label{sec:summary}
 In this paper we introduced the \pkg{drda} package, aimed at evaluating dose-response relationship to advance our understanding of biological processes or pharmacological safety.
