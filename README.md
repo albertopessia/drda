@@ -1,6 +1,6 @@
 # drda
 
-[![Build Status](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml/badge.svg?branch=master)](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml) [![Coverage](https://app.codecov.io/gh/albertopessia/drda/branch/master/graph/badge.svg)](https://app.codecov.io/gh/albertopessia/drda)
+[![Build Status](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml/badge.svg?branch=master)](https://github.com/albertopessia/drda/actions/workflows/r-cmd-check.yml) [![Coverage](https://codecov.io/gh/albertopessia/drda/branch/master/graph/badge.svg?token=VgWfj5eLiV)](https://codecov.io/gh/albertopessia/drda)
 
 ## Overview
 
