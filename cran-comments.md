@@ -1,5 +1,10 @@
 # cran-comments
 
+## 2022-07-06
+
+- This is a re-submission for fixing errors at <https://cran.r-project.org/web/checks/check_results_drda.html>.
+- Increased version to 2.0.1 because submission would not be accepted otherwise.
+
 ## 2022-06-16
 
 - Initiating submission process

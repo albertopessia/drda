@@ -1,7 +1,7 @@
 Type: Package
 Package: drda
 Title: Dose-Response Data Analysis
-Version: 2.0.0
+Version: 2.0.1
 Authors@R: c(
     person("Alberto", "Pessia", , "dev@albertopessia.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8607-9191")),
@@ -14,9 +14,9 @@ Description: Fit logistic functions to observed dose-response continuous
 License: MIT + file LICENSE
 URL: https://github.com/albertopessia/drda
 BugReports: https://github.com/albertopessia/drda/issues
-Depends: 
+Depends:
     R (>= 3.6.0)
-Imports: 
+Imports:
     graphics,
     grDevices,
     stats
@@ -25,7 +25,7 @@ Suggests:
     rmarkdown,
     spelling,
     testthat (>= 3.1.0)
-VignetteBuilder: 
+VignetteBuilder:
     knitr
 Config/testthat/edition: 3
 Encoding: UTF-8
