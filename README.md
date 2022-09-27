@@ -4,7 +4,7 @@
 
 ## Overview
 
-*drda* is a [R](https://www.r-project.org/) package for fitting growth curves
+*drda* is an [R](https://www.r-project.org/) package for fitting growth curves
 and performing dose-response data analysis.
 
 The current available models are:
@@ -74,11 +74,12 @@ sigma(fit)
 fit$coefficients
 fit$sigma
 
-# compare the estimated model against a flat horizontal line using AIC, BIC, or
-# the Likelihood Ratio Test (LRT)
+# compare the estimated model against a flat horizontal line, or the full
+# 5-parameter logistic model, using AIC, BIC, and the Likelihood Ratio Test
+# (LRT)
 #
 # note that the LRT is testing the null hypothesis of a flat horizontal line
-# being as a good fit as the full model, therefore we expect the test to be
+# being as a good fit as the chosen model, therefore we expect the test to be
 # significant
 #
 # if the test is not significant, a horizontal line is probably a better model
@@ -145,8 +146,6 @@ fit <- drda(
 )
 
 summary(fit)
-
-# our starting point was actually worse than the automatic one.
 ```
 
 ### Basic plot functionality

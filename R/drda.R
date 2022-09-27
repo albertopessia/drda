@@ -869,8 +869,8 @@ anova.drdalist <- function(object, ...) {
   str <- paste0("Model ", 2:(n_models + 1), ": ", str)
 
   topnote <- if (k >= 5) {
-    str[n_models] <- paste(str[n_models], " (Full)")
-    paste(c("Model 1: a", str, "\n"), collapse = "\n")
+    str[n_models] <- paste(str[n_models], "(Full)\n")
+    paste(c("Model 1: a", str), collapse = "\n")
   } else {
     tmp <- if (model_type == 1) {
       "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)"
