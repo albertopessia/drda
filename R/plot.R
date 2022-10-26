@@ -404,7 +404,7 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
       k <- log(2)
     } else if (base != "e" && base != "n") {
       # only "n", e", "2", and "10" are supported.
-      base <- "n"
+      stop("base value not supported", call. = FALSE)
     }
   } else {
     # by default we do not change the scale
@@ -628,7 +628,7 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
       h <- exp(2)
     } else if (base != "e" && base != "n") {
       # only "n", e", "2", and "10" are supported.
-      base <- "n"
+      stop("base value not supported", call. = FALSE)
     }
   } else {
     # by default we do not change the scale
@@ -820,7 +820,11 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
 
     x_axis_ticks <- seq(x1, x2, by = ceiling((x2 - x1) / 6))
     x_axis_labels <- str2expression(
-      c("0", paste(base, "^", x_axis_ticks[-1], sep = ""))
+      if (any(zero_x)) {
+        c("0", paste(base, "^", x_axis_ticks[-1], sep = ""))
+      } else {
+        paste(base, "^", x_axis_ticks, sep = "")
+      }
     )
 
     # the following is based on https://stackoverflow.com/a/6956596/7073122
@@ -838,22 +842,25 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
       x_axis_minor > xlim[1] & x_axis_minor < xlim[2]
     ]
 
-    x_axis_ticks[1] <- xv[1]
+    if (any(zero_x)) {
+      # when there is a zero dose we must show a gap in the x-axis
+      x_axis_ticks[1] <- xv[1]
 
-    p1 <- 0.25 * (x_axis_ticks[2] - x_axis_ticks[1])
-    p2 <- 0.35 * (x_axis_ticks[2] - x_axis_ticks[1])
+      p1 <- 0.25 * (x_axis_ticks[2] - x_axis_ticks[1])
+      p2 <- 0.35 * (x_axis_ticks[2] - x_axis_ticks[1])
 
-    x1 <- x_axis_ticks[1] + p1
-    x2 <- x_axis_ticks[1] + p2
+      x1 <- x_axis_ticks[1] + p1
+      x2 <- x_axis_ticks[1] + p2
 
-    x_axis_minor <- x_axis_minor[x_axis_minor >= x2]
+      x_axis_minor <- x_axis_minor[x_axis_minor >= x2]
 
-    x_axis_ticks_1 <- c(x_axis_ticks[1], x1)
-    x_axis_labels_1 <- c(x_axis_labels[1], "")
-    x_axis_ticks_2 <- c(x2, x_axis_ticks[-1])
-    x_axis_labels_2 <- c("", x_axis_labels[-1])
+      x_axis_ticks_1 <- c(x_axis_ticks[1], x1)
+      x_axis_labels_1 <- c(x_axis_labels[1], "")
+      x_axis_ticks_2 <- c(x2, x_axis_ticks[-1])
+      x_axis_labels_2 <- c("", x_axis_labels[-1])
 
-    box$z <- c(x1, x2)
+      box$z <- c(x1, x2)
+    }
   } else {
     mp <- exp(mp)
     f <- fn(x, mp, theta)
