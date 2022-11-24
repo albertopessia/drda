@@ -1,7 +1,7 @@
 Type: Package
 Package: drda
 Title: Dose-Response Data Analysis
-Version: 2.0.1
+Version: 2.0.2
 Authors@R: c(
     person("Alberto", "Pessia", , "dev@albertopessia.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8607-9191")),
