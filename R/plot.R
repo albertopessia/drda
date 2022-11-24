@@ -89,6 +89,11 @@ plot.drda <- function(x, ...) {
     midpoint <- TRUE
   }
 
+  plotPoints <- dotargs[["plotPoints"]]
+  if (is.null(plotPoints)) {
+    plotPoints <- TRUE
+  }
+
   params <- plot_params(
     x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
   )
@@ -139,7 +144,7 @@ plot.drda <- function(x, ...) {
     polygon(xci, yci, col = adjustcolor(col, 0.08), border = FALSE)
   }
 
-  points(params$xv, params$yv, col = col)
+  if(plotPoints){points(params$xv, params$yv, col = col)}
   lines(params$xx, params$mu, lty = 2, lwd = 2, col = col)
 
   if (midpoint && !is.null(params$midpoint_x)) {
@@ -216,6 +221,11 @@ plot.drdalist <- function(x, ...) {
   ylab <- dotargs[["ylab"]]
   if (is.null(ylab)) {
     ylab <- "Response"
+  }
+
+  plotPoints <- dotargs[["plotPoints"]]
+  if (is.null(plotPoints)) {
+    plotPoints <- TRUE
   }
 
   main <- dotargs[["main"]]
@@ -344,7 +354,7 @@ plot.drdalist <- function(x, ...) {
       polygon(xci, yci, col = adjustcolor(col[i], 0.08), border = FALSE)
     }
 
-    points(params[[i]]$xv, params[[i]]$yv, col = col[i])
+    if(plotPoints){points(params[[i]]$xv, params[[i]]$yv, col = col[i])}
     lines(params[[i]]$xx, params[[i]]$mu, lty = 2, lwd = 2, col = col[i])
 
     if (midpoint && !is.null(params[[i]]$midpoint_x)) {
