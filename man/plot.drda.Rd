@@ -38,6 +38,8 @@ colors are provided.}
 to disable confidence intervals.}
 \item{midpoint}{if \code{FALSE} do not show guidelines associated with the
 curve mid-point.}
+\item{plot_data}{if \code{FALSE} do not show data points used for fitting in the
+plot.}
 \item{legend_show}{if \code{FALSE} do not show the legend.}
 \item{legend_location}{character string with custom legend position. See
 \code{link[graphics]{legend}} for possible keywords.}

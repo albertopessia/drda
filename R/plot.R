@@ -27,6 +27,8 @@
 #'     to disable confidence intervals.}
 #'   \item{midpoint}{if `FALSE` do not show guidelines associated with the
 #'     curve mid-point.}
+#'   \item{plot_data}{if `FALSE` do not show data points used for fitting in the
+#'     plot.}
 #'   \item{legend_show}{if `FALSE` do not show the legend.}
 #'   \item{legend_location}{character string with custom legend position. See
 #'     \code{link[graphics]{legend}} for possible keywords.}
@@ -89,9 +91,9 @@ plot.drda <- function(x, ...) {
     midpoint <- TRUE
   }
 
-  plotPoints <- dotargs[["plotPoints"]]
-  if (is.null(plotPoints)) {
-    plotPoints <- TRUE
+  plot_data <- dotargs[["plot_data"]]
+  if (is.null(plot_data)) {
+    plot_data <- TRUE
   }
 
   params <- plot_params(
@@ -144,7 +146,9 @@ plot.drda <- function(x, ...) {
     polygon(xci, yci, col = adjustcolor(col, 0.08), border = FALSE)
   }
 
-  if(plotPoints){points(params$xv, params$yv, col = col)}
+  if (plot_data) {
+    points(params$xv, params$yv, col = col)
+  }
   lines(params$xx, params$mu, lty = 2, lwd = 2, col = col)
 
   if (midpoint && !is.null(params$midpoint_x)) {
@@ -223,11 +227,6 @@ plot.drdalist <- function(x, ...) {
     ylab <- "Response"
   }
 
-  plotPoints <- dotargs[["plotPoints"]]
-  if (is.null(plotPoints)) {
-    plotPoints <- TRUE
-  }
-
   main <- dotargs[["main"]]
   if (is.null(main)) {
     main <- ""
@@ -241,6 +240,11 @@ plot.drdalist <- function(x, ...) {
   midpoint <- dotargs[["midpoint"]]
   if (is.null(midpoint)) {
     midpoint <- TRUE
+  }
+
+  plot_data <- dotargs[["plot_data"]]
+  if (is.null(plot_data)) {
+    plot_data <- TRUE
   }
 
   params <- vector("list", n_curves)
@@ -354,7 +358,9 @@ plot.drdalist <- function(x, ...) {
       polygon(xci, yci, col = adjustcolor(col[i], 0.08), border = FALSE)
     }
 
-    if(plotPoints){points(params[[i]]$xv, params[[i]]$yv, col = col[i])}
+    if (plot_data) {
+      points(params[[i]]$xv, params[[i]]$yv, col = col[i])
+    }
     lines(params[[i]]$xx, params[[i]]$mu, lty = 2, lwd = 2, col = col[i])
 
     if (midpoint && !is.null(params[[i]]$midpoint_x)) {
