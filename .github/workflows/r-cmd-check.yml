@@ -31,7 +31,7 @@ jobs:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -50,6 +50,10 @@ jobs:
           Add-Content $env:GITHUB_PATH "C:\Program Files\gs\gs9.56.1\bin\";
           refreshenv;
         shell: pwsh
+
+      - name: Install OpenBLAS (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install --yes libopenblas-serial-dev
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -71,7 +75,7 @@ jobs:
 
       - name: Upload check results
         if: failure()
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ runner.os }}-${{ matrix.config.r }}-results
           path: check
@@ -85,7 +89,7 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: r-lib/actions/setup-r@v2
         with:
