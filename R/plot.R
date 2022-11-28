@@ -290,38 +290,65 @@ plot.drdalist <- function(x, ...) {
   if (plot_type == 1) {
     axis(1, at = params[[j2]]$x_axis_ticks, labels = params[[j2]]$x_axis_labels)
   } else if (plot_type == 2) {
-    # on the left side of the plot we must use the smallest values
-    axis(
-      1, at = params[[j1]]$x_axis_ticks_1, labels = params[[j1]]$x_axis_labels_1
-    )
+    if (is.null(params[[j1]]$x_axis_ticks_1)) {
+      # there is no zero to plot, that is no gap to plot
+      # default ticks are those of "j1"
+      tks_1 <- params[[j1]]$x_axis_ticks
+      lbl_1 <- params[[j1]]$x_axis_labels
 
-    # default ticks are those of "j1"
-    tks_1 <- params[[j1]]$x_axis_ticks_2
-    lbl_1 <- params[[j1]]$x_axis_labels_2
+      # does "j2" have extra ticks to add?
+      tks_2 <- params[[j2]]$x_axis_ticks
+      lbl_2 <- params[[j2]]$x_axis_labels
 
-    # does "j2" have extra ticks to add?
-    # remove the "gap" tick because we are using that of "j1"
-    tks_2 <- params[[j2]]$x_axis_ticks_2[-1]
-    lbl_2 <- params[[j2]]$x_axis_labels_2[-1]
+      idx <- !(tks_2 %in% tks_1)
+      if (any(idx)) {
+        tks_1 <- c(tks_1, tks_2[idx])
+        lbl_1 <- c(lbl_1, lbl_2[idx])
 
-    idx <- !(tks_2 %in% tks_1)
-    if (any(idx)) {
-      tks_1 <- c(tks_1, tks_2[idx])
-      lbl_1 <- c(lbl_1, lbl_2[idx])
+        ord <- order(tks_1)
+        tks_1 <- tks_1[ord]
+        lbl_1 <- lbl_1[ord]
+      }
 
-      ord <- order(tks_1)
-      tks_1 <- tks_1[ord]
-      lbl_1 <- lbl_1[ord]
+      axis(1, at = tks_1, labels = lbl_1)
+    } else {
+      # on the left side of the plot we must use the smallest values
+      axis(
+        1,
+        at = params[[j1]]$x_axis_ticks_1,
+        labels = params[[j1]]$x_axis_labels_1
+      )
+
+      # default ticks are those of "j1"
+      tks_1 <- params[[j1]]$x_axis_ticks_2
+      lbl_1 <- params[[j1]]$x_axis_labels_2
+
+      # does "j2" have extra ticks to add?
+      # remove the "gap" tick because we are using that of "j1"
+      tks_2 <- params[[j2]]$x_axis_ticks_2[-1]
+      lbl_2 <- params[[j2]]$x_axis_labels_2[-1]
+
+      idx <- !(tks_2 %in% tks_1)
+      if (any(idx)) {
+        tks_1 <- c(tks_1, tks_2[idx])
+        lbl_1 <- c(lbl_1, lbl_2[idx])
+
+        ord <- order(tks_1)
+        tks_1 <- tks_1[ord]
+        lbl_1 <- lbl_1[ord]
+      }
+
+      axis(1, at = tks_1, labels = lbl_1)
+
+      axis(
+        1, at = params[[j1]]$x_axis_ticks_1[2], labels = FALSE,
+        tcl = -par("tcl")
+      )
+      axis(
+        1, at = params[[j1]]$x_axis_ticks_2[1], labels = FALSE,
+        tcl = -par("tcl")
+      )
     }
-
-    axis(1, at = tks_1, labels = lbl_1)
-
-    axis(
-      1, at = params[[j1]]$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl")
-    )
-    axis(
-      1, at = params[[j1]]$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl")
-    )
   }
 
   axis(
