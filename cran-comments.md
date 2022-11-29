@@ -1,33 +1,20 @@
 # cran-comments
 
-## 2022-07-06
-
-- This is a re-submission for fixing errors at <https://cran.r-project.org/web/checks/check_results_drda.html>.
-- Increased version to 2.0.1 because submission would not be accepted otherwise.
-
-## 2022-06-16
+## 2022-11-29
 
 - Initiating submission process
 
-## drda 2.0.0
+## drda 2.0.3
 
-This release extends the available models by implementing the log-logistic
-family (on top of the previously available logistic family).
-
-New features also included in this release:
-
-- New model parameterization, hence the decision to increase the major version
-- Improved initialization algorithm
-- Exported functions for evaluating gradient and Hessian
-- New function `effective_dose`
-- Added examples in the docs
+This release updates the vignette and fixes bugs in the plotting function.
 
 ## Test environments
 
-- Windows 10, local, R 4.2.0
-- macOS-11, GitHub Actions, R 4.2.0
-- Windows Server 2022, GitHub Actions, R 4.2.0
-- Ubuntu 20.04, GitHub Actions, R 4.1.3, R 4.2.0, r-devel
+- Windows 10, local, R 4.2.2
+- macOS 12.6.1, GitHub Actions, R 4.2.2
+- Windows Server 2022 10.0.20348, GitHub Actions, R 4.2.2
+- Ubuntu 20.04, GitHub Actions, R 4.1.3, R 4.2.2, r-devel
+- R-hub with `rhub::check_for_cran`
 
 ## R CMD check results
 
