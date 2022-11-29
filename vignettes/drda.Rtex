@@ -767,12 +767,13 @@ As basic plot functionality, \pkg{drda} allows to plot the data, the maximum lik
 Alongside the common \fct{plot} arguments, it is possible to customize the plot by changing the scale of the x-axis with the argument \code{base} or the level of the confidence intervals with the \code{level} argument (default to 0.95).
 The available options for \code{base} are \class{e}, \class{2}, and \class{10}, with the default setting depending on the scale used for the \code{x} variable in the model \code{formula}.
 The curve midpoint and the corresponding (log-)dose are also highlighted in the plot.
-It is possible to plot any number of models within the same figure.
 
 <<plot_logi5, fig.pos = "H", fig.height = 4, fig.width = 9, fig.cap = "">>=
 fit_l5 <- drda(y ~ x, data = test_data, mean_function = "logistic5")
 plot(fit_l5)
 @
+
+It is possible to plot any number of models within the same figure.
 
 <<plot_multi, fig.pos = "H", fig.height = 4, fig.width = 9, fig.cap = "">>=
 plot(
@@ -788,8 +789,9 @@ Compare against plots of log-logistic functions:
 fit_ll2 <- drda(y ~ d, data = test_data, mean_function = "loglogistic2")
 fit_lgz <- drda(y ~ d, data = test_data, mean_function = "loggompertz")
 plot(
-  fit_ll2, fit_ll4, fit_lgz, base = "10", level = 0.9, xlim = c(0, 100),
-  ylim = c(-0.1, 1.1), xlab = "Dose", ylab = "Relative viability", cex = 0.9,
+  fit_ll2, fit_ll4, fit_lgz, base = "10", level = 0.9,
+  xlim = c(0, 100), ylim = c(-0.1, 1.1), xlab = "Dose",
+  ylab = "Relative viability", cex = 0.9,
   legend = c("2-p log-logistic", "4-p log-logistic", "log-Gompertz")
 )
 @
