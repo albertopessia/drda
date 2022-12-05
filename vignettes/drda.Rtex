@@ -856,7 +856,7 @@ For each dataset we store the residual sum of squares (RSS), convergence status,
 
 Since all packages are solving the same optimization problem, i.e., minimization of the residual sum of squares, we define the absolute relative error of package \(k\) as
 \begin{equation*}
-\rho_{k} = \left|1 - \frac{\text{RSS}_{k}}{\min\{\text{RSS}_{DoseFinding}, \text{RSS}_{drc}, \text{RSS}_{drda}, \text{RSS}_{nplr}\}}\right|
+\rho_{k} = \left|1 - \frac{\text{RSS}_{k}}{\min\{\text{RSS}_{DoseFinding}, \text{RSS}_{drc}, \text{RSS}_{drda}, \text{RSS}_{nls}, \text{RSS}_{nplr}\}}\right|
 \end{equation*}
 For practical purposes small absolute relative errors can be considered equivalent to zero.
 
@@ -913,6 +913,7 @@ For each cell line-drug-package triple we performed the benchmark and summarized
 \pkg{drda} is flagged as the absolute best fit in 96.97\% of the cases.
 When we only consider relative errors greater than 1\%, the percentage raises to 99.53\% (70.87\% for \pkg{DoseFinding}, 64.95\% for \pkg{drc}, 76.14\% for \pkg{nplr}).
 When compared directly against the other packages, \pkg{drda} outperforms \pkg{DoseFinding} in 29.07\% of the cases (worse for 0.43\%), \pkg{drc} in 34.81\% of cases (worse for 0.02\%), and \pkg{nplr} in 23.58\% of the cases (worse for 0.06\%).
+When \fct{nls} succesfully converged, \pkg{drda} was better in 4.9\% and worse in 0.02\% of the cases.
 
 Similar to the simulation study results, \fct{fitMod} and \fct{nplr} are again the fastest functions to complete the fit (mean elapsed time of 0.009s and 0.013s respectively).
 On average \pkg{drda} found the global optimum (or a very close solution) in 0.3 seconds, \fct{drm} in 0.092 seconds, while \fct{nls} in 0.019 seconds.
