@@ -874,7 +874,6 @@ mle_asy.loglogistic5 <- function(object, theta) {
 #'
 #' @noRd
 init.loglogistic5 <- function(object) {
-  m <- object$m
   stats <- object$stats
   rss_fn <- rss(object)
 

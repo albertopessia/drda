@@ -682,7 +682,6 @@ mle_asy.gompertz <- function(object, theta) {
 #'
 #' @noRd
 init.gompertz <- function(object) {
-  m <- object$m
   stats <- object$stats
   rss_fn <- rss(object)
 

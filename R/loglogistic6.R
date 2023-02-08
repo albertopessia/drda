@@ -974,7 +974,6 @@ mle_asy.loglogistic6 <- function(object, theta) {
 #'
 #' @noRd
 init.loglogistic6 <- function(object) {
-  m <- object$m
   stats <- object$stats
   rss_fn <- rss(object)
 

@@ -685,13 +685,23 @@ mle_asy.logistic2 <- function(object, theta) {
 #'
 #' @noRd
 init.logistic2 <- function(object) {
-  m <- object$m
   stats <- object$stats
   rss_fn <- rss(object)
 
   theta <- if (any(is.na(object$start))) {
     # data might not be compatible with a 2-parameter log-logistic function
     idx <- (stats[, 3] >= 0) & (stats[, 3] <= 1)
+
+    if (mean(idx) <= 0.3) {
+      warning(
+        paste(
+          "Too many values outside the range (0, 1).",
+          "Is the data properly scaled?"
+        ),
+        call. = FALSE
+      )
+    }
+
     xx <- stats[idx, 1]
     yy <- stats[idx, 3]
 
