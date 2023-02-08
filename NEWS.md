@@ -1,3 +1,20 @@
+# drda 2.0.3
+
+- Updated vignette after review from the Journal of Statistical Software.
+- Fixed again the `x`-axis of the plot.
+
+# drda 2.0.2
+
+- Fixed a bug in the `plot` when doses were not previously sorted.
+- Fixed a bug in the `x`-axis of the `plot` when data contained zeros.
+- It is now possible to not plot data points by setting option `plot_data` to
+`FALSE` (default `TRUE`).
+
+# drda 2.0.1
+
+- Small fixes to unit tests because they were not passing on specific systems.
+- Updated vignette with new simulation results.
+
 # drda 2.0.0
 
 It is now possible to fit models using either the log-dose or the dose scale.
