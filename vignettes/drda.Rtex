@@ -880,7 +880,7 @@ According to our simulation results (Table~\ref{tab:l4sim}), \pkg{drda} provides
 Overall, \pkg{drda} converged to a solution 100\% of the times, \pkg{drc} 83.8\% of the times, while function \fct{nls} only 25.9\% of the times.
 We cannot provide an accurate convergence rate for \pkg{DoseFinding} and \pkg{nplr} because the information is missing from their returned fit object.
 
-The higher accuracy comes obviously at a small computational cost as more steps are usually needed for exploring the parameter space.
+The higher accuracy comes at a small computational cost as more steps are needed for exploring the parameter space.
 Our data analysis reveals that \fct{fitMOD} and \fct{nplr} are the fastest functions to complete the fit (mean elapsed time of 0.008s and 0.012s respectively).
 \pkg{drda} found the global optimum in 0.514 seconds on average.
 For completeness, \fct{drm} and \fct{nls} had an average of 0.04 and 0.013 seconds respectively.
@@ -917,6 +917,9 @@ When \fct{nls} succesfully converged, \pkg{drda} was better in 4.9\% and worse i
 
 Similar to the simulation study results, \fct{fitMod} and \fct{nplr} are again the fastest functions to complete the fit (mean elapsed time of 0.009s and 0.013s respectively).
 On average \pkg{drda} found the global optimum (or a very close solution) in 0.3 seconds, \fct{drm} in 0.092 seconds, while \fct{nls} in 0.019 seconds.
+
+Results shown in this section were obtained with R version 4.2.1, running under Rocky Linux 8.6 with an Intel\textsuperscript{\tiny\textregistered} Xeon\textsuperscript{\tiny\textregistered} Gold 6230 x86\_64 Processor, using the Intel\textsuperscript{\tiny\textregistered} oneAPI Math Kernel Library 2022.1 as the BLAS/LAPACK back-end.
+Because of system-specific numerical instabilities, executing the provided replication materials within a different environment will likely produce minor differences from what was shown here.
 
 \section{Summary and discussion}\label{sec:summary}
 In this paper we introduced the \pkg{drda} package, aimed at evaluating dose-response relationship to advance our understanding of biological processes or pharmacological safety.
