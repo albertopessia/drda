@@ -1,20 +1,29 @@
-citEntry(
-  entry = "article",
-  title = "{drda: An R package for dose-response data analysis}",
-  author = personList(
-    as.person("Alina Malyutina"),
-    as.person("Jing Tang"),
-    as.person("Alberto Pessia")
+bibentry(
+  bibtype = "Article",
+  title = "{drda}: An {R} Package for Dose-Response Data Analysis Using Logistic Functions",
+  author = c(
+    person(
+      given = "Alina", family = "Malyutina",
+      email = "alina.malyutina@helsinki.fi"
+    ),
+    person(
+      given = "Jing", family = "Tang", email = "jing.tang@helsinki.fi"
+    ),
+    person(
+      given = "Alberto", family = "Pessia", email = "academic@albertopessia.com"
+    )
   ),
-  journal = "bioRxiv",
-  pages = "2021.06.07.447323",
-  year = "2021",
-  doi = "10.1101/2021.06.07.447323",
-  url = "https://doi.org/10.1101/2021.06.07.447323",
-  textVersion  = paste(
-    "Malyutina A, Tang J, Pessia A (2021).",
-    "drda: An R package for dose-response data analysis.",
-    "bioRxiv, 2021.06.07.447323.",
-    "doi: 10.1101/2021.06.07.447323"
+  journal = "Journal of Statistical Software",
+  year = "2023",
+  volume = "106",
+  number = "4",
+  pages = "1--26",
+  doi = "10.18637/jss.v106.i04",
+  header = "To cite drda in publications use:",
+  textVersion = paste(
+    "Alina Malyutina, Jing Tang, Alberto Pessia (2023).",
+    "drda: An R Package for Dose-Response Data Analysis Using Logistic Functions.",
+    "Journal of Statistical Software, 106(4), 1-26.",
+    "doi:10.18637/jss.v106.i04"
   )
 )

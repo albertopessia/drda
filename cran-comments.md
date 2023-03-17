@@ -1,12 +1,13 @@
 # cran-comments
 
-## 2022-11-29
+## 2023-03-17
 
 - Initiating submission process
 
 ## drda 2.0.3
 
-This release updates the vignette and fixes bugs in the plotting function.
+This release updates the vignette following the accepted JSS manuscript.
+It also includes bug fixes in the plotting function.
 
 ## Test environments
 
