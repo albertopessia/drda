@@ -174,11 +174,15 @@ loglogistic6_fn <- function(x, theta) {
 }
 
 # @rdname loglogistic6_fn
+#
+#' @export
 fn.loglogistic6 <- function(object, x, theta) {
   loglogistic6_fn(x, theta)
 }
 
 # @rdname loglogistic6_fn
+#
+#' @export
 fn.loglogistic6_fit <- function(object, x, theta) {
   loglogistic6_fn(x, theta)
 }
@@ -259,6 +263,7 @@ loglogistic6_gradient <- function(x, theta) {
   G
 }
 
+#' @export
 gradient.loglogistic6_fit <- function(object, x) {
   loglogistic6_gradient(x, object$coefficients)
 }
@@ -750,6 +755,8 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
 #   `c(alpha, delta, log(eta), log(phi), log(nu), log(xi))`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
+#
+#' @export
 gradient_hessian.loglogistic6 <- function(object, theta) {
   loglogistic6_gradient_hessian_2(object$stats[, 1], theta)
 }
@@ -778,6 +785,8 @@ gradient_hessian.loglogistic6 <- function(object, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#
+#' @export
 rss.loglogistic6 <- function(object) {
   function(theta) {
     theta[3:6] <- exp(theta[3:6])
@@ -787,6 +796,8 @@ rss.loglogistic6 <- function(object) {
 }
 
 # @rdname rss.loglogistic6
+#
+#' @export
 rss_fixed.loglogistic6 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -826,6 +837,8 @@ rss_fixed.loglogistic6 <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#
+#' @export
 rss_gradient_hessian.loglogistic6 <- function(object) {
   function(theta) {
     theta[3:6] <- exp(theta[3:6])
@@ -853,6 +866,8 @@ rss_gradient_hessian.loglogistic6 <- function(object) {
 }
 
 # @rdname rss_gradient_hessian.loglogistic6
+#
+#' @export
 rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -898,6 +913,8 @@ rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two parameters `alpha`
 #   and `delta`.
+#
+#' @export
 mle_asy.loglogistic6 <- function(object, theta) {
   names(theta) <- NULL
 
@@ -1221,6 +1238,8 @@ init.loglogistic6 <- function(object) {
 #     \item{residuals}{residuals, that is response minus fitted values.}
 #     \item{weights}{vector of weights used for the fit.}
 #   }
+#
+#' @export
 fit.loglogistic6 <- function(object) {
   solution <- find_optimum(object)
 
@@ -1253,6 +1272,8 @@ fit.loglogistic6 <- function(object) {
 }
 
 # @rdname fit.loglogistic6
+#
+#' @export
 fit_constrained.loglogistic6 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -1328,6 +1349,8 @@ fit_constrained.loglogistic6 <- function(object) {
 # @param sigma estimate of the standard deviation.
 #
 # @return Fisher information matrix evaluated at `theta`.
+#
+#' @export
 fisher_info.loglogistic6 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -1389,6 +1412,8 @@ fisher_info.loglogistic6 <- function(object, theta, sigma) {
 #
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+#
+#' @export
 inverse_fn.loglogistic6_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
@@ -1417,6 +1442,8 @@ inverse_fn.loglogistic6_fit <- function(object, y) {
 # obviously `lambda = alpha + delta`.
 #
 # This function evaluates the gradient of the inverse function.
+#
+#' @export
 inverse_fn_gradient.loglogistic6_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]

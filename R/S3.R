@@ -2,7 +2,7 @@ fn <- function(object, x, theta) {
   UseMethod("fn", object)
 }
 
-gradient <- function(object, theta) {
+gradient <- function(object, x) {
   UseMethod("gradient", object)
 }
 

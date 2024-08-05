@@ -7,6 +7,8 @@
 # @param x numeric vector at which to evaluate the variance.
 #
 # @return Numeric vector with the variances of the maximum likelihood curve.
+#
+#' @export
 curve_variance.drda <- function(object, x) {
   len <- length(x)
 
