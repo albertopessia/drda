@@ -7,8 +7,7 @@
 \method{plot}{drda}(x, ...)
 }
 \arguments{
-\item{x}{\code{drda} object as returned by the \code{link[drda]{drda}}
-function.}
+\item{x}{\code{drda} object as returned by the \code{link[drda]{drda}} function.}
 
 \item{...}{other \code{drda} objects or parameters to be passed to the plotting
 functions. See 'Details'.}

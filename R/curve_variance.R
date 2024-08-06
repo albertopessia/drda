@@ -30,7 +30,7 @@ curve_variance.drda <- function(object, x) {
   variance <- rep(NA_real_, len)
 
   for (i in seq_len(len)) {
-    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, ], V), G[i, ]))
+    variance[i] <- as.numeric(tcrossprod(crossprod(G[i, idx], V), G[i, idx]))
   }
 
   variance
