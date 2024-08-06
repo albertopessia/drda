@@ -489,7 +489,9 @@ drda <- function(
   if (any(w_zero)) {
     # fitting was done with only positive weights but we want to report all
     # of them
+    result$fitted.values <- fn(result, model_frame[, 2], result$coefficients)
     result$weights <- model_frame[, 3]
+    result$residuals <- model_frame[, 1] - result$fitted.values
   }
 
   class(result) <- c(class(result), "drda")
