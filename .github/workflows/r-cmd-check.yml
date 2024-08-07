@@ -47,6 +47,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install ghostscript --no-progress --version 10.3.1;
+          Import-Module "$env:ChocolateyInstall/helpers/chocolateyInstaller.psm1"
           Add-Content $env:GITHUB_PATH "C:\Program Files\gs\gs10.3.1\bin\";
           refreshenv;
         shell: pwsh
