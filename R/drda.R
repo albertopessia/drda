@@ -489,7 +489,9 @@ drda <- function(
   if (any(w_zero)) {
     # fitting was done with only positive weights but we want to report all
     # of them
+    result$fitted.values <- fn(result, model_frame[, 2], result$coefficients)
     result$weights <- model_frame[, 3]
+    result$residuals <- model_frame[, 1] - result$fitted.values
   }
 
   class(result) <- c(class(result), "drda")
@@ -512,8 +514,9 @@ anova.drda <- function(object, ...) {
 
   if (any(named)) {
     warning(
-      "the following arguments to 'anova.drda' are invalid and dropped: ",
-      paste(deparse(dotargs[named]), collapse = ", ")
+      "The following arguments to 'anova.drda' are invalid and dropped: ",
+      paste(deparse(dotargs[named]), collapse = ", "),
+      "\n", call. = FALSE
     )
   }
 
@@ -914,49 +917,97 @@ logLik.drda <- function(object, ...) {
   )
 }
 
-#' @importFrom stats predict
+#' @importFrom stats predict qt
 #'
 #' @export
-predict.drda <- function(object, newdata, ...) {
+predict.drda <- function(
+  object, newdata, se.fit = FALSE, interval = FALSE, level = 0.95, ...
+) {
+  if (!is.numeric(level) || level <= 0 || level >= 1) {
+    stop("invalid `level` argument", call. = FALSE)
+  }
+
+  # by default we will return the fitted values
+  predictor <- object$fitted.values
+
   if (missing(newdata) || is.null(newdata)) {
     # did the user provide arguments?
     dotargs <- list(...)
 
-    if (length(dotargs) == 0) {
-      return(object$fitted.values)
-    } else {
-      # we only consider the first argument
+    if (length(dotargs) > 0) {
+      warning("First non-standard argument taken as `newdata`\n", call. = FALSE)
       newdata <- dotargs[[1]]
+    } else {
+      newdata <- NULL
     }
   }
 
-  if (is.data.frame(newdata) || is.matrix(newdata)) {
-    if (ncol(newdata) == 1) {
-      newdata <- newdata[, 1]
-    } else {
-      # in case of multiple columns, pick the one corresponding to our predictor
-      idx <- match(colnames(object$model)[2], colnames(newdata))
-
-      if (!is.na(idx)) {
-        newdata <- newdata[, idx]
+  if (!is.null(newdata)) {
+    if (is.data.frame(newdata) || (is.matrix(newdata) && is.numeric(newdata))) {
+      if (ncol(newdata) == 1) {
+        newdata <- newdata[, 1]
       } else {
-        stop(
-          "cannot find the predictor variable in 'newdata'",
-          call. = FALSE
-        )
+        # in case of multiple columns, try to pick our predictor
+        idx <- match(colnames(object$model)[2], colnames(newdata))
+
+        if (!is.na(idx)) {
+          newdata <- newdata[, idx]
+        } else {
+          stop(
+            "cannot find the predictor variable in `newdata`",
+            call. = FALSE
+          )
+        }
       }
+    } else if (!is.numeric(newdata) || !is.null(dim(newdata))) {
+      stop(
+        "variable `newdata` is not a data.frame nor a numeric object",
+        call. = FALSE
+      )
     }
-  } else if (!is.numeric(newdata) || !is.null(dim(newdata))) {
-    stop(
-      "variable `newdata` is not a data.frame nor a numeric vector",
+
+    predictor <- fn(object, newdata, object$coefficients)
+    names(predictor) <- NULL
+  }
+
+  if (interval && is.null(newdata)) {
+    warning(
+      "Predictions on current data refer to _future_ responses\n",
       call. = FALSE
     )
   }
 
-  res <- fn(object, newdata, object$coefficients)
-  names(res) <- names(newdata)
+  if (se.fit || interval) {
+    pred_var <- if (is.null(newdata)) {
+      curve_variance(object, object$model[, 2])
+    } else {
+      curve_variance(object, newdata)
+    }
 
-  res
+    pred_se <- sqrt(pred_var)
+
+    tq <- qt((1 - level) / 2, object$df.residual, lower.tail = FALSE)
+    hw <- tq * sqrt(object$sigma^2 + pred_var)
+  }
+
+  if (se.fit) {
+    if (interval) {
+      list(
+        fit = predictor, se.fit = pred_se, lwr = predictor - hw,
+        upr = predictor + hw, df = object$df.residual
+      )
+    } else {
+      list(
+        fit = predictor, se.fit = pred_se, df = object$df.residual
+      )
+    }
+  } else {
+    if (interval) {
+      cbind(fit = predictor, lwr = predictor - hw, upr = predictor + hw)
+    } else {
+      predictor
+    }
+  }
 }
 
 #' @export

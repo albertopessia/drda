@@ -52,3 +52,21 @@ Malyutina A, Tang J, Pessia A (2023). drda: An R package for
 dose-response data analysis using logistic functions. Journal of
 Statistical Software, 106(4), 1-26. doi:10.18637/jss.v106.i04
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/albertopessia/drda}
+  \item Report bugs at \url{https://github.com/albertopessia/drda/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Alberto Pessia \email{dev@albertopessia.com} (\href{https://orcid.org/0000-0001-8607-9191}{ORCID})
+
+Other contributors:
+\itemize{
+  \item Alina Malyutina (\href{https://orcid.org/0000-0001-8220-5859}{ORCID}) [contributor]
+}
+
+}
+\keyword{internal}

@@ -138,11 +138,15 @@ loglogistic5_fn <- function(x, theta) {
 }
 
 # @rdname loglogistic5_fn
+#
+#' @export
 fn.loglogistic5 <- function(object, x, theta) {
   loglogistic5_fn(x, theta)
 }
 
 # @rdname loglogistic5_fn
+#
+#' @export
 fn.loglogistic5_fit <- function(object, x, theta) {
   loglogistic5_fn(x, theta)
 }
@@ -217,6 +221,7 @@ loglogistic5_gradient <- function(x, theta) {
   G
 }
 
+#' @export
 gradient.loglogistic5_fit <- function(object, x) {
   loglogistic5_gradient(x, object$coefficients)
 }
@@ -653,6 +658,8 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
 #   `c(alpha, delta, log(eta), log(phi), log(nu))`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
+#
+#' @export
 gradient_hessian.loglogistic5 <- function(object, theta) {
   loglogistic5_gradient_hessian_2(object$stats[, 1], theta)
 }
@@ -681,6 +688,8 @@ gradient_hessian.loglogistic5 <- function(object, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#
+#' @export
 rss.loglogistic5 <- function(object) {
   function(theta) {
     theta[3:5] <- exp(theta[3:5])
@@ -690,6 +699,8 @@ rss.loglogistic5 <- function(object) {
 }
 
 # @rdname rss.loglogistic5
+#
+#' @export
 rss_fixed.loglogistic5 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -729,6 +740,8 @@ rss_fixed.loglogistic5 <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#
+#' @export
 rss_gradient_hessian.loglogistic5 <- function(object) {
   function(theta) {
     theta[3:5] <- exp(theta[3:5])
@@ -755,6 +768,8 @@ rss_gradient_hessian.loglogistic5 <- function(object) {
 }
 
 # @rdname rss_gradient_hessian.loglogistic5
+#
+#' @export
 rss_gradient_hessian_fixed.loglogistic5 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -799,6 +814,8 @@ rss_gradient_hessian_fixed.loglogistic5 <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two parameters `alpha`
 #   and `delta`.
+#
+#' @export
 mle_asy.loglogistic5 <- function(object, theta) {
   names(theta) <- NULL
 
@@ -1098,6 +1115,8 @@ init.loglogistic5 <- function(object) {
 #     \item{residuals}{residuals, that is response minus fitted values.}
 #     \item{weights}{vector of weights used for the fit.}
 #   }
+#
+#' @export
 fit.loglogistic5 <- function(object) {
   solution <- find_optimum(object)
 
@@ -1130,6 +1149,8 @@ fit.loglogistic5 <- function(object) {
 }
 
 # @rdname fit.loglogistic5
+#
+#' @export
 fit_constrained.loglogistic5 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -1205,6 +1226,8 @@ fit_constrained.loglogistic5 <- function(object) {
 # @param sigma estimate of the standard deviation.
 #
 # @return Fisher information matrix evaluated at `theta`.
+#
+#' @export
 fisher_info.loglogistic5 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -1262,6 +1285,8 @@ fisher_info.loglogistic5 <- function(object, theta, sigma) {
 #
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+#
+#' @export
 inverse_fn.loglogistic5_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
@@ -1287,6 +1312,8 @@ inverse_fn.loglogistic5_fit <- function(object, y) {
 # `phi > 0`, and `nu > 0`.
 #
 # This function evaluates the gradient of the inverse function.
+#
+#' @export
 inverse_fn_gradient.loglogistic5_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]

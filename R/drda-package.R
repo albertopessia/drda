@@ -45,7 +45,6 @@
 #'   dose-response data analysis using logistic functions. Journal of
 #'   Statistical Software, 106(4), 1-26. doi:10.18637/jss.v106.i04
 #'
-#' @docType package
-#'
 #' @name drda-package
-NULL
+#' @keywords internal
+"_PACKAGE"

@@ -32,6 +32,6 @@ where \code{x >= 0}, \code{theta = c(alpha, delta, eta, phi)}, \code{eta > 0}, a
 vector \code{c(alpha, delta)} is constrained to be either \code{c(0, 1)} (monotonically
 increasing curve) or \code{c(1, -1)} (monotonically decreasing curve).
 
-This function allows values other than {0, 1, -1} for \code{alpha} and \code{delta} but
-will coerce them to their proper constraints.
+This function allows values other than \verb{\{0, 1, -1\}} for \code{alpha} and \code{delta}
+but will coerce them to their proper constraints.
 }

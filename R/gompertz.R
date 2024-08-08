@@ -103,10 +103,12 @@ gompertz_fn <- function(x, theta) {
   alpha + delta * exp(-exp(-eta * (x - phi)))
 }
 
+#' @export
 fn.gompertz <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
 
+#' @export
 fn.gompertz_fit <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
@@ -169,6 +171,7 @@ gompertz_gradient <- function(x, theta) {
   G
 }
 
+#' @export
 gradient.gompertz_fit <- function(object, x) {
   gompertz_gradient(x, object$coefficients)
 }
@@ -495,6 +498,8 @@ gompertz_gradient_hessian_2 <- function(x, theta) {
 #   `c(alpha, delta, eta, phi)`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
+#
+#' @export
 gradient_hessian.gompertz <- function(object, theta) {
   gompertz_gradient_hessian_2(object$stats[, 1], theta)
 }
@@ -520,6 +525,8 @@ gradient_hessian.gompertz <- function(object, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#
+#' @export
 rss.gompertz <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
@@ -530,6 +537,8 @@ rss.gompertz <- function(object) {
 }
 
 # @rdname rss.gompertz
+#
+#' @export
 rss_fixed.gompertz <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -566,6 +575,8 @@ rss_fixed.gompertz <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#
+#' @export
 rss_gradient_hessian.gompertz <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
@@ -591,6 +602,8 @@ rss_gradient_hessian.gompertz <- function(object) {
 }
 
 # @rdname rss_gradient_hessian.gompertz
+#
+#' @export
 rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -633,6 +646,8 @@ rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
 # @param theta vector of parameters.
 #
 # @return Numeric vector of length 2 with the MLE of the two asymptotes.
+#
+#' @export
 mle_asy.gompertz <- function(object, theta) {
   names(theta) <- NULL
 
@@ -870,6 +885,8 @@ init.gompertz <- function(object) {
 #     \item{residuals}{residuals, that is response minus fitted values.}
 #     \item{weights}{vector of weights used for the fit.}
 #   }
+#
+#' @export
 fit.gompertz <- function(object) {
   solution <- find_optimum(object)
 
@@ -902,6 +919,8 @@ fit.gompertz <- function(object) {
 }
 
 # @rdname fit.gompertz
+#
+#' @export
 fit_constrained.gompertz <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -974,6 +993,8 @@ fit_constrained.gompertz <- function(object) {
 # @param sigma estimate of the standard deviation.
 #
 # @return Fisher information matrix evaluated at `theta`.
+#
+#' @export
 fisher_info.gompertz <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -1030,6 +1051,8 @@ fisher_info.gompertz <- function(object, theta, sigma) {
 #
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+#
+#' @export
 inverse_fn.gompertz_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
@@ -1057,6 +1080,8 @@ inverse_fn.gompertz_fit <- function(object, y) {
 # value at `x = 0`.
 #
 # This function evaluates the gradient of the inverse function.
+#
+#' @export
 inverse_fn_gradient.gompertz_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]

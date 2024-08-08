@@ -135,8 +135,8 @@ loglogistic2_new <-  function(
 #' vector `c(alpha, delta)` is constrained to be either `c(0, 1)` (monotonically
 #' increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #'
-#' This function allows values other than {0, 1, -1} for `alpha` and `delta` but
-#' will coerce them to their proper constraints.
+#' This function allows values other than `{0, 1, -1}` for `alpha` and `delta`
+#' but will coerce them to their proper constraints.
 #'
 #' @param x numeric vector at which the function is to be evaluated.
 #' @param theta numeric vector with the four parameters in the form
@@ -164,10 +164,12 @@ loglogistic2_fn <- function(x, theta) {
   alpha + delta * t1 / (t1 + t2)
 }
 
+#' @export
 fn.loglogistic2 <- function(object, x, theta) {
   loglogistic2_fn(x, c(object$start[1:2], theta))
 }
 
+#' @export
 fn.loglogistic2_fit <- function(object, x, theta) {
   # within a fit, parameter theta is known exactly
   alpha <- theta[1]
@@ -248,6 +250,7 @@ loglogistic2_gradient <- function(x, theta, delta) {
   sign(delta) * G
 }
 
+#' @export
 gradient.loglogistic2_fit <- function(object, x) {
   theta <- object$coefficients
   loglogistic2_gradient(x, theta[3:4], theta[2])
@@ -593,6 +596,8 @@ loglogistic2_gradient_hessian_2 <- function(x, theta, delta) {
 #   `c(log(eta), log(phi))`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
+#
+#' @export
 gradient_hessian.loglogistic2 <- function(object, theta) {
   loglogistic2_gradient_hessian_2(object$stats[, 1], theta, object$start[2])
 }
@@ -622,6 +627,8 @@ gradient_hessian.loglogistic2 <- function(object, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#
+#' @export
 rss.loglogistic2 <- function(object) {
   function(theta) {
     theta <- exp(theta)
@@ -631,6 +638,8 @@ rss.loglogistic2 <- function(object) {
 }
 
 # @rdname rss.loglogistic2
+#
+#' @export
 rss_fixed.loglogistic2 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -672,6 +681,8 @@ rss_fixed.loglogistic2 <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#
+#' @export
 rss_gradient_hessian.loglogistic2 <- function(object) {
   function(theta) {
     theta <- exp(theta)
@@ -695,6 +706,8 @@ rss_gradient_hessian.loglogistic2 <- function(object) {
 }
 
 # @rdname rss_gradient_hessian.loglogistic2
+#
+#' @export
 rss_gradient_hessian_fixed.loglogistic2 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -736,6 +749,8 @@ rss_gradient_hessian_fixed.loglogistic2 <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two parameters `alpha`
 #   and `delta`.
+#
+#' @export
 mle_asy.loglogistic2 <- function(object, theta) {
   names(theta) <- NULL
   theta
@@ -961,6 +976,8 @@ init.loglogistic2 <- function(object) {
 #     \item{residuals}{residuals, that is response minus fitted values.}
 #     \item{weights}{vector of weights used for the fit.}
 #   }
+#
+#' @export
 fit.loglogistic2 <- function(object) {
   solution <- find_optimum(object)
 
@@ -992,6 +1009,8 @@ fit.loglogistic2 <- function(object) {
 }
 
 # @rdname fit.loglogistic2
+#
+#' @export
 fit_constrained.loglogistic2 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -1067,6 +1086,8 @@ fit_constrained.loglogistic2 <- function(object) {
 # @param sigma estimate of the standard deviation.
 #
 # @return Fisher information matrix evaluated at `theta`.
+#
+#' @export
 fisher_info.loglogistic2 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -1120,6 +1141,8 @@ fisher_info.loglogistic2 <- function(object, theta, sigma) {
 #
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+#
+#' @export
 inverse_fn.loglogistic2_fit <- function(object, y) {
   inverse_fn.loglogistic4_fit(object, y)
 }
@@ -1140,6 +1163,8 @@ inverse_fn.loglogistic2_fit <- function(object, y) {
 # increasing curve) or `c(1, -1)` (monotonically decreasing curve).
 #
 # This function evaluates the gradient of the inverse function.
+#
+#' @export
 inverse_fn_gradient.loglogistic2_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]

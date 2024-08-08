@@ -429,14 +429,15 @@ plot.drdalist <- function(x, ...) {
 
 # Initialize graphical parameters for a curve defined over the whole real line.
 #
-# @param x `drda` object.
+# @param object `drda` object.
 # @param base character string with the base used for printing the values on the
 #   `x` axis.
 # @param xlim the range of `x` values.
 # @param ylim the range of `y` values.
 #
 # @return List with processed graphical parameters.
-plot_params.logistic <- function(x, base, xlim, ylim) {
+#' @export
+plot_params.logistic <- function(object, base, xlim, ylim) {
   # these constants are used for proper scaling on the requested base
   k <- 1
 
@@ -454,7 +455,7 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
     base <- "n"
   }
 
-  theta <- x$coefficients
+  theta <- object$coefficients
 
   lb <- theta[1]
   ub <- theta[1]
@@ -466,15 +467,15 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
     lb <- theta[1] + theta[2]
   }
 
-  if (x$mean_function == "logistic4") {
+  if (object$mean_function == "logistic4") {
     mp <- theta[4]
-  } else if (x$mean_function == "logistic2") {
+  } else if (object$mean_function == "logistic2") {
     mp <- theta[4]
-  } else if (x$mean_function == "logistic5") {
+  } else if (object$mean_function == "logistic5") {
     mp <- theta[4] + (log(theta[5]) - log(2^theta[5] - 1)) / theta[3]
-  } else if (x$mean_function == "gompertz") {
+  } else if (object$mean_function == "gompertz") {
     mp <- theta[4] - log(log(2)) / theta[3]
-  } else if (x$mean_function == "logistic6") {
+  } else if (object$mean_function == "logistic6") {
     q <- theta[6]^(-1 / theta[5])
 
     if (theta[2] >= 0) {
@@ -490,9 +491,9 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
     stop("model not supported", call. = FALSE)
   }
 
-  xv <- x$model[, 2]
-  yv <- x$model[, 1]
-  wv <- x$weights
+  xv <- object$model[, 2]
+  yv <- object$model[, 1]
+  wv <- object$weights
 
   idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
 
@@ -519,7 +520,7 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
   }
 
   if (is.null(ylim)) {
-    ylim <- if (x$mean_function != "logistic2") {
+    ylim <- if (object$mean_function != "logistic2") {
       extendrange(yv, f = 0.08)
     } else {
       c(0, 1)
@@ -543,8 +544,8 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
   }
 
   xx <- seq(xlim[1], xlim[2], length.out = 500)
-  mu <- fn(x, xx, theta)
-  cv <- curve_variance(x, xx)
+  mu <- fn(object, xx, theta)
+  cv <- curve_variance(object, xx)
 
   x_axis_ticks <- pretty(xlim)
   x_axis_labels <- TRUE
@@ -615,7 +616,7 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
   midpoint_x <- NULL
   midpoint_y <- NULL
 
-  f <- fn(x, mp, theta)
+  f <- fn(object, mp, theta)
 
   if (base != "n") {
     mp <- mp / k
@@ -650,14 +651,15 @@ plot_params.logistic <- function(x, base, xlim, ylim) {
 
 # Initialize graphical parameters for a curve defined only for positive values.
 #
-# @param x `drda` object.
+# @param object `drda` object.
 # @param base character string with the base used for printing the values on the
 #   `x` axis.
 # @param xlim the range of `x` values.
 # @param ylim the range of `y` values.
 #
 # @return List with processed graphical parameters.
-plot_params.loglogistic <- function(x, base, xlim, ylim) {
+#' @export
+plot_params.loglogistic <- function(object, base, xlim, ylim) {
   # these constants are used for proper scaling on the requested base
   k <- 1
   h <- exp(3)
@@ -678,7 +680,7 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
     base <- "n"
   }
 
-  theta <- x$coefficients
+  theta <- object$coefficients
 
   lb <- theta[1]
   ub <- theta[1]
@@ -690,15 +692,15 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
     lb <- theta[1] + theta[2]
   }
 
-  if (x$mean_function == "loglogistic4") {
+  if (object$mean_function == "loglogistic4") {
     mp <- log(theta[4])
-  } else if (x$mean_function == "loglogistic2") {
+  } else if (object$mean_function == "loglogistic2") {
     mp <- log(theta[4])
-  } else if (x$mean_function == "loglogistic5") {
+  } else if (object$mean_function == "loglogistic5") {
     mp <- log(theta[4]) + (log(theta[5]) - log(2^theta[5] - 1)) / theta[3]
-  } else if (x$mean_function == "loggompertz") {
+  } else if (object$mean_function == "loggompertz") {
     mp <- log(theta[4]) - log(log(2)) / theta[3]
-  } else if (x$mean_function == "loglogistic6") {
+  } else if (object$mean_function == "loglogistic6") {
     q <- theta[6]^(-1 / theta[5])
 
     if (theta[2] >= 0) {
@@ -714,9 +716,9 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
     stop("model not supported", call. = FALSE)
   }
 
-  xv <- x$model[, 2]
-  yv <- x$model[, 1]
-  wv <- x$weights
+  xv <- object$model[, 2]
+  yv <- object$model[, 1]
+  wv <- object$weights
 
   idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
 
@@ -775,7 +777,7 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
   }
 
   if (is.null(ylim)) {
-    ylim <- if (x$mean_function != "loglogistic2") {
+    ylim <- if (object$mean_function != "loglogistic2") {
       extendrange(yv, f = 0.08)
     } else {
       c(0, 1)
@@ -805,8 +807,8 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
     exp(xx)
   }
 
-  mu <- fn(x, zz, theta)
-  cv <- curve_variance(x, zz)
+  mu <- fn(object, zz, theta)
+  cv <- curve_variance(object, zz)
 
   x_axis_ticks <- pretty(xlim)
   x_axis_labels <- TRUE
@@ -849,7 +851,7 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
   f <- 0.0
 
   if (base != "n") {
-    f <- fn(x, exp(mp), theta)
+    f <- fn(object, exp(mp), theta)
 
     mp <- mp / k
 
@@ -906,7 +908,7 @@ plot_params.loglogistic <- function(x, base, xlim, ylim) {
     }
   } else {
     mp <- exp(mp)
-    f <- fn(x, mp, theta)
+    f <- fn(object, mp, theta)
   }
 
   midpoint_x <- NULL

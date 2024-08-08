@@ -116,10 +116,12 @@ loglogistic4_fn <- function(x, theta) {
   alpha + delta * t1 / (t1 + t2)
 }
 
+#' @export
 fn.loglogistic4 <- function(object, x, theta) {
   loglogistic4_fn(x, theta)
 }
 
+#' @export
 fn.loglogistic4_fit <- function(object, x, theta) {
   loglogistic4_fn(x, theta)
 }
@@ -190,6 +192,7 @@ loglogistic4_gradient <- function(x, theta) {
   G
 }
 
+#' @export
 gradient.loglogistic4_fit <- function(object, x) {
   loglogistic4_gradient(x, object$coefficients)
 }
@@ -558,6 +561,8 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
 #   `c(alpha, delta, log(eta), log(phi))`.
 #
 # @return List of two elements: `G` the gradient and `H` the Hessian.
+#
+#' @export
 gradient_hessian.loglogistic4 <- function(object, theta) {
   loglogistic4_gradient_hessian_2(object$stats[, 1], theta)
 }
@@ -702,6 +707,8 @@ rss_gradient_hessian_fixed.loglogistic4 <- function(object, known_param) {
 #
 # @return Numeric vector of length 2 with the MLE of the two parameters `alpha`
 #   and `delta`.
+#
+#' @export
 mle_asy.loglogistic4 <- function(object, theta) {
   names(theta) <- NULL
 
@@ -974,6 +981,8 @@ init.loglogistic4 <- function(object) {
 #     \item{residuals}{residuals, that is response minus fitted values.}
 #     \item{weights}{vector of weights used for the fit.}
 #   }
+#
+#' @export
 fit.loglogistic4 <- function(object) {
   solution <- find_optimum(object)
 
@@ -1006,6 +1015,8 @@ fit.loglogistic4 <- function(object) {
 }
 
 # @rdname fit.loglogistic4
+#
+#' @export
 fit_constrained.loglogistic4 <- function(object) {
   # process constraints
   # first column is for unconstrained parameters
@@ -1081,6 +1092,8 @@ fit_constrained.loglogistic4 <- function(object) {
 # @param sigma estimate of the standard deviation.
 #
 # @return Fisher information matrix evaluated at `theta`.
+#
+#' @export
 fisher_info.loglogistic4 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
@@ -1135,6 +1148,8 @@ fisher_info.loglogistic4 <- function(object, theta, sigma) {
 #
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
+#
+#' @export
 inverse_fn.loglogistic4_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
@@ -1158,6 +1173,8 @@ inverse_fn.loglogistic4_fit <- function(object, y) {
 # where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and `phi > 0`.
 #
 # This function evaluates the gradient of the inverse function.
+#
+#' @export
 inverse_fn_gradient.loglogistic4_fit <- function(object, y) {
   alpha <- object$coefficients[1]
   delta <- object$coefficients[2]
