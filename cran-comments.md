@@ -1,21 +1,20 @@
 # cran-comments
 
-## 2023-03-17
+## 2024-08-08
 
 - Initiating submission process
 
-## drda 2.0.3
+## drda 2.0.4
 
-This release updates the vignette following the accepted JSS manuscript.
-It also includes bug fixes in the plotting function.
+This release includes bug fixes for calculating the variance and improves the
+`predict` function.
 
 ## Test environments
 
-- Windows 10, local, R 4.2.2
-- macOS 12.6.1, GitHub Actions, R 4.2.2
-- Windows Server 2022 10.0.20348, GitHub Actions, R 4.2.2
-- Ubuntu 20.04, GitHub Actions, R 4.1.3, R 4.2.2, r-devel
-- R-hub with `rhub::check_for_cran`
+- Windows 11 22H2 (22621.3880), local, R 4.4.1
+- macOS 14.6 (23G80), GitHub Actions, R 4.4.1
+- Windows Server 2022 (10.0.20348), GitHub Actions, R 4.4.1
+- Ubuntu 22.04.4 LTS, GitHub Actions, R 4.3.3, R 4.4.1, r-devel
 
 ## R CMD check results
 
