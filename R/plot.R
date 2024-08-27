@@ -33,6 +33,7 @@
 #'   \item{legend_location}{character string with custom legend position. See
 #'     \code{link[graphics]{legend}} for possible keywords.}
 #'   \item{legend}{custom labels for the legend model names.}
+#'   \item{plot}{if `FALSE` return plot data instead of the plot.}
 #' }
 #'
 #' @return No return value.
@@ -96,91 +97,110 @@ plot.drda <- function(x, ...) {
     plot_data <- TRUE
   }
 
+  display_plot <- dotargs[["plot"]]
+  if (is.null(plot_data)) {
+    display_plot <- TRUE
+  }
+
   params <- plot_params(
     x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
   )
 
-  dev.hold()
+  if(display_plot){
+    dev.hold()
 
-  plot.default(
-    params$xlim, params$ylim, type = "n", xlim = params$xlim,
-    ylim = params$ylim, xlab = xlab, ylab = ylab, axes = FALSE, main = main
-  )
-
-  if (is.null(params$x_axis_ticks_1)) {
-    axis(1, at = params$x_axis_ticks, labels = params$x_axis_labels)
-  } else {
-    axis(1, at = params$x_axis_ticks_1, labels = params$x_axis_labels_1)
-    axis(1, at = params$x_axis_ticks_2, labels = params$x_axis_labels_2)
-
-    axis(1, at = params$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl"))
-    axis(1, at = params$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl"))
-
-    axis(1, at = params$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
-  }
-
-  axis(2, at = pretty(params$ylim))
-
-  box_x <- par("usr")[params$box$x]
-  box_y <- par("usr")[params$box$y]
-
-  if (!is.null(params$box$z)) {
-    box_x[1] <- params$box$z[1]
-    box_x[10] <- params$box$z[2]
-  }
-
-  lines(x = box_x, y = box_y)
-
-  if ((level > 0) && (level < 1)) {
-    q <- qchisq(level, sum(x$estimated))
-    cs <- sqrt(q * params$cv)
-    upper_bound <- params$mu + cs
-    lower_bound <- params$mu - cs
-
-    xci <- c(params$xx, rev(params$xx))
-    yci <- c(upper_bound, rev(lower_bound))
-
-    yci[yci < par("usr")[3]] <- par("usr")[3]
-    yci[yci > par("usr")[4]] <- par("usr")[4]
-
-    polygon(xci, yci, col = adjustcolor(col, 0.08), border = FALSE)
-  }
-
-  if (plot_data) {
-    points(params$xv, params$yv, col = col)
-  }
-  lines(params$xx, params$mu, lty = 2, lwd = 2, col = col)
-
-  if (midpoint && !is.null(params$midpoint_x)) {
-    lines(x = params$midpoint_x, y = params$midpoint_y, lty = 3, col = col)
-  }
-
-  legend_show <- dotargs[["legend_show"]]
-  if (is.null(legend_show) || legend_show) {
-    legend_location <- dotargs[["legend_location"]]
-
-    if (is.null(legend_location)) {
-      legend_location <- if (params$mu[1] < params$mu[length(params$mu)]) {
-        "bottomright"
-      } else {
-        "topright"
-      }
-    }
-
-    legend_labels <- dotargs[["legend"]]
-    if (is.null(legend_labels)) {
-      legend_labels <- x$mean_function
-    }
-
-    legend(
-      legend_location, col = col, lty = 2, lwd = 2, bg = "white",
-      legend = legend_labels
+    plot.default(
+      params$xlim, params$ylim, type = "n", xlim = params$xlim,
+      ylim = params$ylim, xlab = xlab, ylab = ylab, axes = FALSE, main = main
     )
+
+    if (is.null(params$x_axis_ticks_1)) {
+      axis(1, at = params$x_axis_ticks, labels = params$x_axis_labels)
+    } else {
+      axis(1, at = params$x_axis_ticks_1, labels = params$x_axis_labels_1)
+      axis(1, at = params$x_axis_ticks_2, labels = params$x_axis_labels_2)
+
+      axis(1, at = params$x_axis_ticks_1[2], labels = FALSE, tcl = -par("tcl"))
+      axis(1, at = params$x_axis_ticks_2[1], labels = FALSE, tcl = -par("tcl"))
+
+      axis(1, at = params$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
+    }
+
+    axis(2, at = pretty(params$ylim))
+
+    box_x <- par("usr")[params$box$x]
+    box_y <- par("usr")[params$box$y]
+
+    if (!is.null(params$box$z)) {
+      box_x[1] <- params$box$z[1]
+      box_x[10] <- params$box$z[2]
+    }
+
+    lines(x = box_x, y = box_y)
+
+    if ((level > 0) && (level < 1)) {
+      q <- qchisq(level, sum(x$estimated))
+      cs <- sqrt(q * params$cv)
+      upper_bound <- params$mu + cs
+      lower_bound <- params$mu - cs
+
+      xci <- c(params$xx, rev(params$xx))
+      yci <- c(upper_bound, rev(lower_bound))
+
+      yci[yci < par("usr")[3]] <- par("usr")[3]
+      yci[yci > par("usr")[4]] <- par("usr")[4]
+
+      polygon(xci, yci, col = adjustcolor(col, 0.08), border = FALSE)
+    }
+
+    if (plot_data) {
+      points(params$xv, params$yv, col = col)
+    }
+    lines(params$xx, params$mu, lty = 2, lwd = 2, col = col)
+
+    if (midpoint && !is.null(params$midpoint_x)) {
+      lines(x = params$midpoint_x, y = params$midpoint_y, lty = 3, col = col)
+    }
+
+    legend_show <- dotargs[["legend_show"]]
+    if (is.null(legend_show) || legend_show) {
+      legend_location <- dotargs[["legend_location"]]
+
+      if (is.null(legend_location)) {
+        legend_location <- if (params$mu[1] < params$mu[length(params$mu)]) {
+          "bottomright"
+        } else {
+          "topright"
+        }
+      }
+
+      legend_labels <- dotargs[["legend"]]
+      if (is.null(legend_labels)) {
+        legend_labels <- x$mean_function
+      }
+
+      legend(
+        legend_location, col = col, lty = 2, lwd = 2, bg = "white",
+        legend = legend_labels
+      )
+    }
+
+    dev.flush()
+
+    invisible(NULL)
+  } else {
+    if ((level > 0) && (level < 1)) {
+      q <- qchisq(level, sum(x$estimated))
+      cs <- sqrt(q * params$cv)
+      upper_bound <- params$mu + cs
+      lower_bound <- params$mu - cs
+
+      params$xci <- c(params$xx, rev(params$xx))
+      params$yci <- c(upper_bound, rev(lower_bound))
+    }
+
+    return(params)
   }
-
-  dev.flush()
-
-  invisible(NULL)
 }
 
 #' @export
@@ -247,6 +267,11 @@ plot.drdalist <- function(x, ...) {
     plot_data <- TRUE
   }
 
+  display_plot <- dotargs[["plot"]]
+  if (is.null(plot_data)) {
+    display_plot <- TRUE
+  }
+
   params <- vector("list", n_curves)
 
   plot_type <- 1
@@ -280,151 +305,166 @@ plot.drdalist <- function(x, ...) {
   tmp <- vapply(params, function(w) w$ylim, numeric(2))
   ylim <- c(min(tmp[1, ]), max(tmp[2, ]))
 
-  dev.hold()
+  if(display_plot){
+    dev.hold()
 
-  plot.default(
-    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE
-  )
-
-  if (plot_type == 1) {
-    axis(1, at = params[[j2]]$x_axis_ticks, labels = params[[j2]]$x_axis_labels)
-  } else if (plot_type == 2) {
-    if (is.null(params[[j1]]$x_axis_ticks_1)) {
-      # there is no zero to plot, that is no gap to plot
-      # default ticks are those of "j1"
-      tks_1 <- params[[j1]]$x_axis_ticks
-      lbl_1 <- params[[j1]]$x_axis_labels
-
-      # does "j2" have extra ticks to add?
-      tks_2 <- params[[j2]]$x_axis_ticks
-      lbl_2 <- params[[j2]]$x_axis_labels
-
-      idx <- !(tks_2 %in% tks_1)
-      if (any(idx)) {
-        tks_1 <- c(tks_1, tks_2[idx])
-        lbl_1 <- c(lbl_1, lbl_2[idx])
-
-        ord <- order(tks_1)
-        tks_1 <- tks_1[ord]
-        lbl_1 <- lbl_1[ord]
-      }
-
-      axis(1, at = tks_1, labels = lbl_1)
-    } else {
-      # on the left side of the plot we must use the smallest values
-      axis(
-        1,
-        at = params[[j1]]$x_axis_ticks_1,
-        labels = params[[j1]]$x_axis_labels_1
-      )
-
-      # default ticks are those of "j1"
-      tks_1 <- params[[j1]]$x_axis_ticks_2
-      lbl_1 <- params[[j1]]$x_axis_labels_2
-
-      # does "j2" have extra ticks to add?
-      # remove the "gap" tick because we are using that of "j1"
-      tks_2 <- params[[j2]]$x_axis_ticks_2[-1]
-      lbl_2 <- params[[j2]]$x_axis_labels_2[-1]
-
-      idx <- !(tks_2 %in% tks_1)
-      if (any(idx)) {
-        tks_1 <- c(tks_1, tks_2[idx])
-        lbl_1 <- c(lbl_1, lbl_2[idx])
-
-        ord <- order(tks_1)
-        tks_1 <- tks_1[ord]
-        lbl_1 <- lbl_1[ord]
-      }
-
-      axis(1, at = tks_1, labels = lbl_1)
-
-      axis(
-        1, at = params[[j1]]$x_axis_ticks_1[2], labels = FALSE,
-        tcl = -par("tcl")
-      )
-      axis(
-        1, at = params[[j1]]$x_axis_ticks_2[1], labels = FALSE,
-        tcl = -par("tcl")
-      )
-    }
-  }
-
-  axis(
-    1,
-    at = sort(unique(c(params[[j1]]$x_axis_minor, params[[j2]]$x_axis_minor))),
-    labels = FALSE, tcl = par("tcl") * 0.5
-  )
-
-  axis(2, at = pretty(ylim))
-
-  box_x <- par("usr")[params[[j1]]$box$x]
-  box_y <- par("usr")[params[[j1]]$box$y]
-
-  if (!is.null(params[[j1]]$box$z)) {
-    box_x[1] <- params[[j1]]$box$z[1]
-    box_x[10] <- params[[j1]]$box$z[2]
-  }
-
-  lines(x = box_x, y = box_y)
-
-  for (i in seq_len(n_curves)) {
-    if ((level > 0) && (level < 1)) {
-      q <- qchisq(level, sum(x[[i]]$estimated))
-      cs <- sqrt(q * params[[i]]$cv)
-      upper_bound <- params[[i]]$mu + cs
-      lower_bound <- params[[i]]$mu - cs
-
-      xci <- c(params[[i]]$xx, rev(params[[i]]$xx))
-      yci <- c(upper_bound, rev(lower_bound))
-
-      yci[yci < par("usr")[3]] <- par("usr")[3]
-      yci[yci > par("usr")[4]] <- par("usr")[4]
-
-      polygon(xci, yci, col = adjustcolor(col[i], 0.08), border = FALSE)
-    }
-
-    if (plot_data) {
-      points(params[[i]]$xv, params[[i]]$yv, col = col[i])
-    }
-    lines(params[[i]]$xx, params[[i]]$mu, lty = 2, lwd = 2, col = col[i])
-
-    if (midpoint && !is.null(params[[i]]$midpoint_x)) {
-      midpoint_x <- c(xlim[1], params[[i]]$midpoint_x[-1])
-      midpoint_y <- c(params[[i]]$midpoint_y[-3], ylim[1])
-      lines(x = midpoint_x, y = midpoint_y, lty = 3, col = col[i])
-    }
-  }
-
-  legend_show <- dotargs[["legend_show"]]
-  if (is.null(legend_show) || legend_show) {
-    legend_location <- dotargs[["legend_location"]]
-
-    if (is.null(legend_location)) {
-      v <- vapply(params, function(w) w$mu[1] < w$mu[length(w$mu)], FALSE)
-
-      legend_location <- if (mean(v) > 0.5) {
-        "bottomright"
-      } else {
-        "topright"
-      }
-    }
-
-    legend_labels <- dotargs[["legend"]]
-    if (is.null(legend_labels)) {
-      legend_labels <- vapply(x, function(w) w$mean_function, "a")
-    }
-
-    legend(
-      legend_location, col = col, lty = 2, lwd = 2, bg = "white",
-      legend = legend_labels
+    plot.default(
+      xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+      axes = FALSE
     )
+
+    if (plot_type == 1) {
+      axis(1, at = params[[j2]]$x_axis_ticks, labels = params[[j2]]$x_axis_labels)
+    } else if (plot_type == 2) {
+      if (is.null(params[[j1]]$x_axis_ticks_1)) {
+        # there is no zero to plot, that is no gap to plot
+        # default ticks are those of "j1"
+        tks_1 <- params[[j1]]$x_axis_ticks
+        lbl_1 <- params[[j1]]$x_axis_labels
+
+        # does "j2" have extra ticks to add?
+        tks_2 <- params[[j2]]$x_axis_ticks
+        lbl_2 <- params[[j2]]$x_axis_labels
+
+        idx <- !(tks_2 %in% tks_1)
+        if (any(idx)) {
+          tks_1 <- c(tks_1, tks_2[idx])
+          lbl_1 <- c(lbl_1, lbl_2[idx])
+
+          ord <- order(tks_1)
+          tks_1 <- tks_1[ord]
+          lbl_1 <- lbl_1[ord]
+        }
+
+        axis(1, at = tks_1, labels = lbl_1)
+      } else {
+        # on the left side of the plot we must use the smallest values
+        axis(
+          1,
+          at = params[[j1]]$x_axis_ticks_1,
+          labels = params[[j1]]$x_axis_labels_1
+        )
+
+        # default ticks are those of "j1"
+        tks_1 <- params[[j1]]$x_axis_ticks_2
+        lbl_1 <- params[[j1]]$x_axis_labels_2
+
+        # does "j2" have extra ticks to add?
+        # remove the "gap" tick because we are using that of "j1"
+        tks_2 <- params[[j2]]$x_axis_ticks_2[-1]
+        lbl_2 <- params[[j2]]$x_axis_labels_2[-1]
+
+        idx <- !(tks_2 %in% tks_1)
+        if (any(idx)) {
+          tks_1 <- c(tks_1, tks_2[idx])
+          lbl_1 <- c(lbl_1, lbl_2[idx])
+
+          ord <- order(tks_1)
+          tks_1 <- tks_1[ord]
+          lbl_1 <- lbl_1[ord]
+        }
+
+        axis(1, at = tks_1, labels = lbl_1)
+
+        axis(
+          1, at = params[[j1]]$x_axis_ticks_1[2], labels = FALSE,
+          tcl = -par("tcl")
+        )
+        axis(
+          1, at = params[[j1]]$x_axis_ticks_2[1], labels = FALSE,
+          tcl = -par("tcl")
+        )
+      }
+    }
+
+    axis(
+      1,
+      at = sort(unique(c(params[[j1]]$x_axis_minor, params[[j2]]$x_axis_minor))),
+      labels = FALSE, tcl = par("tcl") * 0.5
+    )
+
+    axis(2, at = pretty(ylim))
+
+    box_x <- par("usr")[params[[j1]]$box$x]
+    box_y <- par("usr")[params[[j1]]$box$y]
+
+    if (!is.null(params[[j1]]$box$z)) {
+      box_x[1] <- params[[j1]]$box$z[1]
+      box_x[10] <- params[[j1]]$box$z[2]
+    }
+
+    lines(x = box_x, y = box_y)
+
+    for (i in seq_len(n_curves)) {
+      if ((level > 0) && (level < 1)) {
+        q <- qchisq(level, sum(x[[i]]$estimated))
+        cs <- sqrt(q * params[[i]]$cv)
+        upper_bound <- params[[i]]$mu + cs
+        lower_bound <- params[[i]]$mu - cs
+
+        xci <- c(params[[i]]$xx, rev(params[[i]]$xx))
+        yci <- c(upper_bound, rev(lower_bound))
+
+        yci[yci < par("usr")[3]] <- par("usr")[3]
+        yci[yci > par("usr")[4]] <- par("usr")[4]
+
+        polygon(xci, yci, col = adjustcolor(col[i], 0.08), border = FALSE)
+      }
+
+      if (plot_data) {
+        points(params[[i]]$xv, params[[i]]$yv, col = col[i])
+      }
+      lines(params[[i]]$xx, params[[i]]$mu, lty = 2, lwd = 2, col = col[i])
+
+      if (midpoint && !is.null(params[[i]]$midpoint_x)) {
+        midpoint_x <- c(xlim[1], params[[i]]$midpoint_x[-1])
+        midpoint_y <- c(params[[i]]$midpoint_y[-3], ylim[1])
+        lines(x = midpoint_x, y = midpoint_y, lty = 3, col = col[i])
+      }
+    }
+
+    legend_show <- dotargs[["legend_show"]]
+    if (is.null(legend_show) || legend_show) {
+      legend_location <- dotargs[["legend_location"]]
+
+      if (is.null(legend_location)) {
+        v <- vapply(params, function(w) w$mu[1] < w$mu[length(w$mu)], FALSE)
+
+        legend_location <- if (mean(v) > 0.5) {
+          "bottomright"
+        } else {
+          "topright"
+        }
+      }
+
+      legend_labels <- dotargs[["legend"]]
+      if (is.null(legend_labels)) {
+        legend_labels <- vapply(x, function(w) w$mean_function, "a")
+      }
+
+      legend(
+        legend_location, col = col, lty = 2, lwd = 2, bg = "white",
+        legend = legend_labels
+      )
+    }
+
+    dev.flush()
+
+    invisible(NULL)
+  } else {
+    for (i in seq_len(n_curves)) {
+      if ((level > 0) && (level < 1)) {
+        q <- qchisq(level, sum(x[[i]]$estimated))
+        cs <- sqrt(q * params[[i]]$cv)
+        upper_bound <- params[[i]]$mu + cs
+        lower_bound <- params[[i]]$mu - cs
+
+        params[[i]]$xci <- c(params[[i]]$xx, rev(params[[i]]$xx))
+        params[[i]]$yci <- c(upper_bound, rev(lower_bound))
+      }
+
+    return(params)
   }
-
-  dev.flush()
-
-  invisible(NULL)
 }
 
 # Initialize graphical parameters for a curve defined over the whole real line.
