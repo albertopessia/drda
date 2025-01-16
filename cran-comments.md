@@ -1,20 +1,20 @@
 # cran-comments
 
-## 2024-08-08
+## 2025-01-16
 
 - Initiating submission process
 
-## drda 2.0.4
+## drda 2.0.5
 
-This release includes bug fixes for calculating the variance and improves the
-`predict` function.
+This release adds an argument to the `plot` function for returning a list with
+graphical parameters instead of showing the figure.
 
 ## Test environments
 
-- Windows 11 22H2 (22621.3880), local, R 4.4.1
-- macOS 14.6 (23G80), GitHub Actions, R 4.4.1
-- Windows Server 2022 (10.0.20348), GitHub Actions, R 4.4.1
-- Ubuntu 22.04.4 LTS, GitHub Actions, R 4.3.3, R 4.4.1, r-devel
+- Windows 11 22H2 (22621.4602), local, R 4.4.2
+- macOS 14.7.2 (23H311), GitHub Actions, R 4.4.2
+- Windows Server 2022 (10.0.20348), GitHub Actions, R 4.4.2
+- Ubuntu 24.04.1 LTS, GitHub Actions, R 4.3.3, R 4.4.2, r-devel
 
 ## R CMD check results
 
