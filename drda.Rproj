@@ -1,4 +1,5 @@
 Version: 1.0
+ProjectId: f84f6123-cbd2-4e21-84a5-d39f00503cf4
 
 RestoreWorkspace: No
 SaveWorkspace: No
@@ -14,6 +15,7 @@ LaTeX: XeLaTeX
 
 AutoAppendNewline: Yes
 StripTrailingWhitespace: Yes
+LineEndingConversion: Posix
 
 BuildType: Package
 PackageUseDevtools: Yes
