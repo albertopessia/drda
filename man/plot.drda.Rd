@@ -13,7 +13,8 @@
 functions. See 'Details'.}
 }
 \value{
-No return value.
+If argument \code{show} is \code{TRUE}, no return value. If argument \code{show} is
+\code{FALSE}, a list with all plotting data.
 }
 \description{
 Plot maximum likelihood curves fitted with \code{drda}.
@@ -34,15 +35,17 @@ for base e, or \code{n} (default) for no log-scale printing.}
 colors are provided.}
 \item{xlab, ylab}{axis labels.}
 \item{xlim, ylim}{the range of x and y values with sensible defaults.}
-\item{level}{level of confidence intervals. Set to zero or a negative value
-to disable confidence intervals.}
-\item{midpoint}{if \code{FALSE} do not show guidelines associated with the
+\item{level}{level of confidence intervals (default is 0.95). Set to zero
+or a negative value to disable confidence intervals.}
+\item{midpoint}{if \code{TRUE} (default) shows guidelines associated with the
 curve mid-point.}
-\item{plot_data}{if \code{FALSE} do not show data points used for fitting in the
-plot.}
-\item{legend_show}{if \code{FALSE} do not show the legend.}
+\item{plot_data}{if \code{TRUE} (default) shows in the plot the data points used
+for fitting.}
+\item{legend_show}{if \code{TRUE} (default) shows the legend.}
 \item{legend_location}{character string with custom legend position. See
 \code{link[graphics]{legend}} for possible keywords.}
 \item{legend}{custom labels for the legend model names.}
+\item{show}{If \code{TRUE} (default) a figure is plotted, otherwise the function
+returns a list with values to create the figure manually.}
 }
 }

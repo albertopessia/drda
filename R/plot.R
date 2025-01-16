@@ -23,19 +23,22 @@
 #'     colors are provided.}
 #'   \item{xlab, ylab}{axis labels.}
 #'   \item{xlim, ylim}{the range of x and y values with sensible defaults.}
-#'   \item{level}{level of confidence intervals. Set to zero or a negative value
-#'     to disable confidence intervals.}
-#'   \item{midpoint}{if `FALSE` do not show guidelines associated with the
+#'   \item{level}{level of confidence intervals (default is 0.95). Set to zero
+#'     or a negative value to disable confidence intervals.}
+#'   \item{midpoint}{if `TRUE` (default) shows guidelines associated with the
 #'     curve mid-point.}
-#'   \item{plot_data}{if `FALSE` do not show data points used for fitting in the
-#'     plot.}
-#'   \item{legend_show}{if `FALSE` do not show the legend.}
+#'   \item{plot_data}{if `TRUE` (default) shows in the plot the data points used
+#'     for fitting.}
+#'   \item{legend_show}{if `TRUE` (default) shows the legend.}
 #'   \item{legend_location}{character string with custom legend position. See
 #'     \code{link[graphics]{legend}} for possible keywords.}
 #'   \item{legend}{custom labels for the legend model names.}
+#'   \item{show}{If `TRUE` (default) a figure is plotted, otherwise the function
+#'     returns a list with values to create the figure manually.}
 #' }
 #'
-#' @return No return value.
+#' @return If argument `show` is `TRUE`, no return value. If argument `show` is
+#'   `FALSE`, a list with all plotting data.
 #'
 #' @importFrom graphics axis box curve legend lines par polygon points
 #' @importFrom graphics plot.default
@@ -96,9 +99,18 @@ plot.drda <- function(x, ...) {
     plot_data <- TRUE
   }
 
+  display_plot <- dotargs[["show"]]
+  if (is.null(display_plot)) {
+    display_plot <- TRUE
+  }
+
   params <- plot_params(
-    x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+    x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]], level
   )
+
+  if (!display_plot) {
+    return(output_params(params))
+  }
 
   dev.hold()
 
@@ -119,7 +131,7 @@ plot.drda <- function(x, ...) {
     axis(1, at = params$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
   }
 
-  axis(2, at = pretty(params$ylim))
+  axis(2, at = params$y_axis_ticks)
 
   box_x <- par("usr")[params$box$x]
   box_y <- par("usr")[params$box$y]
@@ -132,13 +144,8 @@ plot.drda <- function(x, ...) {
   lines(x = box_x, y = box_y)
 
   if ((level > 0) && (level < 1)) {
-    q <- qchisq(level, sum(x$estimated))
-    cs <- sqrt(q * params$cv)
-    upper_bound <- params$mu + cs
-    lower_bound <- params$mu - cs
-
-    xci <- c(params$xx, rev(params$xx))
-    yci <- c(upper_bound, rev(lower_bound))
+    xci <- params$xci
+    yci <- params$yci
 
     yci[yci < par("usr")[3]] <- par("usr")[3]
     yci[yci > par("usr")[4]] <- par("usr")[4]
@@ -149,7 +156,7 @@ plot.drda <- function(x, ...) {
   if (plot_data) {
     points(params$xv, params$yv, col = col)
   }
-  lines(params$xx, params$mu, lty = 2, lwd = 2, col = col)
+  lines(params$xf, params$yf, lty = 2, lwd = 2, col = col)
 
   if (midpoint && !is.null(params$midpoint_x)) {
     lines(x = params$midpoint_x, y = params$midpoint_y, lty = 3, col = col)
@@ -160,7 +167,7 @@ plot.drda <- function(x, ...) {
     legend_location <- dotargs[["legend_location"]]
 
     if (is.null(legend_location)) {
-      legend_location <- if (params$mu[1] < params$mu[length(params$mu)]) {
+      legend_location <- if (params$yf[1] < params$yf[length(params$yf)]) {
         "bottomright"
       } else {
         "topright"
@@ -247,6 +254,11 @@ plot.drdalist <- function(x, ...) {
     plot_data <- TRUE
   }
 
+  display_plot <- dotargs[["show"]]
+  if (is.null(display_plot)) {
+    display_plot <- TRUE
+  }
+
   params <- vector("list", n_curves)
 
   plot_type <- 1
@@ -255,7 +267,8 @@ plot.drdalist <- function(x, ...) {
   }
 
   params[[n_curves]] <- plot_params(
-    x[[n_curves]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+    x[[n_curves]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]],
+    level
   )
 
   for (i in seq_len(n_curves - 1)) {
@@ -267,10 +280,11 @@ plot.drdalist <- function(x, ...) {
     }
 
     params[[i]] <- plot_params(
-      x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]]
+      x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]], level
     )
   }
 
+  # find common graphical parameters to fit all plots into one figure
   tmp <- vapply(params, function(w) w$xlim, numeric(2))
 
   j1 <- which.min(tmp[1, ])
@@ -280,15 +294,14 @@ plot.drdalist <- function(x, ...) {
   tmp <- vapply(params, function(w) w$ylim, numeric(2))
   ylim <- c(min(tmp[1, ]), max(tmp[2, ]))
 
-  dev.hold()
+  common <- list()
 
-  plot.default(
-    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
-    axes = FALSE
-  )
+  common$xlim <- xlim
+  common$ylim <- ylim
 
   if (plot_type == 1) {
-    axis(1, at = params[[j2]]$x_axis_ticks, labels = params[[j2]]$x_axis_labels)
+    common$x_axis_ticks_1 <- params[[j2]]$x_axis_ticks
+    common$x_axis_labels_1 <- params[[j2]]$x_axis_labels
   } else if (plot_type == 2) {
     if (is.null(params[[j1]]$x_axis_ticks_1)) {
       # there is no zero to plot, that is no gap to plot
@@ -310,15 +323,10 @@ plot.drdalist <- function(x, ...) {
         lbl_1 <- lbl_1[ord]
       }
 
-      axis(1, at = tks_1, labels = lbl_1)
+      common$x_axis_ticks_1 <- tks_1
+      common$x_axis_labels_1 <- lbl_1
     } else {
-      # on the left side of the plot we must use the smallest values
-      axis(
-        1,
-        at = params[[j1]]$x_axis_ticks_1,
-        labels = params[[j1]]$x_axis_labels_1
-      )
-
+      # we got the "gap" to plot
       # default ticks are those of "j1"
       tks_1 <- params[[j1]]$x_axis_ticks_2
       lbl_1 <- params[[j1]]$x_axis_labels_2
@@ -338,46 +346,62 @@ plot.drdalist <- function(x, ...) {
         lbl_1 <- lbl_1[ord]
       }
 
-      axis(1, at = tks_1, labels = lbl_1)
-
-      axis(
-        1, at = params[[j1]]$x_axis_ticks_1[2], labels = FALSE,
-        tcl = -par("tcl")
-      )
-      axis(
-        1, at = params[[j1]]$x_axis_ticks_2[1], labels = FALSE,
-        tcl = -par("tcl")
-      )
+      common$x_axis_ticks_1 <- params[[j1]]$x_axis_ticks_1
+      common$x_axis_labels_1 <- params[[j1]]$x_axis_labels_1
+      common$x_axis_ticks_2 <- tks_1
+      common$x_axis_labels_2 <- lbl_1
     }
   }
 
-  axis(
-    1,
-    at = sort(unique(c(params[[j1]]$x_axis_minor, params[[j2]]$x_axis_minor))),
-    labels = FALSE, tcl = par("tcl") * 0.5
+  common$x_axis_minor <- sort(
+    unique(c(params[[j1]]$x_axis_minor, params[[j2]]$x_axis_minor))
   )
 
-  axis(2, at = pretty(ylim))
+  common$y_axis_ticks <- pretty(ylim)
 
-  box_x <- par("usr")[params[[j1]]$box$x]
-  box_y <- par("usr")[params[[j1]]$box$y]
+  common$box <- params[[j1]]$box
 
-  if (!is.null(params[[j1]]$box$z)) {
-    box_x[1] <- params[[j1]]$box$z[1]
-    box_x[10] <- params[[j1]]$box$z[2]
+  if (!display_plot) {
+    return(output_params(params, common))
+  }
+
+  dev.hold()
+
+  plot.default(
+    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+    axes = FALSE
+  )
+
+  axis(1, at = common$x_axis_ticks_1, labels = common$x_axis_labels_1)
+
+  if (!is.null(common$x_axis_ticks_2)) {
+    axis(1, at = common$x_axis_ticks_2, labels = common$x_axis_labels_2)
+    axis(
+      1, at = tail(common$x_axis_ticks_1, 1), labels = FALSE, tcl = -par("tcl")
+    )
+    axis(
+      1, at = head(common$x_axis_ticks_2, 1), labels = FALSE, tcl = -par("tcl")
+    )
+  }
+
+  axis(1, at = common$x_axis_minor, labels = FALSE, tcl = par("tcl") * 0.5)
+
+  axis(2, at = common$y_axis_ticks)
+
+  box_x <- par("usr")[common$box$x]
+  box_y <- par("usr")[common$box$y]
+
+  if (!is.null(common$box$z)) {
+    box_x[1] <- common$box$z[1]
+    box_x[10] <- common$box$z[2]
   }
 
   lines(x = box_x, y = box_y)
 
   for (i in seq_len(n_curves)) {
     if ((level > 0) && (level < 1)) {
-      q <- qchisq(level, sum(x[[i]]$estimated))
-      cs <- sqrt(q * params[[i]]$cv)
-      upper_bound <- params[[i]]$mu + cs
-      lower_bound <- params[[i]]$mu - cs
-
-      xci <- c(params[[i]]$xx, rev(params[[i]]$xx))
-      yci <- c(upper_bound, rev(lower_bound))
+      xci <- params[[i]]$xci
+      yci <- params[[i]]$yci
 
       yci[yci < par("usr")[3]] <- par("usr")[3]
       yci[yci > par("usr")[4]] <- par("usr")[4]
@@ -388,7 +412,7 @@ plot.drdalist <- function(x, ...) {
     if (plot_data) {
       points(params[[i]]$xv, params[[i]]$yv, col = col[i])
     }
-    lines(params[[i]]$xx, params[[i]]$mu, lty = 2, lwd = 2, col = col[i])
+    lines(params[[i]]$xf, params[[i]]$yf, lty = 2, lwd = 2, col = col[i])
 
     if (midpoint && !is.null(params[[i]]$midpoint_x)) {
       midpoint_x <- c(xlim[1], params[[i]]$midpoint_x[-1])
@@ -402,7 +426,7 @@ plot.drdalist <- function(x, ...) {
     legend_location <- dotargs[["legend_location"]]
 
     if (is.null(legend_location)) {
-      v <- vapply(params, function(w) w$mu[1] < w$mu[length(w$mu)], FALSE)
+      v <- vapply(params, function(w) w$yf[1] < w$yf[length(w$yf)], FALSE)
 
       legend_location <- if (mean(v) > 0.5) {
         "bottomright"
@@ -434,10 +458,12 @@ plot.drdalist <- function(x, ...) {
 #   `x` axis.
 # @param xlim the range of `x` values.
 # @param ylim the range of `y` values.
+# @param level level of confidence intervals.
 #
 # @return List with processed graphical parameters.
+#
 #' @export
-plot_params.logistic <- function(object, base, xlim, ylim) {
+plot_params.logistic <- function(object, base, xlim, ylim, level) {
   # these constants are used for proper scaling on the requested base
   k <- 1
 
@@ -543,9 +569,9 @@ plot_params.logistic <- function(object, base, xlim, ylim) {
     }
   }
 
-  xx <- seq(xlim[1], xlim[2], length.out = 500)
-  mu <- fn(object, xx, theta)
-  cv <- curve_variance(object, xx)
+  xf <- seq(xlim[1], xlim[2], length.out = 500)
+  yf <- fn(object, xf, theta)
+  cv <- curve_variance(object, xf)
 
   x_axis_ticks <- pretty(xlim)
   x_axis_labels <- TRUE
@@ -589,7 +615,7 @@ plot_params.logistic <- function(object, base, xlim, ylim) {
     xlim <- xlim / k
 
     xv <- xv / k
-    xx <- xx / k
+    xf <- xf / k
 
     x1 <- floor(xv[1])
     x2 <- ceiling(xv[length(xv)])
@@ -623,8 +649,21 @@ plot_params.logistic <- function(object, base, xlim, ylim) {
   }
 
   if (mp > xlim[1] && mp < xlim[2]) {
-    midpoint_x <- c(xlim[1], mp, mp)
-    midpoint_y <- c(f, f, ylim[1])
+    midpoint_x <- c(xlim[1], mp, mp, use.names = FALSE)
+    midpoint_y <- c(f, f, ylim[1], use.names = FALSE)
+  }
+
+  xci <- NULL
+  yci <- NULL
+
+  if ((level > 0) && (level < 1)) {
+    q <- qchisq(level, sum(object$estimated))
+    cs <- sqrt(q * cv)
+    upper_bound <- yf + cs
+    lower_bound <- yf - cs
+
+    xci <- c(xf, rev(xf))
+    yci <- c(upper_bound, rev(lower_bound))
   }
 
   list(
@@ -632,10 +671,10 @@ plot_params.logistic <- function(object, base, xlim, ylim) {
     ylim = ylim,
     xv = xv,
     yv = yv,
-    xx = xx,
-    zz = xx,
-    mu = mu,
-    cv = cv,
+    xf = xf,
+    yf = yf,
+    xci = xci,
+    yci = yci,
     x_axis_ticks = x_axis_ticks,
     x_axis_labels = x_axis_labels,
     x_axis_ticks_1 = x_axis_ticks_1,
@@ -643,6 +682,7 @@ plot_params.logistic <- function(object, base, xlim, ylim) {
     x_axis_ticks_2 = x_axis_ticks_2,
     x_axis_labels_2 = x_axis_labels_2,
     x_axis_minor = x_axis_minor,
+    y_axis_ticks = pretty(ylim),
     box = box,
     midpoint_x = midpoint_x,
     midpoint_y = midpoint_y
@@ -656,10 +696,11 @@ plot_params.logistic <- function(object, base, xlim, ylim) {
 #   `x` axis.
 # @param xlim the range of `x` values.
 # @param ylim the range of `y` values.
+# @param level level of confidence intervals.
 #
 # @return List with processed graphical parameters.
 #' @export
-plot_params.loglogistic <- function(object, base, xlim, ylim) {
+plot_params.loglogistic <- function(object, base, xlim, ylim, level) {
   # these constants are used for proper scaling on the requested base
   k <- 1
   h <- exp(3)
@@ -800,14 +841,14 @@ plot_params.loglogistic <- function(object, base, xlim, ylim) {
     }
   }
 
-  xx <- seq(xlim[1], xlim[2], length.out = 500)
+  xf <- seq(xlim[1], xlim[2], length.out = 500)
   zz <- if (base == "n") {
-    xx
+    xf
   } else {
-    exp(xx)
+    exp(xf)
   }
 
-  mu <- fn(object, zz, theta)
+  yf <- fn(object, zz, theta)
   cv <- curve_variance(object, zz)
 
   x_axis_ticks <- pretty(xlim)
@@ -858,7 +899,7 @@ plot_params.loglogistic <- function(object, base, xlim, ylim) {
     xlim <- xlim / k
 
     xv <- xv / k
-    xx <- xx / k
+    xf <- xf / k
 
     x1 <- floor(xv[1])
     x2 <- ceiling(xv[len])
@@ -915,8 +956,21 @@ plot_params.loglogistic <- function(object, base, xlim, ylim) {
   midpoint_y <- NULL
 
   if (mp > xlim[1] && mp < xlim[2]) {
-    midpoint_x <- c(xlim[1], mp, mp)
-    midpoint_y <- c(f, f, ylim[1])
+    midpoint_x <- c(xlim[1], mp, mp, use.names = FALSE)
+    midpoint_y <- c(f, f, ylim[1], use.names = FALSE)
+  }
+
+  xci <- NULL
+  yci <- NULL
+
+  if ((level > 0) && (level < 1)) {
+    q <- qchisq(level, sum(object$estimated))
+    cs <- sqrt(q * cv)
+    upper_bound <- yf + cs
+    lower_bound <- yf - cs
+
+    xci <- c(xf, rev(xf))
+    yci <- c(upper_bound, rev(lower_bound))
   }
 
   list(
@@ -924,10 +978,10 @@ plot_params.loglogistic <- function(object, base, xlim, ylim) {
     ylim = ylim,
     xv = xv,
     yv = yv,
-    xx = xx,
-    zz = zz,
-    mu = mu,
-    cv = cv,
+    xf = xf,
+    yf = yf,
+    xci = xci,
+    yci = yci,
     x_axis_ticks = x_axis_ticks,
     x_axis_labels = x_axis_labels,
     x_axis_ticks_1 = x_axis_ticks_1,
@@ -935,8 +989,83 @@ plot_params.loglogistic <- function(object, base, xlim, ylim) {
     x_axis_ticks_2 = x_axis_ticks_2,
     x_axis_labels_2 = x_axis_labels_2,
     x_axis_minor = x_axis_minor,
+    y_axis_ticks = pretty(ylim),
     box = box,
     midpoint_x = midpoint_x,
     midpoint_y = midpoint_y
   )
+}
+
+# Plot parameters
+#
+# Convert a `params` object into a list of user-friendly graphical parameters.
+#
+# @param params List of graphical parameters as returned by `plot_params`.
+# @param common List with common graphical parameters.
+#
+# @return List with user-friendly graphical parameters.
+#
+#' @importFrom utils head tail
+output_params <- function(params, common = NULL) {
+  f <- function(w, i) {
+    list(
+      data = data.frame(id = rep(i, length(w$xv)), x = w$xv, y = w$yv),
+      fitted_curve = data.frame(id = rep(i, length(w$xf)), x = w$xf, y = w$yf),
+      confidence_interval = data.frame(
+        id = rep(i, length(w$xf)),
+        x = w$xf,
+        y_lower = rev(tail(w$yci, length(w$xf))),
+        y_upper = head(w$yci, length(w$xf))
+      ),
+      midpoint = c(id = i, x = w$midpoint_x[2], y = w$midpoint_y[2]),
+      limits = data.frame(x = w$xlim, y = w$ylim),
+      x_axis_ticks = w$x_axis_ticks,
+      x_axis_labels = w$x_axis_labels,
+      x_axis_ticks_1 = w$x_axis_ticks_1,
+      x_axis_labels_1 = w$x_axis_labels_1,
+      x_axis_ticks_2 = w$x_axis_ticks_2,
+      x_axis_labels_2 = w$x_axis_labels_2,
+      x_axis_minor = w$x_axis_minor,
+      y_axis_ticks = w$y_axis_ticks,
+      box = w$box
+    )
+  }
+
+  g <- function(params, common) {
+    data <- vector("list", length(params))
+    fitted_curve <- vector("list", length(params))
+    confidence_interval <- vector("list", length(params))
+    midpoint <- vector("list", length(params))
+
+    for (i in seq_along(params)) {
+      out <- f(params[[i]], i)
+      data[[i]] <- out$data
+      fitted_curve[[i]] <- out$fitted_curve
+      confidence_interval[[i]] <- out$confidence_interval
+      midpoint[[i]] <- out$midpoint
+    }
+
+    list(
+      data = do.call("rbind", data),
+      fitted_curve = do.call("rbind", fitted_curve),
+      confidence_interval = do.call("rbind", confidence_interval),
+      midpoint = do.call("rbind", midpoint),
+      limits = data.frame(x = common$xlim, y = common$ylim),
+      x_axis_ticks = common$x_axis_ticks,
+      x_axis_labels = common$x_axis_labels,
+      x_axis_ticks_1 = common$x_axis_ticks_1,
+      x_axis_labels_1 = common$x_axis_labels_1,
+      x_axis_ticks_2 = common$x_axis_ticks_2,
+      x_axis_labels_2 = common$x_axis_labels_2,
+      x_axis_minor = common$x_axis_minor,
+      y_axis_ticks = common$y_axis_ticks,
+      box = common$box
+    )
+  }
+
+  if (is.null(common)) {
+    f(params, 1)
+  } else {
+    g(params, common)
+  }
 }

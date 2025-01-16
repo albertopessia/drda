@@ -58,7 +58,7 @@ inverse_fn_gradient <- function(object, y) {
   UseMethod("inverse_fn_gradient", object)
 }
 
-plot_params <- function(object, base, xlim, ylim) {
+plot_params <- function(object, base, xlim, ylim, level) {
   UseMethod("plot_params", object)
 }
 
