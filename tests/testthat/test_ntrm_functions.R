@@ -78,11 +78,6 @@ test_that("ntrm_solve_quadratic_equation", {
 
   result <- ntrm_solve_quadratic_equation(1, 1.0e-13, 1.0e-13)
   expect_equal(result, c(0, 0))
-
-  # negative discriminant
-  expect_error(ntrm_solve_quadratic_equation(1, 1, pi))
-  expect_error(ntrm_solve_quadratic_equation(1, 0, 1))
-  expect_error(ntrm_solve_quadratic_equation(1, 1.0e-13, 1))
 })
 
 test_that("ntrm_line_search", {

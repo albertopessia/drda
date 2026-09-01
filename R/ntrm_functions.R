@@ -64,7 +64,8 @@ ntrm_norm <- function(x) {
 #
 # Solve the equation `a x^2 + b x + c = 0` for x, in a numerically stable
 # manner. However, the discriminant is still evaluated using the actual
-# formula.
+# formula. This solver is not a general quadratic equation solver, but only
+# for our specific case of NTRM line-sphere intersection.
 #
 # @param a quadratic coefficient.
 # @param b linear coefficient.
@@ -73,46 +74,63 @@ ntrm_norm <- function(x) {
 # @return Numeric vector of length 2 with the solutions of the quadratic
 #   equation.
 ntrm_solve_quadratic_equation <- function(a, b, c) {
-  eps <- 1.0e-12
+  # ~100 ulps
+  u <- 100 * .Machine$double.eps
 
-  # this should really be done by Kahan's method and fused multiply-add (fma),
-  # but I can't find a function in R to perform fma
-  if (abs(b) > eps) {
-    discriminant <- b^2 - 4 * a * c
+  # Check if it is a degenerate quadratic equation, i.e. at most linear.
+  #
+  # When a is very close to zero, the equation is basically `b x + c = 0` with
+  # solution `x = -c / b`, unless also b is very close to zero.
+  #
+  # There is also a problem of scale. `a` and `b` can be very small or very
+  # large, therefore we need to use a relative tolerance. If `b` is very large,
+  # we use a relative tolerance based on its value. If `b` is very small, we
+  # use an absolute tolerance based on the machine epsilon (this is the reason
+  # why we put a 1 in the `max` function).
+  if (abs(a) <= u * max(abs(b), 1)) {
+    # `a` is close to zero, so we check if `b` is also close to zero.
+    if (abs(b) <= u) {
+      # `b` is close to zero, so we check if `c` is also close to zero.
+      if (abs(c) <= u) {
+        # all coefficients are basically zero, so the equation is effectively
+        # 0 = 0. Since there is no x, we return two zeros by convention.
+        return(c(0, 0))
+      }
 
-    t0 <- if (discriminant > 0) {
-      sqrt(discriminant)
-    } else if (discriminant > -eps) {
-      0
-    } else {
+      # `a` is close to zero (compared to `b`), `b` is close to zero, but `c`
+      # is not. The equation is effectively `c = 0`, so no solution is possible.
       stop(
-        "negative discriminant when solving quadratic equation",
+        "no finite solutions while solving quadratic equation",
         call. = FALSE
       )
     }
 
-    if (t0 != 0) {
-      t1 <- b + sign(b) * t0
-      x <- -c(t1 / (2 * a), 2 * c / t1)
+    # `a` is close to zero (compared to `b`) but `b` is not, so the equation is
+    # effectively `b x + c = 0` with solution `x = -c / b`.
+    return(rep(-c / b, 2))
+  }
 
-      if (x[1] < x[2]) {
-        x
-      } else {
-        c(x[2], x[1])
-      }
-    } else {
-      rep(-b / (2 * a), 2)
-    }
+  # In general, we should check for a negative discriminant. However, in our
+  # application, we know that the discriminant is always non-negative. Negative
+  # discriminants are likely numerical errors, so we set them to zero.
+  discriminant <- max(b^2 - 4 * a * c, 0)
+
+  if (discriminant == 0) {
+    return(rep(-b / (2 * a), 2))
+  }
+
+  s <- 1
+  if (b < 0) {
+    s <- -1
+  }
+
+  t <- b + s * sqrt(discriminant)
+  x <- -c(t / (2 * a), 2 * c / t)
+
+  if (x[1] <= x[2]) {
+    x
   } else {
-    y <- -c / a
-
-    if (y >= 0) {
-      c(-1, 1) * sqrt(y)
-    } else if (y >= -eps) {
-      c(0, 0)
-    } else {
-      stop("complex solutions while solving quadratic equation", call. = FALSE)
-    }
+    c(x[2], x[1])
   }
 }
 

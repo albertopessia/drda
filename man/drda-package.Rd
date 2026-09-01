@@ -63,6 +63,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Alberto Pessia \email{dev@albertopessia.com} (\href{https://orcid.org/0000-0001-8607-9191}{ORCID})
 
+Authors:
+\itemize{
+  \item Alberto Pessia \email{dev@albertopessia.com} (\href{https://orcid.org/0000-0001-8607-9191}{ORCID})
+}
+
 Other contributors:
 \itemize{
   \item Alina Malyutina (\href{https://orcid.org/0000-0001-8220-5859}{ORCID}) [contributor]
