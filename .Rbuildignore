@@ -6,6 +6,7 @@
 ^\.gitignore$
 ^\.Rprofile$
 ^\.Rhistory$
+^\.lintr$
 ^\.travis\.yml$
 ^data-raw$
 ^cran-comments\.md$
