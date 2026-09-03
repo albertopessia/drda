@@ -105,7 +105,11 @@ plot.drda <- function(x, ...) {
   }
 
   params <- plot_params(
-    x, dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]], level
+    x,
+    dotargs[["base"]],
+    dotargs[["xlim"]],
+    dotargs[["ylim"]],
+    level
   )
 
   if (!display_plot) {
@@ -115,8 +119,15 @@ plot.drda <- function(x, ...) {
   dev.hold()
 
   plot.default(
-    params$xlim, params$ylim, type = "n", xlim = params$xlim,
-    ylim = params$ylim, xlab = xlab, ylab = ylab, axes = FALSE, main = main
+    params$xlim,
+    params$ylim,
+    type = "n",
+    xlim = params$xlim,
+    ylim = params$ylim,
+    xlab = xlab,
+    ylab = ylab,
+    axes = FALSE,
+    main = main
   )
 
   if (is.null(params$x_axis_ticks_1)) {
@@ -180,7 +191,11 @@ plot.drda <- function(x, ...) {
     }
 
     legend(
-      legend_location, col = col, lty = 2, lwd = 2, bg = "white",
+      legend_location,
+      col = col,
+      lty = 2,
+      lwd = 2,
+      bg = "white",
       legend = legend_labels
     )
   }
@@ -204,6 +219,7 @@ plot.drdalist <- function(x, ...) {
   if (is.null(col)) {
     # choose a colorblind friendly palette
     # https://personal.sron.nl/~pault/
+    # fmt: skip
     col <- if (n_curves <= 6) {
       # Paul Tol's bright palette
       c(
@@ -267,20 +283,27 @@ plot.drdalist <- function(x, ...) {
   }
 
   params[[n_curves]] <- plot_params(
-    x[[n_curves]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]],
+    x[[n_curves]],
+    dotargs[["base"]],
+    dotargs[["xlim"]],
+    dotargs[["ylim"]],
     level
   )
 
   for (i in seq_len(n_curves - 1)) {
     if (
       (inherits(x[[i]], "logistic") && plot_type != 1) ||
-      (inherits(x[[i]], "loglogistic") && plot_type != 2)
+        (inherits(x[[i]], "loglogistic") && plot_type != 2)
     ) {
       stop("curves defined on different domains", call. = FALSE)
     }
 
     params[[i]] <- plot_params(
-      x[[i]], dotargs[["base"]], dotargs[["xlim"]], dotargs[["ylim"]], level
+      x[[i]],
+      dotargs[["base"]],
+      dotargs[["xlim"]],
+      dotargs[["ylim"]],
+      level
     )
   }
 
@@ -368,7 +391,13 @@ plot.drdalist <- function(x, ...) {
   dev.hold()
 
   plot.default(
-    xlim, ylim, type = "n", xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab,
+    xlim,
+    ylim,
+    type = "n",
+    xlim = xlim,
+    ylim = ylim,
+    xlab = xlab,
+    ylab = ylab,
     axes = FALSE
   )
 
@@ -377,10 +406,16 @@ plot.drdalist <- function(x, ...) {
   if (!is.null(common$x_axis_ticks_2)) {
     axis(1, at = common$x_axis_ticks_2, labels = common$x_axis_labels_2)
     axis(
-      1, at = tail(common$x_axis_ticks_1, 1), labels = FALSE, tcl = -par("tcl")
+      1,
+      at = tail(common$x_axis_ticks_1, 1),
+      labels = FALSE,
+      tcl = -par("tcl")
     )
     axis(
-      1, at = head(common$x_axis_ticks_2, 1), labels = FALSE, tcl = -par("tcl")
+      1,
+      at = head(common$x_axis_ticks_2, 1),
+      labels = FALSE,
+      tcl = -par("tcl")
     )
   }
 
@@ -441,7 +476,11 @@ plot.drdalist <- function(x, ...) {
     }
 
     legend(
-      legend_location, col = col, lty = 2, lwd = 2, bg = "white",
+      legend_location,
+      col = col,
+      lty = 2,
+      lwd = 2,
+      bg = "white",
       legend = legend_labels
     )
   }
@@ -510,9 +549,8 @@ plot_params.logistic <- function(object, base, xlim, ylim, level) {
       lb <- theta[1] + theta[2] * q
     }
 
-    mp <- theta[4] + (
-      log(theta[5]) - log(theta[6]) - log(2^theta[5] - 1)
-    ) / theta[3]
+    mp <- theta[4] +
+      (log(theta[5]) - log(theta[6]) - log(2^theta[5] - 1)) / theta[3]
   } else {
     stop("model not supported", call. = FALSE)
   }
@@ -521,7 +559,7 @@ plot_params.logistic <- function(object, base, xlim, ylim, level) {
   yv <- object$model[, 1]
   wv <- object$weights
 
-  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
+  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & (wv != 0)
 
   if (sum(idx) != length(yv)) {
     yv <- yv[idx]
@@ -583,6 +621,7 @@ plot_params.logistic <- function(object, base, xlim, ylim, level) {
   x_axis_ticks_2 <- NULL
   x_axis_labels_2 <- NULL
 
+  # fmt: skip
   box <- list(
     x = c(
       # bottom-left border
@@ -750,9 +789,8 @@ plot_params.loglogistic <- function(object, base, xlim, ylim, level) {
       lb <- theta[1] + theta[2] * q
     }
 
-    mp <- log(theta[4]) + (
-      log(theta[5]) - log(theta[6]) - log(2^theta[5] - 1)
-    ) / theta[3]
+    mp <- log(theta[4]) +
+      (log(theta[5]) - log(theta[6]) - log(2^theta[5] - 1)) / theta[3]
   } else {
     stop("model not supported", call. = FALSE)
   }
@@ -861,6 +899,7 @@ plot_params.loglogistic <- function(object, base, xlim, ylim, level) {
   x_axis_ticks_2 <- NULL
   x_axis_labels_2 <- NULL
 
+  # fmt: skip
   box <- list(
     x = c(
       # bottom-left border

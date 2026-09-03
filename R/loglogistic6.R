@@ -15,8 +15,14 @@
 #   parameters.
 #
 # @return An object of class `loglogistic*`.
-loglogistic6_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+loglogistic6_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 6) {
@@ -593,8 +599,11 @@ loglogistic6_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+
+  # fmt: skip
+  H[, 5, 5] <- delta *
+    ((l + y / nu) * c2 + (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
   H[, 2, 6] <- H[, 6, 2]
@@ -688,8 +697,11 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+
+  # fmt: skip
+  H[, 5, 5] <- delta *
+    ((l + y / nu) * c2 + (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
   H[, 2, 6] <- H[, 6, 2]
@@ -854,11 +866,18 @@ rss_gradient_hessian.loglogistic6 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 6, 6))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
+    # fmt: skip
     hessian[, , 6] <- object$stats[, 2] * (r * H[, , 6] + G[, 6] * G)
 
     list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
@@ -889,11 +908,18 @@ rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 6, 6))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
+    # fmt: skip
     hessian[, , 6] <- object$stats[, 2] * (r * H[, , 6] + G[, 6] * G)
 
     list(
@@ -1036,6 +1062,8 @@ init.loglogistic6 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -1134,7 +1162,8 @@ init.loglogistic6 <- function(object) {
       -1.97, -1.78, -1.32, -1.24, 0.59, 0.26, -0.33, 0.4, 0.62, -1.55, -2.17,
       0.01, 2.02, -0.18, 1.19, 1.76, -2.07, 1.57, 1.78, -1.77, -0.71, 0.64
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 6, ncol = v)
@@ -1168,19 +1197,23 @@ init.loglogistic6 <- function(object) {
   if (object$constrained) {
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1374,11 +1407,17 @@ fisher_info.loglogistic6 <- function(object, theta, sigma) {
 
   H <- array(0, dim = c(object$m, 6, 6))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  # fmt: skip
   H[, , 5] <- w * (z * gh$H[, , 5] + gh$G[, 5] * gh$G)
+  # fmt: skip
   H[, , 6] <- w * (z * gh$H[, , 6] + gh$G[, 6] * gh$G)
 
   H <- apply(H, 2:3, sum)

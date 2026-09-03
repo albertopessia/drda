@@ -101,8 +101,12 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 
       # Equation (4.45) at page 88 from Nocedal and Wright (2006)
       j <- 1:max(which(H_eig$values > H_ev_min))
+
       p <- ntrm_calc_p(
-        Q[j], H_eig$vectors[, j], H_eig$values[j], -H_ev_min
+        Q[j],
+        H_eig$vectors[, j],
+        H_eig$values[j],
+        -H_ev_min
       )
 
       p_norm_2 <- sum(p^2)

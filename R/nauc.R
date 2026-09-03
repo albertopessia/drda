@@ -137,10 +137,13 @@ nauc.drda <- function(object, xlim = NULL, ylim = c(0, 1)) {
       fn(object, x, object$coefficients) - ylim[1]
     }
 
-    I <- I + integrate(
-      f, lower = xlim_new[1], upper = xlim_new[2],
-      rel.tol = sqrt(.Machine$double.eps)
-    )$value
+    I <- I +
+      integrate(
+        f,
+        lower = xlim_new[1],
+        upper = xlim_new[2],
+        rel.tol = sqrt(.Machine$double.eps)
+      )$value
   }
 
   nauc <- I / ((xlim[2] - xlim[1]) * (ylim[2] - ylim[1]))

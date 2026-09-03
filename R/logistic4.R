@@ -1,6 +1,12 @@
 # @rdname logistic6_new
-logistic4_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+logistic4_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 4) {
@@ -593,9 +599,14 @@ rss_gradient_hessian.logistic4 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
     list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
@@ -624,9 +635,14 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
     list(
@@ -730,6 +746,8 @@ init.logistic4 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -782,7 +800,8 @@ init.logistic4 <- function(object) {
       -12.29, -15.43, -10.48, -16.71, 0.97, 2.51, 7.63, -3.8, -5.32, 5.64,
       -7.34, -1.17, -10.01, -14.72, -13.37, -8.87
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
@@ -817,19 +836,23 @@ init.logistic4 <- function(object) {
     # fix the candidates to be within the constraints
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1015,9 +1038,13 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
 
   H <- array(0, dim = c(object$m, 4, 4))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)

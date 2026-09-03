@@ -1,6 +1,9 @@
 #' @export
 effective_dose.drda <- function(
-    object, y = 0.5, type = "relative", level = 0.95
+  object,
+  y = 0.5,
+  type = "relative",
+  level = 0.95
 ) {
   if (level <= 0 || level >= 1) {
     stop("Confidence level must be in the interval (0, 1)", call. = FALSE)
@@ -56,7 +59,7 @@ effective_dose.drda <- function(
 
   std_err <- if (any(is.na(V))) {
     rep(NA_real_, length(y))
-  } else{
+  } else {
     sqrt(diag(tcrossprod(crossprod(t(G), V), G)))
   }
   names(std_err) <- NULL
@@ -73,7 +76,8 @@ effective_dose.drda <- function(
     nrow = length(y),
     ncol = 3,
     dimnames = list(
-      lbl, c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
+      lbl,
+      c("Estimate", paste0(c("Lower .", "Upper ."), c(l, l)))
     )
   )
 

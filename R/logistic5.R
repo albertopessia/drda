@@ -1,6 +1,12 @@
 # @rdname logistic6_new
-logistic5_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+logistic5_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 5) {
@@ -673,10 +679,16 @@ rss_gradient_hessian.logistic5 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 5, 5))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
 
     list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
@@ -707,10 +719,16 @@ rss_gradient_hessian_fixed.logistic5 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 5, 5))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
 
     list(
@@ -818,6 +836,8 @@ init.logistic5 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -893,7 +913,8 @@ init.logistic5 <- function(object) {
       -0.48, 0.49, 2.19, 1.62, -1.37, -0.71, -1.54, -0.89, 2.05, -1.53, -1.96,
       2.16, -0.79, 0.03, -1.31, -1.27, 2.05, -1.15, 1.68, -0.33, 0.98, 1.05
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 5, ncol = v)
@@ -928,19 +949,23 @@ init.logistic5 <- function(object) {
     # fix the candidates to be within the constraints
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1132,10 +1157,15 @@ fisher_info.logistic5 <- function(object, theta, sigma) {
 
   H <- array(0, dim = c(object$m, 5, 5))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  # fmt: skip
   H[, , 5] <- w * (z * gh$H[, , 5] + gh$G[, 5] * gh$G)
 
   H <- apply(H, 2:3, sum)

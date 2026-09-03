@@ -287,8 +287,16 @@
 #' # optimization: not only the variance-covariance matrix is now singular but
 #' # asymptotic assumptions do not hold anymore.
 drda <- function(
-  formula, data, subset, weights, na.action, mean_function = "logistic4",
-  lower_bound = NULL, upper_bound = NULL, start = NULL, max_iter = 1000
+  formula,
+  data,
+  subset,
+  weights,
+  na.action,
+  mean_function = "logistic4",
+  lower_bound = NULL,
+  upper_bound = NULL,
+  start = NULL,
+  max_iter = 1000
 ) {
   # first, we expand the call to this function
   model_frame <- match.call(expand.dots = FALSE)
@@ -516,7 +524,8 @@ anova.drda <- function(object, ...) {
     warning(
       "The following arguments to 'anova.drda' are invalid and dropped: ",
       paste(deparse(dotargs[named]), collapse = ", "),
-      "\n", call. = FALSE
+      "\n",
+      call. = FALSE
     )
   }
 
@@ -609,7 +618,13 @@ anova.drda <- function(object, ...) {
   dvn <- c(NA_real_, diff(deviance_value))
 
   table <- data.frame(
-    deviance_df, deviance_value, df - 1, aic, bic, dvn, c(NA_real_, lrt)
+    deviance_df,
+    deviance_value,
+    df - 1,
+    aic,
+    bic,
+    dvn,
+    c(NA_real_, lrt)
   )
 
   pvalue <- pchisq(lrt, diff(df), lower.tail = FALSE)
@@ -618,7 +633,14 @@ anova.drda <- function(object, ...) {
   table$pvalue <- c(NA_real_, pvalue)
 
   colnames(table) <- c(
-    "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
+    "Resid. Df",
+    "Resid. Dev",
+    "Df",
+    "AIC",
+    "BIC",
+    "Deviance",
+    "LRT",
+    "Pr(>Chi)"
   )
   rownames(table) <- paste("Model", seq_len(l))
 
@@ -731,7 +753,8 @@ anova.drdalist <- function(object, ...) {
 
   if (any(n_residuals != n_residuals[1L])) {
     stop(
-      "models were not all fitted to the same size of dataset", call. = FALSE
+      "models were not all fitted to the same size of dataset",
+      call. = FALSE
     )
   }
 
@@ -829,7 +852,12 @@ anova.drdalist <- function(object, ...) {
   dvn <- c(NA_real_, diff(deviance_value))
 
   table <- data.frame(
-    deviance_df, deviance_value, c(NA_real_, df), aic, bic, dvn,
+    deviance_df,
+    deviance_value,
+    c(NA_real_, df),
+    aic,
+    bic,
+    dvn,
     c(NA_real_, lrt)
   )
 
@@ -839,7 +867,14 @@ anova.drdalist <- function(object, ...) {
   table$pvalue <- c(NA_real_, pvalue)
 
   colnames(table) <- c(
-    "Resid. Df", "Resid. Dev", "Df", "AIC", "BIC", "Deviance", "LRT", "Pr(>Chi)"
+    "Resid. Df",
+    "Resid. Dev",
+    "Df",
+    "AIC",
+    "BIC",
+    "Deviance",
+    "LRT",
+    "Pr(>Chi)"
   )
   rownames(table) <- paste("Model", seq_len(l))
 
@@ -888,12 +923,14 @@ anova.drdalist <- function(object, ...) {
   }
 
   comment <- paste(
-    "Model", which.min(aic),
+    "Model",
+    which.min(aic),
     "is the best model according to the Akaike Information Criterion.\n"
   )
 
   structure(
-    table, heading = c(title, topnote, comment),
+    table,
+    heading = c(title, topnote, comment),
     class = c("anova", "data.frame")
   )
 }
@@ -921,7 +958,12 @@ logLik.drda <- function(object, ...) {
 #'
 #' @export
 predict.drda <- function(
-  object, newdata, se.fit = FALSE, interval = FALSE, level = 0.95, ...
+  object,
+  newdata,
+  se.fit = FALSE,
+  interval = FALSE,
+  level = 0.95,
+  ...
 ) {
   if (!is.numeric(level) || level <= 0 || level >= 1) {
     stop("invalid `level` argument", call. = FALSE)
@@ -993,12 +1035,17 @@ predict.drda <- function(
   if (se.fit) {
     if (interval) {
       list(
-        fit = predictor, se.fit = pred_se, lwr = predictor - hw,
-        upr = predictor + hw, df = object$df.residual
+        fit = predictor,
+        se.fit = pred_se,
+        lwr = predictor - hw,
+        upr = predictor + hw,
+        df = object$df.residual
       )
     } else {
       list(
-        fit = predictor, se.fit = pred_se, df = object$df.residual
+        fit = predictor,
+        se.fit = pred_se,
+        df = object$df.residual
       )
     }
   } else {
@@ -1040,8 +1087,9 @@ print.drda <- function(x, digits = max(3L, getOption("digits") - 3L), ...) {
 #'
 #' @export
 print.summary.drda <- function(
-  x, digits = max(3L, getOption("digits") - 3L), symbolic.cor = x$symbolic.cor,
-  signif.stars = getOption("show.signif.stars"), ...
+  x,
+  digits = max(3L, getOption("digits") - 3L),
+  ...
 ) {
   cat(
     "\nCall: ",
@@ -1064,12 +1112,17 @@ print.summary.drda <- function(
 
   cat("\nParameters:\n")
   printCoefmat(
-    x$param, digits = digits, cs.ind = numeric(0), P.values = FALSE,
+    x$param,
+    digits = digits,
+    cs.ind = numeric(0),
+    P.values = FALSE,
     has.Pvalue = FALSE
   )
 
   cat(
-    "\nResidual standard error on", x$df.residual, "degrees of freedom\n"
+    "\nResidual standard error on",
+    x$df.residual,
+    "degrees of freedom\n"
   )
 
   msg <- naprint(x$na.action)
@@ -1103,7 +1156,9 @@ print.summary.drda <- function(
 #'
 #' @export
 residuals.drda <- function(
-  object, type = c("response", "weighted", "pearson"), ...
+  object,
+  type = c("response", "weighted", "pearson"),
+  ...
 ) {
   r <- object$residuals
 
@@ -1153,7 +1208,7 @@ summary.drda <- function(object, level = 0.95, ...) {
   object$param <- c(object$coefficients, sigma = object$sigma)
 
   if (is_2 || is_4) {
-    names(object$param) <-  {
+    names(object$param) <- {
       c("Maximum", "Height", "Growth rate", "Midpoint at", "Residual std err.")
     }
 

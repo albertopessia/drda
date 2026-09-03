@@ -169,20 +169,28 @@ fit_nlminb <- function(object, start, max_iter) {
   fit_fn <- if (!object$constrained) {
     function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h,
+        start = x,
+        objective = f,
+        gradient = g,
+        hessian = h,
         control = list(eval.max = k, iter.max = k)
       )
 
       list(
-        par = mle_asy(object, y$par), niter = y$iterations
+        par = mle_asy(object, y$par),
+        niter = y$iterations
       )
     }
   } else {
     function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h,
+        start = x,
+        objective = f,
+        gradient = g,
+        hessian = h,
         control = list(eval.max = k, iter.max = k),
-        lower = object$lower_bound, upper = object$upper_bound
+        lower = object$lower_bound,
+        upper = object$upper_bound
       )
 
       list(par = y$par, niter = y$iterations)
@@ -276,7 +284,11 @@ find_optimum_constrained <- function(object, constraint, known_param) {
       ntrm(rss_fn, rss_gh, theta[idx], max_iter)
     } else {
       ntrm_constrained(
-        rss_fn, rss_gh, theta[idx], max_iter, object$lower_bound[idx],
+        rss_fn,
+        rss_gh,
+        theta[idx],
+        max_iter,
+        object$lower_bound[idx],
         object$upper_bound[idx]
       )
     }
@@ -285,7 +297,12 @@ find_optimum_constrained <- function(object, constraint, known_param) {
     rss_gh <- rss_gradient_hessian(object)
 
     ntrm_constrained(
-      rss_fn, rss_gh, theta, max_iter, object$lower_bound, object$upper_bound
+      rss_fn,
+      rss_gh,
+      theta,
+      max_iter,
+      object$lower_bound,
+      object$upper_bound
     )
   }
 

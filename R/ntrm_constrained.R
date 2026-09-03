@@ -22,12 +22,18 @@
 # Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 # New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_ared <- function(
-  nu, f_current, f_candidate, s_current, s_candidate, m0_current, m0_candidate,
+  nu,
+  f_current,
+  f_candidate,
+  s_current,
+  s_candidate,
+  m0_current,
+  m0_candidate,
   mu
 ) {
   # Equation (19.40) at page 582 of Nocedal and Wright (2006)
   ntrm_merit(nu, f_current, s_current, m0_current, mu) -
-  ntrm_merit(nu, f_candidate, s_candidate, m0_candidate, mu)
+    ntrm_merit(nu, f_candidate, s_candidate, m0_candidate, mu)
 }
 
 # Process constraint requirements
@@ -121,7 +127,11 @@ ntrm_error <- function(obj, mu) {
 # Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 # New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_inertia_correction <- function(
-  H, A, slack_variable, lagrange_multiplier, kappa
+  H,
+  A,
+  slack_variable,
+  lagrange_multiplier,
+  kappa
 ) {
   eps <- sqrt(.Machine$double.eps)
 
@@ -425,14 +435,20 @@ ntrm_reductions <- function(obj, candidate, mu, nu) {
 
   ared <- ntrm_ared(
     nu,
-    obj$f, candidate$f,
-    obj$s, candidate$s,
-    obj$m0, candidate$m0,
+    obj$f,
+    candidate$f,
+    obj$s,
+    candidate$s,
+    obj$m0,
+    candidate$m0,
     mu
   )
 
   pred <- ntrm_pred(
-    nu, obj$m0, candidate$mp, candidate$h
+    nu,
+    obj$m0,
+    candidate$mp,
+    candidate$h
   )
 
   rho <- ared / pred
@@ -1070,7 +1086,13 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
 
   # initial value should already be an optimum or close to it
   obj <- ntrm_init_obj(
-    fn, gh, C, cur_optimum, C(cur_optimum), constraints$A, 0
+    fn,
+    gh,
+    C,
+    cur_optimum,
+    C(cur_optimum),
+    constraints$A,
+    0
   )
   error <- ntrm_error(obj, 0)
 
@@ -1110,7 +1132,13 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   )
 
   obj <- ntrm_init_obj(
-    fn, gh, C, cur_optimum, rep(s, nrow(constraints$A)), constraints$A, mu
+    fn,
+    gh,
+    C,
+    cur_optimum,
+    rep(s, nrow(constraints$A)),
+    constraints$A,
+    mu
   )
 
   i <- 0
