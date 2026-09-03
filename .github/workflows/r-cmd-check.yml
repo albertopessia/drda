@@ -31,7 +31,7 @@ jobs:
       R_REMOTES_NO_ERRORS_FROM_WARNINGS: true
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -46,9 +46,9 @@ jobs:
       - name: Install Ghostscript (Windows)
         if: runner.os == 'Windows'
         run: |
-          choco install ghostscript --no-progress --version 10.3.1;
+          choco install ghostscript --no-progress --version 10.7.1;
           Import-Module "$env:ChocolateyInstall/helpers/chocolateyInstaller.psm1"
-          Add-Content $env:GITHUB_PATH "C:\Program Files\gs\gs10.03.1\bin\";
+          Add-Content $env:GITHUB_PATH "C:\Program Files\gs\gs10.07.1\bin\";
           refreshenv;
         shell: pwsh
 
@@ -72,7 +72,7 @@ jobs:
 
       - name: Upload check results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ runner.os }}-${{ matrix.config.r }}-results
           path: check
@@ -87,7 +87,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: r-lib/actions/setup-r@v2
         with:
