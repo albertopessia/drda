@@ -799,7 +799,7 @@ plot_params.loglogistic <- function(object, base, xlim, ylim, level) {
   yv <- object$model[, 1]
   wv <- object$weights
 
-  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & !(wv == 0)
+  idx <- !is.na(yv) & !is.na(xv) & !is.na(wv) & (wv != 0)
 
   if (sum(idx) != length(yv)) {
     yv <- yv[idx]

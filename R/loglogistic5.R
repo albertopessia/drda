@@ -779,7 +779,7 @@ rss_gradient_hessian.loglogistic5 <- function(object) {
     # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -820,7 +820,7 @@ rss_gradient_hessian_fixed.loglogistic5 <- function(object, known_param) {
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -1275,7 +1275,7 @@ fisher_info.loglogistic5 <- function(object, theta, sigma) {
   G[, 4] <- w * z * gh$G[, 4]
   G[, 5] <- w * z * gh$G[, 5]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 5, 5))
 

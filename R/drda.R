@@ -561,7 +561,7 @@ anova.drda <- function(object, ...) {
   x <- object$model[, 2]
   w <- object$weights
 
-  idx <- !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
+  idx <- !is.na(y) & !is.na(x) & !is.na(w) & (w != 0)
 
   if (sum(idx) != length(y)) {
     y <- y[idx]
@@ -779,7 +779,7 @@ anova.drdalist <- function(object, ...) {
     stop("models were not all fitted with the same weights", call. = FALSE)
   }
 
-  idx <- !is.na(y) & !is.na(x) & !is.na(w) & !(w == 0)
+  idx <- !is.na(y) & !is.na(x) & !is.na(w) & (w != 0)
 
   if (sum(idx) != length(y)) {
     y <- y[idx]

@@ -21,7 +21,7 @@ curve_variance.drda <- function(object, x) {
 
   V <- object$vcov[idx, idx, drop = FALSE]
 
-  if (any(is.na(V))) {
+  if (anyNA(V)) {
     return(rep(NA_real_, len))
   }
 

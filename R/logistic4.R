@@ -103,6 +103,8 @@ logistic4_new <- function(
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
 #'
+#' @importFrom stats plogis
+#'
 #' @export
 logistic4_fn <- function(x, theta) {
   alpha <- theta[1]
@@ -110,7 +112,7 @@ logistic4_fn <- function(x, theta) {
   eta <- theta[3]
   phi <- theta[4]
 
-  alpha + delta / (1 + exp(-eta * (x - phi)))
+  alpha + delta * plogis(eta * (x - phi))
 }
 
 #' @export
@@ -609,7 +611,7 @@ rss_gradient_hessian.logistic4 <- function(object) {
     # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -646,7 +648,7 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -1034,7 +1036,7 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
   G[, 3] <- w * z * gh$G[, 3]
   G[, 4] <- w * z * gh$G[, 4]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
@@ -1076,6 +1078,8 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
 #
+#' @importFrom stats qlogis
+#'
 #' @export
 inverse_fn.logistic4_fit <- function(object, y) {
   alpha <- object$coefficients[1]
@@ -1083,10 +1087,7 @@ inverse_fn.logistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  x <- delta / (y - alpha)
-  x[!is.na(x) & (x > 1)] <- phi - log(x[!is.na(x) & (x > 1)] - 1) / eta
-
-  x
+  phi + qlogis((y - alpha) / delta) / eta
 }
 
 # 4-parameter logistic fit

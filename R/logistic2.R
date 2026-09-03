@@ -641,7 +641,7 @@ rss_gradient_hessian.logistic2 <- function(object) {
     # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -675,7 +675,7 @@ rss_gradient_hessian_fixed.logistic2 <- function(object, known_param) {
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -711,7 +711,7 @@ init.logistic2 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
 
-  theta <- if (any(is.na(object$start))) {
+  theta <- if (anyNA(object$start)) {
     # data might not be compatible with a 2-parameter log-logistic function
     idx <- (stats[, 3] >= 0) & (stats[, 3] <= 1)
 
@@ -1046,7 +1046,7 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
   G[, 1] <- w * z * gh$G[, 1]
   G[, 2] <- w * z * gh$G[, 2]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 2, 2))
 
