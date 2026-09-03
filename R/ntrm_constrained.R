@@ -623,17 +623,17 @@ ntrm_step_normal <- function(Y, B, slack_residual, delta, tau, idx_s) {
     } else {
       # dogleg method
       #
-      # solve | theta * v_gn + (1 - theta) * v_sd |^2 = delta^2 for theta, that
+      # solve | theta * v_gn + (1 - theta) * v_sd |^2 = rho^2 for theta, that
       # is
       #
-      # theta^2 x'x + 2 * theta * x'v_sd + v_sd'v_sd - delta^2 = 0
+      # theta^2 x'x + 2 * theta * x'v_sd + v_sd'v_sd - rho^2 = 0
       #
       # where x = v_gn - v_sd
       x <- v_gn - v_sd
       a <- ntrm_solve_quadratic_equation(
         sum(x^2),
         2 * sum(x * v_sd),
-        v_sd_norm^2 - delta^2
+        v_sd_norm^2 - rho^2
       )
 
       a[2] * v_gn + (1 - a[2]) * v_sd

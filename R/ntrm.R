@@ -37,8 +37,8 @@ ntrm_safeguard <- function(lambda, G, H, delta) {
   # Equations are on page 560 of Moré and Sorensen (1983)
   lambda_S <- max(-diag(H))
 
-  # squared Euclidean norm
-  G_norm <- sum(G^2)
+  # Euclidean norm
+  G_norm <- ntrm_norm(G)
 
   # operator norm: maximum absolute column sum
   H_norm <- max(colSums(abs(H)))
@@ -100,7 +100,13 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
       # an orthogonal eigenvector that lands on the boundary
 
       # Equation (4.45) at page 88 from Nocedal and Wright (2006)
-      j <- 1:max(which(H_eig$values > H_ev_min))
+      idx <- which(H_eig$values > H_ev_min)
+
+      j <- if (length(idx) > 0) {
+        seq_len(max(idx))
+      } else {
+        1
+      }
 
       p <- ntrm_calc_p(
         Q[j],
