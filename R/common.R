@@ -310,3 +310,53 @@ find_optimum_constrained <- function(object, constraint, known_param) {
 
   solution
 }
+
+# Get formula for a given mean function
+#
+# @param x `drda` object
+#
+# @return Formula as a string.
+get_formula <- function(x) {
+  switch(
+    x$mean_function,
+    logistic2 = if (x$coefficients[2] >= 0) {
+      "1 / (1 + exp(-e * (x - p)))"
+    } else {
+      "1 - 1 / (1 + exp(-e * (x - p)))"
+    },
+    logistic4 = "a + d / (1 + exp(-e * (x - p)))",
+    logistic5 = "a + d / (1 + n * exp(-e * (x - p)))^(1 / n) (Full)",
+    logistic6 = "a + d / (w + n * exp(-e * (x - p)))^(1 / n) (Full)",
+    gompertz = "a + d * exp(-exp(-e * (x - p)))",
+    loglogistic2 = if (x$coefficients[2] >= 0) {
+      "x^e / (x^e + p^e)"
+    } else {
+      "1 - x^e / (x^e + p^e)"
+    },
+    loglogistic4 = "a + d * x^e / (x^e + p^e)",
+    loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n) (Full)",
+    loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n) (Full)",
+    loggompertz = "a + d * exp(-(p / x)^e)"
+  )
+}
+
+# Get model identifier
+#
+# @param x `drda` object
+#
+# @return Model identifier for sorting.
+get_model_identifier <- function(x) {
+  switch(
+    x$mean_function,
+    logistic2 = 1,
+    logistic4 = 2,
+    logistic5 = 3,
+    logistic6 = 4,
+    gompertz = 5,
+    loglogistic2 = 1,
+    loglogistic4 = 2,
+    loglogistic5 = 3,
+    loglogistic6 = 4,
+    loggompertz = 5
+  )
+}

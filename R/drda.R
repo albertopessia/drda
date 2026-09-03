@@ -549,14 +549,6 @@ anova.drda <- function(object, ...) {
 
   s <- substr(object$mean_function, 1, 8)
 
-  model_type <- if (s == "logistic" || s == "gompertz") {
-    1
-  } else if (s == "loglogis" || s == "loggompe") {
-    2
-  } else {
-    stop("model not supported", call. = FALSE)
-  }
-
   y <- object$model[, 1]
   x <- object$model[, 2]
   w <- object$weights
@@ -572,41 +564,18 @@ anova.drda <- function(object, ...) {
   n <- length(y)
   log_n <- log(n)
   log_w <- sum(log(w))
-  k <- sum(object$estimated)
+  weighted_mean <- sum(w * y) / sum(w)
 
-  l <- if (k >= 5) {
-    # we compare the full model against a flat horizontal line
-    2
-  } else {
-    # we compare the estimated model against the baseline and the full model
-    3
-  }
-
-  deviance_df <- rep(-1, l)
-  deviance_value <- rep(-1, l)
-  loglik <- rep(-1, l)
+  deviance_df <- rep(-1, 2)
+  deviance_value <- rep(-1, 2)
 
   # constant model: horizontal line
-  weighted_mean <- sum(w * y) / sum(w)
   deviance_df[1] <- n - 1
   deviance_value[1] <- sum(w * (y - weighted_mean)^2)
 
   # fitted model
   deviance_df[2] <- object$df.residual
   deviance_value[2] <- object$rss
-
-  if (k < 5) {
-    # at least a parameter was considered fixed, so we now fit the full model
-    s <- substr(object$mean_function, 1, 8)
-    fit <- if (s == "logistic" || s == "gompertz") {
-      drda(y ~ x, weights = w, mean_function = "logistic5")
-    } else {
-      drda(y ~ x, weights = w, mean_function = "loglogistic5")
-    }
-
-    deviance_df[3] <- fit$df.residual
-    deviance_value[3] <- fit$rss
-  }
 
   loglik <- loglik_normal(deviance_value, n, log_w)
 
@@ -627,10 +596,12 @@ anova.drda <- function(object, ...) {
     c(NA_real_, lrt)
   )
 
-  pvalue <- pchisq(lrt, diff(df), lower.tail = FALSE)
-  pvalue[pvalue == 0] <- NA_real_
-
-  table$pvalue <- c(NA_real_, pvalue)
+  if ((s == "gompertz") || (s == "loggompe")) {
+    pvalue <- pchisq(lrt, diff(df), lower.tail = FALSE)
+    table$pvalue <- c(NA_real_, pvalue)
+  } else {
+    table$pvalue <- rep(NA_real_, 2)
+  }
 
   colnames(table) <- c(
     "Resid. Df",
@@ -642,67 +613,17 @@ anova.drda <- function(object, ...) {
     "LRT",
     "Pr(>Chi)"
   )
-  rownames(table) <- paste("Model", seq_len(l))
+  rownames(table) <- paste("Model", seq_len(2))
 
   title <- "Analysis of Deviance Table\n"
 
-  str <- switch(object$mean_function,
-    logistic2 = if (object$coefficients[2] >= 0) {
-      "1 / (1 + exp(-e * (x - p)))"
-    } else {
-      "1 - 1 / (1 + exp(-e * (x - p)))"
-    },
-    logistic4 = "a + d / (1 + exp(-e * (x - p)))",
-    logistic5 = "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)",
-    logistic6 = "a + d / (w + n * exp(-e * (x - p)))^(1 / n)",
-    gompertz = "a + d * exp(-exp(-e * (x - p)))",
-    loglogistic2 = if (object$coefficients[2] >= 0) {
-      "x^e / (x^e + p^e)"
-    } else {
-      "1 - x^e / (x^e + p^e)"
-    },
-    loglogistic4 = "a + d * x^e / (x^e + p^e)",
-    loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
-    loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
-    loggompertz = "a + d * exp(-(p / x)^e)"
-  )
+  str <- get_formula(object)
 
-  topnote <- if (k >= 5) {
-    paste(
-      paste0(
-        c(
-          "Model 1: a", "\n",
-          "Model 2: ", str, " (Full)", "\n"
-        )
-      ),
-      collapse = ""
-    )
-  } else {
-    tmp <- if (model_type == 1) {
-      "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)"
-    } else {
-      "a + d * (x^e / (x^e + n * p^e))^(1 / n)"
-    }
-
-    paste(
-      paste0(
-        c(
-          "Model 1: a", "\n",
-          "Model 2: ", str, " (Fit)", "\n",
-          "Model 3: ", tmp, " (Full)", "\n"
-        )
-      ),
-      collapse = ""
-    )
-  }
-
-  comment <- paste(
-    "Model", which.min(aic),
-    "is the best model according to the Akaike Information Criterion.\n"
-  )
+  topnote <- paste0("Model 1: a\nModel 2: ", str, "\n")
 
   structure(
-    table, heading = c(title, topnote, comment),
+    table,
+    heading = c(title, topnote),
     class = c("anova", "data.frame")
   )
 }
@@ -787,63 +708,24 @@ anova.drdalist <- function(object, ...) {
     w <- w[idx]
   }
 
-  n_obs <- length(y)
-  log_n <- log(n_obs)
+  n <- length(y)
+  log_n <- log(n)
   log_w <- sum(log(w))
+  weighted_mean <- sum(w * y) / sum(w)
 
-  n_params <- vapply(object, function(x) sum(x$estimated), 0)
+  model_id <- vapply(object, get_model_identifier, 0)
+  object <- object[order(model_id)]
 
-  tmp_dev <- vapply(object, function(x) x$rss, 0)
-
-  ord <- order(n_params, -tmp_dev)
-
-  object <- object[ord]
-  n_params <- n_params[ord]
-  tmp_dev <- tmp_dev[ord]
-
-  tmp_df <- vapply(object, function(x) x$df.residual, 0)
-
-  k <- max(n_params)
-
-  df <- if (k >= 5) {
-    c(1, n_params) + 1
-  } else {
-    c(1, n_params, 5) + 1
-  }
-
-  deviance_df <- if (k >= 5) {
-    c(-1, tmp_df)
-  } else {
-    c(-1, tmp_df, -1)
-  }
-
-  deviance_value <- if (k >= 5) {
-    c(-1, tmp_dev)
-  } else {
-    c(-1, tmp_dev, -1)
-  }
-
-  l <- length(deviance_df)
-
-  loglik <- rep(-1, l)
+  deviance_value <- c(-1, vapply(object, function(x) x$rss, 0))
+  deviance_df <- c(1, vapply(object, function(x) x$df.residual, 0))
 
   # constant model: horizontal line
-  weighted_mean <- sum(w * y) / sum(w)
-  deviance_df[1] <- n_obs - 1
+  deviance_df[1] <- n - 1
   deviance_value[1] <- sum(w * (y - weighted_mean)^2)
 
-  if (k < 5) {
-    fit <- if (model_type == 1) {
-      drda(y ~ x, weights = w, mean_function = "logistic5")
-    } else {
-      drda(y ~ x, weights = w, mean_function = "loglogistic5")
-    }
+  loglik <- loglik_normal(deviance_value, n, log_w)
 
-    deviance_df[l] <- fit$df.residual
-    deviance_value[l] <- fit$rss
-  }
-
-  loglik <- loglik_normal(deviance_value, n_obs, log_w)
+  df <- n - deviance_df + 1
 
   aic <- 2 * (df - loglik)
   bic <- log_n * df - 2 * loglik
@@ -862,8 +744,6 @@ anova.drdalist <- function(object, ...) {
   )
 
   pvalue <- pchisq(lrt, df, lower.tail = FALSE)
-  pvalue[pvalue == 0] <- NA_real_
-
   table$pvalue <- c(NA_real_, pvalue)
 
   colnames(table) <- c(
@@ -876,51 +756,23 @@ anova.drdalist <- function(object, ...) {
     "LRT",
     "Pr(>Chi)"
   )
-  rownames(table) <- paste("Model", seq_len(l))
+  rownames(table) <- paste("Model", seq_len(n_models + 1))
+
+  # Gompertz models are not nested, therefore the LRT is not applicable
+  s <- substr(object[[n_models]]$mean_function, 1, 8)
+  if (s == "gompertz" || s == "loggompe") {
+    table[n_models + 1, "Deviance"] <- NA_real_
+    table[n_models + 1, "LRT"] <- NA_real_
+    table[n_models + 1, "Pr(>Chi)"] <- NA_real_
+  }
 
   title <- "Analysis of Deviance Table\n"
 
-  f <- function(x) {
-    switch(x$mean_function,
-      logistic2 = if (x$coefficients[2] >= 0) {
-        "1 / (1 + exp(-e * (x - p)))"
-      } else {
-        "1 - 1 / (1 + exp(-e * (x - p)))"
-      },
-      logistic4 = "a + d / (1 + exp(-e * (x - p)))",
-      logistic5 = "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)",
-      logistic6 = "a + d / (w + n * exp(-e * (x - p)))^(1 / n)",
-      gompertz = "a + d * exp(-exp(-e * (x - p)))",
-      loglogistic2 = if (x$coefficients[2] >= 0) {
-        "x^e / (x^e + p^e)"
-      } else {
-        "1 - x^e / (x^e + p^e)"
-      },
-      loglogistic4 = "a + d * x^e / (x^e + p^e)",
-      loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n)",
-      loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n)",
-      loggompertz = "a + d * exp(-(p / x)^e)"
-    )
-  }
-
-  str <- vapply(object, f, "a")
-  str <- paste0("Model ", 2:(n_models + 1), ": ", str)
-
-  topnote <- if (k >= 5) {
-    str[n_models] <- paste(str[n_models], "(Full)\n")
-    paste(c("Model 1: a", str), collapse = "\n")
-  } else {
-    tmp <- if (model_type == 1) {
-      "a + d / (1 + n * exp(-e * (x - p)))^(1 / n)"
-    } else {
-      "a + d * (x^e / (x^e + n * p^e))^(1 / n)"
-    }
-
-    paste(
-      c("Model 1: a", str, paste0("Model ", l, ": ", tmp, " (Full)\n")),
-      collapse = "\n"
-    )
-  }
+  str <- vapply(object, get_formula, "a")
+  topnote <- paste0(
+    "Model 1: a\n",
+    paste0("Model ", seq_len(n_models) + 1, ": ", str, collapse = "\n")
+  )
 
   comment <- paste(
     "Model",
