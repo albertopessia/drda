@@ -2013,6 +2013,15 @@ test_that("drda: 'start' argument errors", {
   )
 })
 
+test_that("drda: negative predictor errors", {
+  D <- data.frame(x = c(-1, 0, 1, 2), y = c(1, 0.8, 0.4, 0.1))
+
+  expect_error(
+    drda(y ~ x, data = D, mean_function = "loglogistic6"),
+    "predictor variable 'x' is negative"
+  )
+})
+
 test_that("nauc: decreasing", {
   x <- lltd$D$x
   y <- lltd$D$y
@@ -2079,4 +2088,50 @@ test_that("naac: increasing", {
     naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.79822066734104781
   )
   expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 0.0)
+})
+
+test_that("zero-weight restoration with extra formula terms", {
+  D <- lltd$D
+  D$z <- seq_len(nrow(D))
+
+  result <- drda(
+    y ~ x + z, data = D, weights = w, mean_function = "loglogistic6"
+  )
+
+  expect_length(result$weights, nrow(D))
+  expect_identical(as.numeric(result$weights), as.numeric(D$w))
+  expect_length(result$fitted.values, nrow(D))
+  expect_length(result$residuals, nrow(D))
+  expect_equal(
+    result$residuals,
+    D$y - result$fitted.values,
+    tolerance = 1.0e-12
+  )
+})
+
+test_that("single-model anova p-values", {
+  result <- drda(y ~ x, data = lltd$D, mean_function = "loglogistic6")
+  tab <- anova(result)
+
+  expect_s3_class(tab, "anova")
+  expect_true("Pr(>Chi)" %in% colnames(tab))
+  expect_true(is.na(tab[["Pr(>Chi)"]][1]))
+  expect_true(is.finite(tab[["Pr(>Chi)"]][2]))
+  expect_gte(tab[["Pr(>Chi)"]][2], 0)
+  expect_lte(tab[["Pr(>Chi)"]][2], 1)
+})
+
+test_that("inverse returns NA/Inf at asymptotes", {
+  result <- drda(y ~ x, data = lltd$D, mean_function = "loglogistic6")
+  alpha <- result$coefficients[1]
+  delta <- result$coefficients[2]
+  nu <- result$coefficients[5]
+  xi <- result$coefficients[6]
+
+  y_target <- alpha + delta * xi^(-1 / nu)
+
+  expect_identical(inverse_fn(result, alpha), 0)
+  expect_identical(inverse_fn(result, y_target), Inf)
+  expect_true(is.na(inverse_fn(result, alpha - sign(delta))))
+  expect_true(is.na(inverse_fn(result, y_target + sign(delta))))
 })

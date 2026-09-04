@@ -1677,3 +1677,43 @@ test_that("naac: increasing", {
   )
   expect_equal(naac(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 0.0)
 })
+
+test_that("zero-weight restoration with extra formula terms", {
+  D <- ltd$D
+  D$z <- seq_len(nrow(D))
+
+  result <- drda(y ~ x + z, data = D, weights = w, mean_function = "gompertz")
+
+  expect_length(result$weights, nrow(D))
+  expect_identical(as.numeric(result$weights), as.numeric(D$w))
+  expect_length(result$fitted.values, nrow(D))
+  expect_length(result$residuals, nrow(D))
+  expect_equal(
+    result$residuals,
+    D$y - result$fitted.values,
+    tolerance = 1.0e-12
+  )
+})
+
+test_that("single-model anova p-values", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "gompertz")
+  tab <- anova(result)
+
+  expect_s3_class(tab, "anova")
+  expect_true("Pr(>Chi)" %in% colnames(tab))
+  expect_true(is.na(tab[["Pr(>Chi)"]][1]))
+  expect_true(is.finite(tab[["Pr(>Chi)"]][2]))
+  expect_gte(tab[["Pr(>Chi)"]][2], 0)
+  expect_lte(tab[["Pr(>Chi)"]][2], 1)
+})
+
+test_that("inverse returns NA/Inf at asymptotes", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "gompertz")
+  alpha <- result$coefficients[1]
+  delta <- result$coefficients[2]
+
+  expect_identical(inverse_fn(result, alpha), -Inf)
+  expect_identical(inverse_fn(result, alpha + delta), Inf)
+  expect_true(is.na(inverse_fn(result, alpha - sign(delta))))
+  expect_true(is.na(inverse_fn(result, alpha + delta + sign(delta))))
+})
