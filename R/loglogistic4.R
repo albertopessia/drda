@@ -183,7 +183,7 @@ loglogistic4_gradient <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -245,7 +245,7 @@ loglogistic4_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -309,7 +309,7 @@ loglogistic4_gradient_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -321,7 +321,7 @@ loglogistic4_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -396,7 +396,7 @@ loglogistic4_gradient_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -452,7 +452,7 @@ loglogistic4_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -517,7 +517,7 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -529,7 +529,7 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -758,8 +758,8 @@ mle_asy.loglogistic4 <- function(object, theta) {
   #
   # when x > phi then g is approximately 1 (case 1)
   # when x < phi then g is approximately 0 (case 2)
-  g[is.nan(g) & x > phi] <- 1
-  g[is.nan(g) & x < phi] <- 0
+  g[!is.finite(g) & x > phi] <- 1
+  g[!is.finite(g) & x < phi] <- 0
 
   t1 <- 0
   t2 <- 0

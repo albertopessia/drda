@@ -453,7 +453,7 @@ ntrm_reductions <- function(obj, candidate, mu, nu) {
 
   rho <- ared / pred
 
-  if (is.nan(rho)) {
+  if (!is.finite(rho)) {
     # both reductions are zero and we reject this step
     rho <- 0
   }
@@ -902,7 +902,7 @@ ntrm_update_nu <- function(nu, h, m0, mp) {
   } else {
     nu_lb <- h / denominator
 
-    if (is.nan(nu_lb) || is.infinite(nu_lb) || (nu >= nu_lb)) {
+    if (!is.finite(nu_lb) || (nu >= nu_lb)) {
       # old value satisfies the inequality or the new lower bound is invalid
       nu
     } else {

@@ -170,7 +170,7 @@ logistic4_gradient <- function(x, theta) {
   G[, 4] <- delta * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -224,7 +224,7 @@ logistic4_hessian <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -279,7 +279,7 @@ logistic4_gradient_hessian <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -291,7 +291,7 @@ logistic4_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -361,7 +361,7 @@ logistic4_gradient_2 <- function(x, theta) {
   G[, 4] <- delta * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -412,7 +412,7 @@ logistic4_hessian_2 <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -469,7 +469,7 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -481,7 +481,7 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(

@@ -179,7 +179,7 @@ loggompertz_gradient <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -238,7 +238,7 @@ loggompertz_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -300,7 +300,7 @@ loggompertz_gradient_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -312,7 +312,7 @@ loggompertz_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -384,7 +384,7 @@ loggompertz_gradient_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -439,7 +439,7 @@ loggompertz_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -501,7 +501,7 @@ loggompertz_gradient_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -513,7 +513,7 @@ loggompertz_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(

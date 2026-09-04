@@ -210,7 +210,7 @@ logistic2_gradient <- function(x, theta, delta) {
   G[, 2] <- u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -259,7 +259,7 @@ logistic2_hessian <- function(x, theta, delta) {
   H[, 2, 2] <- (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -307,7 +307,7 @@ logistic2_gradient_hessian <- function(x, theta, delta) {
   H[, 2, 2] <- (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -319,7 +319,7 @@ logistic2_gradient_hessian <- function(x, theta, delta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -390,7 +390,7 @@ logistic2_gradient_2 <- function(x, theta, delta) {
   G[, 2] <- u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -434,7 +434,7 @@ logistic2_hessian_2 <- function(x, theta, delta) {
   H[, 2, 2] <- (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -484,7 +484,7 @@ logistic2_gradient_hessian_2 <- function(x, theta, delta) {
   H[, 2, 2] <- (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -496,7 +496,7 @@ logistic2_gradient_hessian_2 <- function(x, theta, delta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(

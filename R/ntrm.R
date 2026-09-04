@@ -278,7 +278,7 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
       # This should only happen when the step is very small, in which case
       # we should accept the step and assess convergence
       1
-    } else if (is.nan(cur_value)) {
+    } else if (!is.finite(cur_value)) {
       # We went somewhere wrong
       -1
     } else {

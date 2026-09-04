@@ -212,7 +212,7 @@ fit_nlminb <- function(object, start, max_iter) {
       max_iter <- max(0, max_iter - tmp$niter)
       niter <- niter + tmp$niter
 
-      if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      if (is.finite(current_rss) && (current_rss < best_rss)) {
         best_par <- tmp$par
         best_rss <- current_rss
       }

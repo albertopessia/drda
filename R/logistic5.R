@@ -188,7 +188,7 @@ logistic5_gradient <- function(x, theta) {
   G[, 5] <- delta * v / nu
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -253,7 +253,7 @@ logistic5_hessian <- function(x, theta) {
   H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -320,7 +320,7 @@ logistic5_gradient_hessian <- function(x, theta) {
   H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - 2 * g)) / (nu^2 * g)
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -332,7 +332,7 @@ logistic5_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -407,7 +407,7 @@ logistic5_gradient_2 <- function(x, theta) {
   G[, 5] <- delta * v
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -469,7 +469,7 @@ logistic5_hessian_2 <- function(x, theta) {
   H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - g)) / g
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -538,7 +538,7 @@ logistic5_gradient_hessian_2 <- function(x, theta) {
   H[, 5, 5] <- delta * (nu * (u / eta)^2 + v * (v - g)) / g
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -550,7 +550,7 @@ logistic5_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
