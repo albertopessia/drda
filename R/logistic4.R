@@ -1067,7 +1067,15 @@ inverse_fn.logistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  phi + qlogis((y - alpha) / delta) / eta
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi + qlogis(p[ok]) / eta
+  x[!is.na(p) & (p == 0)] <- -Inf
+  x[!is.na(p) & (p == 1)] <- Inf
+
+  x
 }
 
 # 4-parameter logistic fit

@@ -1308,11 +1308,15 @@ inverse_fn.logistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  x <- (delta / (y - alpha))^nu
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
+  smxi <- xi * expm1(-nu * log(p[ok]) - log(xi))
 
-  # fmt: skip
-  x[!is.na(x) & (x > xi)] <- phi -
-    log((x[!is.na(x) & (x > xi)] - xi) / nu) / eta
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi + (log(nu) - log(smxi)) / eta
+  x[!is.na(p) & (p == 0)] <- -Inf
+  x[!is.na(p) & (p == g_max)] <- Inf
 
   x
 }
@@ -1340,17 +1344,23 @@ inverse_fn_gradient.logistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  z <- delta / (y - alpha)
-  s <- z^nu
-  u <- nu / (s - xi)
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
 
-  G <- matrix(1, nrow = length(y), ncol = 6)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 6)
+  if (any(ok)) {
+    # p^{-nu} - xi = xi * expm1(-nu * log(p) - log(xi))
+    e <- xi * expm1(-nu * log(p[ok]) - log(xi))
+    s <- e + xi
 
-  G[, 1] <- -z * s * u / (delta * eta)
-  G[, 2] <- -s * u / (delta * eta)
-  G[, 3] <- -log(u) / eta^2
-  G[, 5] <- (1 - s * log(z) * u) / (eta * nu)
-  G[, 6] <- u / (eta * nu)
+    G[ok, 1] <- -nu * s / (p[ok] * e * eta * delta)
+    G[ok, 2] <- -nu * s / (e * eta * delta)
+    G[ok, 3] <- -(log(nu) - log(e)) / eta^2
+    G[ok, 4] <- 1
+    G[ok, 5] <- (1 / nu + log(p[ok]) * s / e) / eta
+    G[ok, 6] <- 1 / (e * eta)
+  }
 
   G
 }

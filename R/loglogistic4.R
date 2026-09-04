@@ -1159,7 +1159,15 @@ inverse_fn.loglogistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  phi / ((delta / (y - alpha)) - 1)^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi * (p[ok] / (1 - p[ok]))^(1 / eta)
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == 1)] <- Inf
+
+  x
 }
 
 # 4-parameter log-logistic fit
@@ -1184,17 +1192,21 @@ inverse_fn_gradient.loglogistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  u <- 1 / (z - 1)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(0, nrow = length(y), ncol = 4)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 4)
+  if (any(ok)) {
+    h <- phi / eta
+    u <- p[ok] / (1 - p[ok])
+    v <- u^(1 / eta)
+    z <- 1 / p[ok]
 
-  G[, 1] <- -h * z * z * u * v / delta
-  G[, 2] <- -h * z * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
+    G[ok, 1] <- -h * z * z * u * v / delta
+    G[ok, 2] <- -h * z * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+  }
 
   G
 }

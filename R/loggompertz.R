@@ -1095,7 +1095,7 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
   G[, 3] <- w * z * gh$G[, 3]
   G[, 4] <- w * z * gh$G[, 4]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
@@ -1145,8 +1145,13 @@ inverse_fn.loggompertz_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  x <- delta / (y - alpha)
-  x[!is.na(x) & (x > 0)] <- phi / log(x[!is.na(x) & (x > 0)])^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi / (-log(p[ok]))^(1 / eta)
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == 1)] <- Inf
 
   x
 }
@@ -1174,17 +1179,20 @@ inverse_fn_gradient.loggompertz_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  u <- 1 / log(z)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(0, nrow = length(y), ncol = 4)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 4)
+  if (any(ok)) {
+    h <- phi / eta
+    u <- 1 / (-log(p[ok]))
+    v <- u^(1 / eta)
 
-  G[, 1] <- -h * u * z * v / delta
-  G[, 2] <- -h * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
+    G[ok, 1] <- -h * u * v / (p[ok] * delta)
+    G[ok, 2] <- -h * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+  }
 
   G
 }

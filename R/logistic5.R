@@ -1181,8 +1181,13 @@ inverse_fn.logistic5_fit <- function(object, y) {
   phi <- object$coefficients[4]
   nu <- object$coefficients[5]
 
-  x <- (delta / (y - alpha))^nu
-  x[!is.na(x) & (x > 1)] <- phi - log((x[!is.na(x) & (x > 1)] - 1) / nu) / eta
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi + (log(nu) - log(expm1(-nu * log(p[ok])))) / eta
+  x[!is.na(p) & (p == 0)] <- -Inf
+  x[!is.na(p) & (p == 1)] <- Inf
 
   x
 }
@@ -1208,16 +1213,20 @@ inverse_fn_gradient.logistic5_fit <- function(object, y) {
   eta <- object$coefficients[3]
   nu <- object$coefficients[5]
 
-  z <- delta / (y - alpha)
-  s <- z^nu
-  u <- nu / (s - 1)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(1, nrow = length(y), ncol = 5)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 5)
+  if (any(ok)) {
+    e <- expm1(-nu * log(p[ok]))
+    ep1 <- e + 1
 
-  G[, 1] <- -z * s * u / (delta * eta)
-  G[, 2] <- -s * u / (delta * eta)
-  G[, 3] <- -log(u) / eta^2
-  G[, 5] <- (1 - s * log(z) * u) / (eta * nu)
+    G[ok, 1] <- -nu * ep1 / (p[ok] * e * eta * delta)
+    G[ok, 2] <- -nu * ep1 / (e * eta * delta)
+    G[ok, 3] <- -(log(nu) - log(e)) / eta^2
+    G[ok, 4] <- 1
+    G[ok, 5] <- (1 / nu + log(p[ok]) * ep1 / e) / eta
+  }
 
   G
 }

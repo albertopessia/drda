@@ -88,38 +88,36 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
     p <- ntrm_calc_p(Q, H_eig$vectors, H_eig$values, 0)
   }
 
-  if ((H_ev_min < eps) || (sum(p^2) > delta_2)) {
+  if ((H_ev_min <= eps) || (sum(p^2) > delta_2)) {
     # either hard case or we went outside the trust region
     hard_case <- FALSE
 
-    if (abs(Q[k]) < eps) {
-      # this might be a hard case because the gradient is orthogonal to all
-      # eigenvectors associated with the lowest eigenvalue.
-      #
-      # lambda is taken to be -H_ev_min and we only need to find a multiple of
-      # an orthogonal eigenvector that lands on the boundary
+    # Hard case only when the Hessian is singular/indefinite and the gradient
+    # is nearly orthogonal to the whole min-eigenspace (Moré–Sorensen).
+    idx_min <- which(H_eig$values <= H_ev_min + eps)
+    q_min_max <- max(abs(Q[idx_min]))
 
+    if ((H_ev_min <= eps) && (q_min_max < eps)) {
       # Equation (4.45) at page 88 from Nocedal and Wright (2006)
-      idx <- which(H_eig$values > H_ev_min)
+      idx <- which(H_eig$values > H_ev_min + eps)
 
-      j <- if (length(idx) > 0) {
-        seq_len(max(idx))
+      p <- if (length(idx) > 0) {
+        ntrm_calc_p(
+          Q[idx],
+          H_eig$vectors[, idx, drop = FALSE],
+          H_eig$values[idx],
+          -H_ev_min
+        )
       } else {
-        1
+        # Entire space is the min-eigenspace: unconstrained hard-case step is 0
+        rep(0, k)
       }
-
-      p <- ntrm_calc_p(
-        Q[j],
-        H_eig$vectors[, j],
-        H_eig$values[j],
-        -H_ev_min
-      )
 
       p_norm_2 <- sum(p^2)
 
       if (p_norm_2 <= delta_2) {
         hard_case <- TRUE
-        tau <- sqrt(delta_2 - p_norm_2)
+        tau <- sqrt(max(delta_2 - p_norm_2, 0))
         p <- tau * H_eig$vectors[, k] - p
       }
     }
@@ -129,8 +127,8 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
       # Algorithm 4.3 at page 87 in Nocedal and Wright (2006)
       B <- H
 
-      # lambda cannot be lower than this lower bound
-      lambda_lb <- -H_ev_min + 1.0e-12
+      # lambda cannot be lower than this lower bound (lambda >= 0 on boundary)
+      lambda_lb <- max(0, -H_ev_min) + 1.0e-12
       lambda <- ntrm_safeguard(lambda_lb, G, H, delta)
 
       for (i in seq_len(10)) {
@@ -148,6 +146,11 @@ ntrm_solve_tr_subproblem <- function(G, H, delta) {
 
         p_norm_2 <- sum(p^2)
         q_norm_2 <- sum(q^2)
+
+        if (!(q_norm_2 > 0) || !is.finite(q_norm_2)) {
+          lambda <- 10 * lambda
+          next
+        }
 
         lambda_old <- lambda
         lambda <- lambda +
@@ -261,9 +264,13 @@ ntrm <- function(fn, gh, init, max_iter, update_fn = NULL) {
       break
     }
 
-    # perform a correction in case the Hessian is not positive definite
-    B <- ntrm_correct_hessian(gradient_hessian$H)
-    result <- ntrm_solve_tr_subproblem(gradient_hessian$G, B, delta)
+    # pass the unmodified Hessian; regularization is handled via lambda in
+    # the Moré–Sorensen trust-region subproblem
+    result <- ntrm_solve_tr_subproblem(
+      gradient_hessian$G,
+      gradient_hessian$H,
+      delta
+    )
 
     candidate <- cur_optimum + result$p
 

@@ -171,13 +171,16 @@ loglogistic6_fn <- function(x, theta) {
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
-  xi <- theta[6]
+  log_xi <- log(theta[6])
 
-  t1 <- x^eta
-  t2 <- phi^eta
+  a <- log(nu) + eta * (log(phi) - log(x))
+  log_term <- ifelse(
+    a > log_xi,
+    a + log1p(exp(log_xi - a)),
+    log_xi + log1p(exp(a - log_xi))
+  )
 
-  alpha + delta * (t1 / (xi * t1 + nu * t2))^(1 / nu)
-
+  alpha + delta * exp(-log_term / nu)
 }
 
 # @rdname loglogistic6_fn
@@ -490,7 +493,6 @@ loglogistic6_gradient_2 <- function(x, theta) {
   nu <- theta[5]
   xi <- theta[6]
 
-  k1 <- eta / nu
   k2 <- xi / nu
 
   c1 <- x^eta
@@ -498,21 +500,19 @@ loglogistic6_gradient_2 <- function(x, theta) {
 
   f <- xi * c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   p <- (x^eta / f)^(1 / nu)
   r <- eta * c2 * p / f
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- (p * s) / f
-  v <- (p * t) / f
   w <- k2 * p * c1 / f
+  z <- p * (y / nu + c2 / f)
 
   G <- matrix(1, nrow = k, ncol = 6)
 
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
-  G[, 5] <- -delta * (v - u)
+  G[, 5] <- -delta * z
   G[, 6] <- -delta * w
 
   # gradient and Hessian might not be defined when we plug x = 0 directly into
@@ -550,7 +550,6 @@ loglogistic6_hessian_2 <- function(x, theta) {
   nu <- theta[5]
   xi <- theta[6]
 
-  k1 <- eta / nu
   k2 <- xi / nu
 
   c1 <- x^eta
@@ -558,24 +557,22 @@ loglogistic6_hessian_2 <- function(x, theta) {
 
   f <- xi * c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   l <- (1 + nu) * c2 / f
   m <- (1 + nu) * xi * c1 / (nu * f)
 
   p <- (x^eta / f)^(1 / nu)
   r <- eta * c2 * p / f
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- (p * s) / f
-  v <- (p * t) / f
   w <- k2 * p * c1 / f
-  y <- eta * log(x) - log(f)
+  z <- p * (y / nu + c2 / f)
+  s <- (f / nu) * y + c2
 
   H <- array(0, dim = c(k, 6, 6))
 
   H[, 3, 2] <- e * r
   H[, 4, 2] <- -r
-  H[, 5, 2] <- u - v
+  H[, 5, 2] <- -z
   H[, 6, 2] <- -w
 
   H[, 2, 3] <- H[, 3, 2]
@@ -593,10 +590,7 @@ loglogistic6_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-
-  # fmt: skip
-  H[, 5, 5] <- delta *
-    ((l + y / nu) * c2 + (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+  H[, 5, 5] <- delta * ((l + y / nu) * c2 + (1 + y / nu) * s) * p / f
 
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
@@ -640,7 +634,6 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   nu <- theta[5]
   xi <- theta[6]
 
-  k1 <- eta / nu
   k2 <- xi / nu
 
   c1 <- x^eta
@@ -648,32 +641,30 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
 
   f <- xi * c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   l <- (1 + nu) * c2 / f
   m <- (1 + nu) * xi * c1 / (nu * f)
 
   p <- (x^eta / f)^(1 / nu)
   r <- eta * c2 * p / f
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- (p * s) / f
-  v <- (p * t) / f
   w <- k2 * p * c1 / f
-  y <- eta * log(x) - log(f)
+  z <- p * (y / nu + c2 / f)
+  s <- (f / nu) * y + c2
 
   G <- matrix(1, nrow = k, ncol = 6)
 
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
-  G[, 5] <- -delta * (v - u)
+  G[, 5] <- -delta * z
   G[, 6] <- -delta * w
 
   H <- array(0, dim = c(k, 6, 6))
 
   H[, 3, 2] <- e * r
   H[, 4, 2] <- -r
-  H[, 5, 2] <- u - v
+  H[, 5, 2] <- -z
   H[, 6, 2] <- -w
 
   H[, 2, 3] <- H[, 3, 2]
@@ -691,10 +682,7 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-
-  # fmt: skip
-  H[, 5, 5] <- delta *
-    ((l + y / nu) * c2 + (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+  H[, 5, 5] <- delta * ((l + y / nu) * c2 + (1 + y / nu) * s) * p / f
 
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
@@ -1432,7 +1420,19 @@ inverse_fn.loglogistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  phi / (((delta / (y - alpha))^nu - xi) / nu)^(1 / eta)
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
+
+  x <- rep(NA_real_, length(y))
+  if (any(ok)) {
+    e <- xi * expm1(-nu * log(p[ok]) - log(xi))
+    x[ok] <- phi * (nu / e)^(1 / eta)
+  }
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == g_max)] <- Inf
+
+  x
 }
 
 # 6-parameter log-logistic fit
@@ -1462,20 +1462,25 @@ inverse_fn_gradient.loglogistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  s <- z^nu
-  u <- nu / (z^nu - xi)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
 
-  G <- matrix(0, nrow = length(y), ncol = 6)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 6)
+  if (any(ok)) {
+    h <- phi / eta
+    e <- xi * expm1(-nu * log(p[ok]) - log(xi))
+    s <- e + xi
+    u <- nu / e
+    v <- u^(1 / eta)
 
-  G[, 1] <- -h * z * s * u * v / delta
-  G[, 2] <- -h * s * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
-  G[, 5] <- -h * (log(z) * s * u - 1) * v / nu
-  G[, 6] <- h * u * v / nu
+    G[ok, 1] <- -h * s * u * v / (p[ok] * delta)
+    G[ok, 2] <- -h * s * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+    G[ok, 5] <- h * v * (log(p[ok]) * s / e + 1 / nu)
+    G[ok, 6] <- h * u * v / nu
+  }
 
   G
 }

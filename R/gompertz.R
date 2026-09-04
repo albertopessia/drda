@@ -1008,7 +1008,7 @@ fisher_info.gompertz <- function(object, theta, sigma) {
   G[, 3] <- w * z * gh$G[, 3]
   G[, 4] <- w * z * gh$G[, 4]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
@@ -1059,8 +1059,13 @@ inverse_fn.gompertz_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  x <- delta / (y - alpha)
-  x[!is.na(x) & (x > 1)] <- phi - log(log(x[!is.na(x) & (x > 1)])) / eta
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi - log(-log(p[ok])) / eta
+  x[!is.na(p) & (p == 0)] <- -Inf
+  x[!is.na(p) & (p == 1)] <- Inf
 
   x
 }
@@ -1087,13 +1092,18 @@ inverse_fn_gradient.gompertz_fit <- function(object, y) {
   delta <- object$coefficients[2]
   eta <- object$coefficients[3]
 
-  z <- delta / (y - alpha)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(1, nrow = length(y), ncol = 4)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 4)
+  if (any(ok)) {
+    lp <- -log(p[ok])
 
-  G[, 1] <- -z / (delta * eta * log(z))
-  G[, 2] <- -1 / (delta * eta * log(z))
-  G[, 3] <- log(log(z)) / eta^2
+    G[ok, 1] <- -1 / (p[ok] * delta * eta * lp)
+    G[ok, 2] <- -1 / (delta * eta * lp)
+    G[ok, 3] <- log(lp) / eta^2
+    G[ok, 4] <- 1
+  }
 
   G
 }
