@@ -1047,15 +1047,27 @@ plot_params.loglogistic <- function(object, base, xlim, ylim, level) {
 #' @importFrom utils head tail
 output_params <- function(params, common = NULL) {
   f <- function(w, i) {
+    n_f <- length(w$xf)
+    confidence_interval <- if (is.null(w$yci)) {
+      data.frame(
+        id = rep(i, n_f),
+        x = w$xf,
+        y_lower = rep(NA_real_, n_f),
+        y_upper = rep(NA_real_, n_f)
+      )
+    } else {
+      data.frame(
+        id = rep(i, n_f),
+        x = w$xf,
+        y_lower = rev(tail(w$yci, n_f)),
+        y_upper = head(w$yci, n_f)
+      )
+    }
+
     list(
       data = data.frame(id = rep(i, length(w$xv)), x = w$xv, y = w$yv),
-      fitted_curve = data.frame(id = rep(i, length(w$xf)), x = w$xf, y = w$yf),
-      confidence_interval = data.frame(
-        id = rep(i, length(w$xf)),
-        x = w$xf,
-        y_lower = rev(tail(w$yci, length(w$xf))),
-        y_upper = head(w$yci, length(w$xf))
-      ),
+      fitted_curve = data.frame(id = rep(i, n_f), x = w$xf, y = w$yf),
+      confidence_interval = confidence_interval,
       midpoint = c(id = i, x = w$midpoint_x[2], y = w$midpoint_y[2]),
       limits = data.frame(x = w$xlim, y = w$ylim),
       x_axis_ticks = w$x_axis_ticks,

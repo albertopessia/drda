@@ -483,9 +483,22 @@ drda <- function(
     approx_vcov(result$fisher.info)
   } else {
     k <- nrow(result$fisher.info)
-    idx <- which(!result$estimated)
-    vcov <- matrix(NA_real_, nrow = k, ncol = k)
-    vcov[-idx, -idx] <- approx_vcov(result$fisher.info[-idx, -idx])
+
+    # 2-parameter logistic is a special case of the 4-parameter logistic, so
+    # fisher.info has two parameters, but length(result$estimated) is four.
+    estimated <- result$estimated
+    estimated <- estimated[names(estimated) %in% rownames(result$fisher.info)]
+
+    # always include the sigma parameter
+    idx <- c(which(estimated), k)
+
+    vcov <- matrix(
+      NA_real_,
+      nrow = k,
+      ncol = k,
+      dimnames = dimnames(result$fisher.info)
+    )
+    vcov[idx, idx] <- approx_vcov(result$fisher.info[idx, idx])
     vcov
   }
 
@@ -498,7 +511,7 @@ drda <- function(
     # fitting was done with only positive weights but we want to report all
     # of them
     result$fitted.values <- fn(result, model_frame[, 2], result$coefficients)
-    result$weights <- model_frame[, 3]
+    result$weights <- model_frame[, "(weights)"]
     result$residuals <- model_frame[, 1] - result$fitted.values
   }
 
@@ -596,12 +609,8 @@ anova.drda <- function(object, ...) {
     c(NA_real_, lrt)
   )
 
-  if ((s == "gompertz") || (s == "loggompe")) {
-    pvalue <- pchisq(lrt, diff(df), lower.tail = FALSE)
-    table$pvalue <- c(NA_real_, pvalue)
-  } else {
-    table$pvalue <- rep(NA_real_, 2)
-  }
+  pvalue <- pchisq(lrt, diff(df), lower.tail = FALSE)
+  table$pvalue <- c(NA_real_, pvalue)
 
   colnames(table) <- c(
     "Resid. Df",

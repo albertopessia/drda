@@ -28,13 +28,18 @@ suff_stats <- function(x, y, w) {
     m <- sum(q * z) / t
     v <- sum(q * (z - m)^2) / t
 
+    if (t == 0) {
+      m <- 0
+      v <- 0
+    }
+
     stats[i, 1] <- unique_x[i]
     stats[i, 2] <- t
     stats[i, 3] <- m
     stats[i, 4] <- v
   }
 
-  stats
+  stats[stats[, 2] > 0, ]
 }
 
 # Variance estimator

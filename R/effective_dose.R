@@ -24,6 +24,7 @@ effective_dose.drda <- function(
   } else if (
     inherits(object, "loglogistic6_fit") || inherits(object, "logistic6_fit")
   ) {
+    nu <- object$coefficients[5]
     xi <- object$coefficients[6]
     k <- xi^(-1 / nu)
   }

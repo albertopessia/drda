@@ -753,7 +753,7 @@ init.logistic2 <- function(object) {
 
     c(log_eta, phi)
   } else {
-    object$start
+    object$start[3:4]
   }
 
   best_rss <- rss_fn(theta)
