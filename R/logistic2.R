@@ -149,11 +149,6 @@ logistic2_fn <- function(x, theta) {
 }
 
 #' @export
-fn.logistic2 <- function(object, x, theta) {
-  logistic2_fn(x, c(object$start[1:2], theta))
-}
-
-#' @export
 fn.logistic2_fit <- function(object, x, theta) {
   # within a fit, parameter theta is known exactly
   alpha <- theta[1]
@@ -511,35 +506,6 @@ logistic2_gradient_hessian_2 <- function(x, theta, delta) {
   list(G = sign(delta) * G, H = sign(delta) * H)
 }
 
-# 2-parameter logistic function
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 2-parameter logistic function.
-#
-# @details
-# The 2-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`. Only `eta` and `phi`
-# are free to vary (therefore the name) while vector `c(alpha, delta)` is
-# constrained to be either `c(0, 1)` (monotonically increasing curve) or
-# `c(1, -1)` (monotonically decreasing curve).
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization with `log(eta)`.
-#
-# @param object object of class `logistic2`.
-# @param theta numeric vector with the parameters in the form `c(eta, phi)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.logistic2 <- function(object, theta) {
-  logistic2_gradient_hessian_2(object$stats[, 1], theta, object$start[2])
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -570,8 +536,7 @@ gradient_hessian.logistic2 <- function(object, theta) {
 rss.logistic2 <- function(object) {
   function(theta) {
     theta[1] <- exp(theta[1])
-
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic2_fn(object$stats[, 1], c(object$start[1:2], theta))
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -589,7 +554,7 @@ rss_fixed.logistic2 <- function(object, known_param) {
 
     theta[1] <- exp(theta[1])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic2_fn(object$stats[, 1], c(object$start[1:2], theta))
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -625,8 +590,14 @@ rss_gradient_hessian.logistic2 <- function(object) {
   function(theta) {
     theta[1] <- exp(theta[1])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic2_fn(x, c(object$start[1:2], theta))
+    mu_gradient_hessian <- logistic2_gradient_hessian_2(
+      x,
+      theta,
+      object$start[2]
+    )
 
     r <- mu - object$stats[, 3]
 
@@ -658,8 +629,14 @@ rss_gradient_hessian_fixed.logistic2 <- function(object, known_param) {
 
     theta[1] <- exp(theta[1])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic2_fn(x, c(object$start[1:2], theta))
+    mu_gradient_hessian <- logistic2_gradient_hessian_2(
+      x,
+      theta,
+      object$start[2]
+    )
 
     r <- mu - object$stats[, 3]
 
@@ -1035,7 +1012,7 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta[3:4]) - y
+  z <- logistic2_fn(x, theta) - y
 
   gh <- logistic2_gradient_hessian(x, theta[3:4], theta[2])
 
@@ -1057,7 +1034,7 @@ fisher_info.logistic2 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta[3:4])
+  mu <- logistic2_fn(object$x, theta)
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2

@@ -146,13 +146,6 @@ loglogistic5_fn <- function(x, theta) {
 # @rdname loglogistic5_fn
 #
 #' @export
-fn.loglogistic5 <- function(object, x, theta) {
-  loglogistic5_fn(x, theta)
-}
-
-# @rdname loglogistic5_fn
-#
-#' @export
 fn.loglogistic5_fit <- function(object, x, theta) {
   loglogistic5_fn(x, theta)
 }
@@ -645,35 +638,6 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# 5-parameter log-logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 5-parameter log-logistic function.
-#
-# @details
-# The 5-parameter log-logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = (x^eta / (x^eta + nu * phi^eta))^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, `phi > 0`,
-# and `nu > 0`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)`,
-# `log(phi)`, and `log(nu)`.
-#
-# @param object object of class `loglogistic5`.
-# @param theta numeric vector with the five parameters in the form
-#   `c(alpha, delta, log(eta), log(phi), log(nu))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loglogistic5 <- function(object, theta) {
-  loglogistic5_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -703,7 +667,7 @@ gradient_hessian.loglogistic5 <- function(object, theta) {
 rss.loglogistic5 <- function(object) {
   function(theta) {
     theta[3:5] <- exp(theta[3:5])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic5_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -721,7 +685,7 @@ rss_fixed.loglogistic5 <- function(object, known_param) {
 
     theta[3:5] <- exp(theta[3:5])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic5_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -756,8 +720,10 @@ rss_gradient_hessian.loglogistic5 <- function(object) {
   function(theta) {
     theta[3:5] <- exp(theta[3:5])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic5_fn(x, theta)
+    mu_gradient_hessian <- loglogistic5_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -796,8 +762,10 @@ rss_gradient_hessian_fixed.loglogistic5 <- function(object, known_param) {
 
     theta[3:5] <- exp(theta[3:5])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic5_fn(x, theta)
+    mu_gradient_hessian <- loglogistic5_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1261,7 +1229,7 @@ fisher_info.loglogistic5 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loglogistic5_fn(x, theta) - y
 
   gh <- loglogistic5_gradient_hessian(x, theta)
 
@@ -1292,7 +1260,7 @@ fisher_info.loglogistic5 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loglogistic5_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2

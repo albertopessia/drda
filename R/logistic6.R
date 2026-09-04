@@ -161,13 +161,6 @@ logistic6_fn <- function(x, theta) {
   alpha + delta / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)
 }
 
-# @rdname logistic6_fn
-#
-#' @export
-fn.logistic6 <- function(object, x, theta) {
-  logistic6_fn(x, theta)
-}
-
 # @rdname loglogistic6_fn
 #
 #' @export
@@ -658,31 +651,6 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# 6-parameter logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 6-parameter logistic function.
-#
-# @details
-# The 6-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`, `phi > 0`,
-# `nu > 0`, and `xi > 0`.
-#
-# @param object object of class `logistic6`.
-# @param theta numeric vector with the six parameters in the form
-#   `c(alpha, delta, eta, phi, nu, xi)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.logistic6 <- function(object, theta) {
-  logistic6_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -711,7 +679,7 @@ gradient_hessian.logistic6 <- function(object, theta) {
 rss.logistic6 <- function(object) {
   function(theta) {
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -729,7 +697,7 @@ rss_fixed.logistic6 <- function(object, known_param) {
 
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -763,8 +731,10 @@ rss_gradient_hessian.logistic6 <- function(object) {
   function(theta) {
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic6_fn(x, theta)
+    mu_gradient_hessian <- logistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -805,8 +775,10 @@ rss_gradient_hessian_fixed.logistic6 <- function(object, known_param) {
 
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic6_fn(x, theta)
+    mu_gradient_hessian <- logistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1263,7 +1235,7 @@ fisher_info.logistic6 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- logistic6_fn(x, theta) - y
 
   gh <- logistic6_gradient_hessian(x, theta)
 
@@ -1297,7 +1269,7 @@ fisher_info.logistic6 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- logistic6_fn(object$x, theta)
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2

@@ -122,11 +122,6 @@ loggompertz_fn <- function(x, theta) {
 }
 
 #' @export
-fn.loggompertz <- function(object, x, theta) {
-  loggompertz_fn(x, theta)
-}
-
-#' @export
 fn.loggompertz_fit <- function(object, x, theta) {
   loggompertz_fn(x, theta)
 }
@@ -528,35 +523,6 @@ loggompertz_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# log-Gompertz function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# log-Gompertz function.
-#
-# @details
-# The log-Gompertz function `f(x; theta)` is defined here as
-#
-# `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
-# `phi > 0`. By convention we set
-# `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)` and
-# `log(phi)`.
-#
-# @param object object of class `loggompertz`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, log(eta), log(phi))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loggompertz <- function(object, theta) {
-  loggompertz_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a log-Gompertz
@@ -586,7 +552,7 @@ gradient_hessian.loggompertz <- function(object, theta) {
 rss.loggompertz <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loggompertz_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -604,7 +570,7 @@ rss_fixed.loggompertz <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loggompertz_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -639,8 +605,10 @@ rss_gradient_hessian.loggompertz <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loggompertz_fn(x, theta)
+    mu_gradient_hessian <- loggompertz_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -677,8 +645,10 @@ rss_gradient_hessian_fixed.loggompertz <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loggompertz_fn(x, theta)
+    mu_gradient_hessian <- loggompertz_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1110,7 +1080,7 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loggompertz_fn(x, theta) - y
 
   gh <- loggompertz_gradient_hessian(x, theta)
 
@@ -1138,7 +1108,7 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loggompertz_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2

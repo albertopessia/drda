@@ -116,11 +116,6 @@ logistic4_fn <- function(x, theta) {
 }
 
 #' @export
-fn.logistic4 <- function(object, x, theta) {
-  logistic4_fn(x, theta)
-}
-
-#' @export
 fn.logistic4_fit <- function(object, x, theta) {
   logistic4_fn(x, theta)
 }
@@ -496,30 +491,6 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# 4-parameter logistic function
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 4-parameter logistic function.
-#
-# @details
-# The 4-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`.
-#
-# @param object object of class `logistic4`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, eta, phi)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.logistic4 <- function(object, theta) {
-  logistic4_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -542,8 +513,7 @@ gradient_hessian.logistic4 <- function(object, theta) {
 rss.logistic4 <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
-
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -559,7 +529,7 @@ rss_fixed.logistic4 <- function(object, known_param) {
 
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -590,8 +560,10 @@ rss_gradient_hessian.logistic4 <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic4_fn(x, theta)
+    mu_gradient_hessian <- logistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -626,8 +598,10 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
 
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic4_fn(x, theta)
+    mu_gradient_hessian <- logistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1023,7 +997,7 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- logistic4_fn(x, theta) - y
 
   gh <- logistic4_gradient_hessian(x, theta)
 
@@ -1051,7 +1025,7 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- logistic4_fn(object$x, theta)
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2

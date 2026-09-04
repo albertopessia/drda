@@ -177,13 +177,7 @@ loglogistic6_fn <- function(x, theta) {
   t2 <- phi^eta
 
   alpha + delta * (t1 / (xi * t1 + nu * t2))^(1 / nu)
-}
 
-# @rdname loglogistic6_fn
-#
-#' @export
-fn.loglogistic6 <- function(object, x, theta) {
-  loglogistic6_fn(x, theta)
 }
 
 # @rdname loglogistic6_fn
@@ -744,35 +738,6 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# 6-parameter log-logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 6-parameter log-logistic function.
-#
-# @details
-# The 6-parameter log-logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = x^(eta / nu) / (xi * x^eta + nu * phi^eta)^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`,
-# `phi > 0`, `nu > 0`, and `xi > 0`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)`,
-# `log(phi)`, `log(xi)`, and `log(nu)`.
-#
-# @param object object of class `loglogistic6`.
-# @param theta numeric vector with the six parameters in the form
-#   `c(alpha, delta, log(eta), log(phi), log(nu), log(xi))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loglogistic6 <- function(object, theta) {
-  loglogistic6_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -802,7 +767,7 @@ gradient_hessian.loglogistic6 <- function(object, theta) {
 rss.loglogistic6 <- function(object) {
   function(theta) {
     theta[3:6] <- exp(theta[3:6])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -820,7 +785,7 @@ rss_fixed.loglogistic6 <- function(object, known_param) {
 
     theta[3:6] <- exp(theta[3:6])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -855,8 +820,10 @@ rss_gradient_hessian.loglogistic6 <- function(object) {
   function(theta) {
     theta[3:6] <- exp(theta[3:6])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic6_fn(x, theta)
+    mu_gradient_hessian <- loglogistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -897,8 +864,10 @@ rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
 
     theta[3:6] <- exp(theta[3:6])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic6_fn(x, theta)
+    mu_gradient_hessian <- loglogistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1388,7 +1357,7 @@ fisher_info.loglogistic6 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loglogistic6_fn(x, theta) - y
 
   gh <- loglogistic6_gradient_hessian(x, theta)
 
@@ -1422,7 +1391,7 @@ fisher_info.loglogistic6 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loglogistic6_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2

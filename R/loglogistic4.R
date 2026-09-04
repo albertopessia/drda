@@ -123,11 +123,6 @@ loglogistic4_fn <- function(x, theta) {
 }
 
 #' @export
-fn.loglogistic4 <- function(object, x, theta) {
-  loglogistic4_fn(x, theta)
-}
-
-#' @export
 fn.loglogistic4_fit <- function(object, x, theta) {
   loglogistic4_fn(x, theta)
 }
@@ -544,35 +539,6 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# 4-parameter log-logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 4-parameter log-logistic function.
-#
-# @details
-# The 4-parameter log-logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = x^eta / (x^eta + phi^eta)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
-# `phi > 0`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)` and
-# `log(phi)`.
-#
-# @param object object of class `loglogistic4`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, log(eta), log(phi))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loglogistic4 <- function(object, theta) {
-  loglogistic4_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -600,7 +566,7 @@ gradient_hessian.loglogistic4 <- function(object, theta) {
 rss.loglogistic4 <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -616,7 +582,7 @@ rss_fixed.loglogistic4 <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -649,8 +615,10 @@ rss_gradient_hessian.loglogistic4 <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic4_fn(x, theta)
+    mu_gradient_hessian <- loglogistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -685,8 +653,10 @@ rss_gradient_hessian_fixed.loglogistic4 <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic4_fn(x, theta)
+    mu_gradient_hessian <- loglogistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1121,7 +1091,7 @@ fisher_info.loglogistic4 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loglogistic4_fn(x, theta) - y
 
   gh <- loglogistic4_gradient_hessian(x, theta)
 
@@ -1149,7 +1119,7 @@ fisher_info.loglogistic4 <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loglogistic4_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2

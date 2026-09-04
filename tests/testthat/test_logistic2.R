@@ -235,14 +235,6 @@ test_that("Function value (decreasing)", {
   expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(list(stats = ltd$stats_1), class = "logistic2")
-
-  value <- fn(object, object$stats[, 1], theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
   object <- structure(list(stats = ltd$stats_1), class = "logistic2_fit")
 
   value <- fn(object, object$stats[, 1], c(1, -1, theta[3:4]))
@@ -266,14 +258,6 @@ test_that("Function value (increasing)", {
   )
 
   value <- logistic2_fn(x, theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
-  object <- structure(list(stats = ltd$stats_1), class = "logistic2")
-
-  value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
   expect_length(value, m)
@@ -514,23 +498,6 @@ test_that("Gradient and Hessian (2)", {
   )
 
   gh <- logistic2_gradient_hessian_2(x, theta, -1)
-
-  expect_type(gh, "list")
-  expect_type(gh$G, "double")
-  expect_type(gh$H, "double")
-
-  expect_length(gh$G, m * 2)
-  expect_length(gh$H, m * 2 * 2)
-
-  expect_equal(gh$G, true_gradient)
-  expect_equal(gh$H, true_hessian)
-
-  object <- structure(
-    list(stats = ltd$stats_1, start = c(1, -1, NA_real_, NA_real_)),
-    class = "logistic2"
-  )
-
-  gh <- gradient_hessian(object, theta)
 
   expect_type(gh, "list")
   expect_type(gh$G, "double")

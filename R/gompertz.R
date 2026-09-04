@@ -110,11 +110,6 @@ gompertz_fn <- function(x, theta) {
 }
 
 #' @export
-fn.gompertz <- function(object, x, theta) {
-  gompertz_fn(x, theta)
-}
-
-#' @export
 fn.gompertz_fit <- function(object, x, theta) {
   gompertz_fn(x, theta)
 }
@@ -483,33 +478,6 @@ gompertz_gradient_hessian_2 <- function(x, theta) {
   list(G = G, H = H)
 }
 
-# Gompertz function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# Gompertz function.
-#
-# @details
-# The Gompertz function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = exp(-exp(-eta * (x - phi)))`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi)`, `alpha` is the value of the
-# function when `x -> -Inf`, `delta` is the (signed) height of the curve,
-# `eta > 0` is the steepness of the curve or growth rate, and `phi` is related
-# with the value of function at `x = 0`.
-#
-# @param object object of class `gompertz`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, eta, phi)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.gompertz <- function(object, theta) {
-  gompertz_gradient_hessian_2(object$stats[, 1], theta)
-}
-
 # Residual sum of squares
 #
 # Evaluate the residual sum of squares (RSS) against the mean of a
@@ -536,8 +504,7 @@ gradient_hessian.gompertz <- function(object, theta) {
 rss.gompertz <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
-
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- gompertz_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -555,7 +522,7 @@ rss_fixed.gompertz <- function(object, known_param) {
 
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- gompertz_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -587,8 +554,10 @@ rss_gradient_hessian.gompertz <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- gompertz_fn(x, theta)
+    mu_gradient_hessian <- gompertz_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -625,8 +594,10 @@ rss_gradient_hessian_fixed.gompertz <- function(object, known_param) {
 
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- gompertz_fn(x, theta)
+    mu_gradient_hessian <- gompertz_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -1022,7 +993,7 @@ fisher_info.gompertz <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- gompertz_fn(x, theta) - y
 
   gh <- gompertz_gradient_hessian(x, theta)
 
@@ -1050,7 +1021,7 @@ fisher_info.gompertz <- function(object, theta, sigma) {
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- gompertz_fn(object$x, theta)
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2

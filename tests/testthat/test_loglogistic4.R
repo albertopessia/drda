@@ -175,14 +175,6 @@ test_that("Function value", {
   expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(list(stats = lltd$stats_1), class = "loglogistic4")
-
-  value <- fn(object, object$stats[, 1], theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
   object <- structure(list(stats = lltd$stats_1), class = "loglogistic4_fit")
 
   value <- fn(object, object$stats[, 1], theta)
@@ -564,20 +556,6 @@ test_that("Gradient and Hessian (2)", {
   )
 
   gh <- loglogistic4_gradient_hessian_2(x, theta)
-
-  expect_type(gh, "list")
-  expect_type(gh$G, "double")
-  expect_type(gh$H, "double")
-
-  expect_length(gh$G, m * 4)
-  expect_length(gh$H, m * 4 * 4)
-
-  expect_equal(gh$G, true_gradient)
-  expect_equal(gh$H, true_hessian)
-
-  object <- structure(list(stats = lltd$stats_1), class = "loglogistic4")
-
-  gh <- gradient_hessian(object, theta)
 
   expect_type(gh, "list")
   expect_type(gh$G, "double")
