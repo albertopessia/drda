@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("drda: default arguments", {
   result <- drda(y ~ x, data = ltd$D)
 

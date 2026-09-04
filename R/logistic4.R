@@ -510,6 +510,7 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#' @export
 rss.logistic4 <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
@@ -519,6 +520,7 @@ rss.logistic4 <- function(object) {
 }
 
 # @rdname rss.logistic4
+#' @export
 rss_fixed.logistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -556,6 +558,7 @@ rss_fixed.logistic4 <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#' @export
 rss_gradient_hessian.logistic4 <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
@@ -588,6 +591,7 @@ rss_gradient_hessian.logistic4 <- function(object) {
 }
 
 # @rdname rss_gradient_hessian.logistic4
+#' @export
 rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -687,6 +691,8 @@ mle_asy.logistic4 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.logistic4 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)

@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("curve_variance: call", {
   result <- drda(y ~ x, data = ltd$D)
 

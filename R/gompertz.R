@@ -683,6 +683,8 @@ mle_asy.gompertz <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.gompertz <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)

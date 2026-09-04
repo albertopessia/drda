@@ -737,6 +737,8 @@ mle_asy.loggompertz <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.loggompertz <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)

@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("Constructor (decreasing)", {
   x <- ltd$D$x
   y <- ltd$D$y

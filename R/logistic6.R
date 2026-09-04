@@ -870,6 +870,8 @@ mle_asy.logistic6 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.logistic6 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)

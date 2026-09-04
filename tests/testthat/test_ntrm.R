@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("ntrm_solve_tr_subproblem: random vector", {
   set.seed(4705968)
 

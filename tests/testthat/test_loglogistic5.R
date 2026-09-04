@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("Constructor", {
   x <- lltd$D$x
   y <- lltd$D$y
@@ -1634,7 +1636,8 @@ test_that("fisher_info", {
 
   sigma <- lltd$sigma
 
-  true_value <- matrix(c(
+  true_value <- matrix(
+    c(
       # alpha
       6206.9600000000000, 3572.2954245320960, 9.9745955351015971,
       258.77353469936811, -255.55983146098816, -361.21156590873761,
@@ -1704,7 +1707,7 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic5",
-      lower_bound = c( 0, -Inf, -Inf, -Inf, -Inf),
+      lower_bound = c(0, -Inf, -Inf, -Inf, -Inf),
       upper_bound = c(-1, Inf, Inf, Inf, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
