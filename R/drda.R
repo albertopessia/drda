@@ -560,8 +560,6 @@ anova.drda <- function(object, ...) {
     )
   }
 
-  s <- substr(object$mean_function, 1, 8)
-
   y <- object$model[, 1]
   x <- object$model[, 2]
   w <- object$weights

@@ -1433,7 +1433,8 @@ test_that("fisher_info", {
 
   sigma <- ltd$sigma
 
-  true_value <- matrix(c(
+  true_value <- matrix(
+    c(
       # alpha
       6206.96, 2988.8313875883050, -372.86733266468586, 61.788189997723084,
       -13304.137147527459,
@@ -1500,7 +1501,7 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "logistic4",
-      lower_bound = c( 0, -Inf, -Inf, -Inf),
+      lower_bound = c(0, -Inf, -Inf, -Inf),
       upper_bound = c(-1, Inf, Inf, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
