@@ -70,8 +70,6 @@ logistic2_new <- function(
   )
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 2)
     } else {
@@ -102,6 +100,7 @@ logistic2_new <- function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object

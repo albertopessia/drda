@@ -297,6 +297,11 @@ find_optimum_constrained <- function(object, constraint, known_param) {
         object$upper_bound[idx]
       )
     }
+  } else if (all(constraint[, 1])) {
+    # all bounds are infinite: no active constraints
+    rss_fn <- rss(object)
+    rss_gh <- rss_gradient_hessian(object)
+    ntrm(rss_fn, rss_gh, theta, max_iter)
   } else {
     rss_fn <- rss(object)
     rss_gh <- rss_gradient_hessian(object)
