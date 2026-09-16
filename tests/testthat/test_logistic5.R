@@ -1845,7 +1845,9 @@ test_that("nauc: decreasing", {
   expect_equal(nauc(result, ylim = c(0.3, 0.7)), 0.40513264312426204)
   expect_equal(nauc(result, xlim = c(-15, -10), ylim = c(0.3, 0.7)), 1.0)
   expect_equal(
-    nauc(result, xlim = c(1, 5), ylim = c(0.3, 0.7)), 0.019678613960950707
+    nauc(result, xlim = c(1, 5), ylim = c(0.3, 0.7)),
+    0.019678613960950707,
+    tolerance = 1.0e-12
   )
   expect_equal(nauc(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 0.0)
 })
