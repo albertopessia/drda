@@ -1,5 +1,20 @@
 # Release Notes
 
+## drda 2.1.0
+
+- Removed the automatic fit of a 5-parameter (log-)logistic function from the
+`anova` function. If needed, a 5-parameter (log-)logistic fit should be
+explicitly passed to the `anova` function.
+- General improvements to numerical precision and stability.
+- Bug fixes and small changes to code formatting style.
+
+## drda 2.0.5
+
+- Added argument `show` (default `TRUE`) to `plot` to decide if the plot should
+be displayed or not. If `FALSE`, the `plot` function returns a list with the
+plot components.
+- Bug fixes.
+
 ## drda 2.0.4
 
 - Fitted values and residuals have now the correct length even when there are
