@@ -22,12 +22,18 @@
 # Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 # New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_ared <- function(
-  nu, f_current, f_candidate, s_current, s_candidate, m0_current, m0_candidate,
+  nu,
+  f_current,
+  f_candidate,
+  s_current,
+  s_candidate,
+  m0_current,
+  m0_candidate,
   mu
 ) {
   # Equation (19.40) at page 582 of Nocedal and Wright (2006)
   ntrm_merit(nu, f_current, s_current, m0_current, mu) -
-  ntrm_merit(nu, f_candidate, s_candidate, m0_candidate, mu)
+    ntrm_merit(nu, f_candidate, s_candidate, m0_candidate, mu)
 }
 
 # Process constraint requirements
@@ -54,8 +60,14 @@ ntrm_create_constraints <- function(lower_bound, upper_bound) {
   # the first m_lb rows are associated with functions f(x_i) = (x_i - l_i)
   # the last m_ub rows are associated with functions f(x_i) = (u_i - x_i)
   A <- matrix(0, nrow = m, ncol = n)
-  A[seq_len(m_lb) + m * (idx_lb - 1)] <- 1
-  A[((m_lb + 1):m) + m * (idx_ub - 1)] <- -1
+
+  if (m_lb > 0) {
+    A[seq_len(m_lb) + m * (idx_lb - 1)] <- 1
+  }
+
+  if (m_ub > 0) {
+    A[(m_lb + seq_len(m_ub)) + m * (idx_ub - 1)] <- -1
+  }
 
   list(
     idx_lb = idx_lb,
@@ -121,7 +133,11 @@ ntrm_error <- function(obj, mu) {
 # Jorge Nocedal and Stephen J Wright. **Numerical optimization**. Springer,
 # New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_inertia_correction <- function(
-  H, A, slack_variable, lagrange_multiplier, kappa
+  H,
+  A,
+  slack_variable,
+  lagrange_multiplier,
+  kappa
 ) {
   eps <- sqrt(.Machine$double.eps)
 
@@ -131,6 +147,8 @@ ntrm_inertia_correction <- function(
   n_total <- n_variables + n_constraints
 
   idx <- seq_len(n_total)
+
+  slack_variable <- ntrm_floor_slack(slack_variable)
 
   # X = | H  0  A' |
   #     | 0  V -I  |
@@ -241,9 +259,9 @@ ntrm_init_obj <- function(fn, gh, C, x, s, A, mu) {
     # function value
     f = fn(x),
     # slack variables
-    s = s,
+    s = ntrm_floor_slack(s),
     # slack residuals (distances from boundary)
-    r = C(x) - s
+    r = C(x) - ntrm_floor_slack(s)
   )
 
   # Equation (19.41+) at page 580
@@ -257,7 +275,7 @@ ntrm_init_obj <- function(fn, gh, C, x, s, A, mu) {
   obj$G <- gradient_hessian$G
   obj$H <- gradient_hessian$H
 
-  obj$B <- cbind(A, -diag(s, nrow = n_slk))
+  obj$B <- cbind(A, -diag(obj$s, nrow = n_slk))
   obj$Y <- rbind(
     cbind(diag(n_tot), t(obj$B)),
     cbind(obj$B, matrix(0, nrow = n_slk, ncol = n_slk))
@@ -312,9 +330,7 @@ ntrm_lagrange_multiplier <- function(obj, mu) {
   # Lagrange multipliers cannot be negative
   idx_neg <- z < 0
   if (any(idx_neg)) {
-    s <- obj$s
-    s[s == 0] <- .Machine$double.eps
-
+    s <- ntrm_floor_slack(obj$s)
     z[idx_neg] <- pmin(1.0e-3, mu / s[idx_neg])
   }
 
@@ -339,7 +355,7 @@ ntrm_lagrange_multiplier <- function(obj, mu) {
 # New York, NY, USA, second edition, 2006. ISBN 978-0-387-30303-1.
 ntrm_merit <- function(nu, f, s, m0, mu) {
   # Equation (19.26) at page 575
-  f - mu * sum(log(s)) + nu * m0
+  f - mu * sum(log(ntrm_floor_slack(s))) + nu * m0
 }
 
 # Objective function value
@@ -425,19 +441,25 @@ ntrm_reductions <- function(obj, candidate, mu, nu) {
 
   ared <- ntrm_ared(
     nu,
-    obj$f, candidate$f,
-    obj$s, candidate$s,
-    obj$m0, candidate$m0,
+    obj$f,
+    candidate$f,
+    obj$s,
+    candidate$s,
+    obj$m0,
+    candidate$m0,
     mu
   )
 
   pred <- ntrm_pred(
-    nu, obj$m0, candidate$mp, candidate$h
+    nu,
+    obj$m0,
+    candidate$mp,
+    candidate$h
   )
 
   rho <- ared / pred
 
-  if (is.nan(rho)) {
+  if (!is.finite(rho)) {
     # both reductions are zero and we reject this step
     rho <- 0
   }
@@ -607,17 +629,17 @@ ntrm_step_normal <- function(Y, B, slack_residual, delta, tau, idx_s) {
     } else {
       # dogleg method
       #
-      # solve | theta * v_gn + (1 - theta) * v_sd |^2 = delta^2 for theta, that
+      # solve | theta * v_gn + (1 - theta) * v_sd |^2 = rho^2 for theta, that
       # is
       #
-      # theta^2 x'x + 2 * theta * x'v_sd + v_sd'v_sd - delta^2 = 0
+      # theta^2 x'x + 2 * theta * x'v_sd + v_sd'v_sd - rho^2 = 0
       #
       # where x = v_gn - v_sd
       x <- v_gn - v_sd
       a <- ntrm_solve_quadratic_equation(
         sum(x^2),
         2 * sum(x * v_sd),
-        v_sd_norm^2 - delta^2
+        v_sd_norm^2 - rho^2
       )
 
       a[2] * v_gn + (1 - a[2]) * v_sd
@@ -728,9 +750,6 @@ ntrm_step_tilde <- function(Q, u, B, initial_value, delta, tau, idx_s) {
   repeat {
     W <- Q %*% d
     dqf <- sum(d * W)
-    a <- dot / dqf
-
-    p_new <- p_old + a * d
 
     # new proposed step is `p + a d` but `a` is computed according to the
     # unrestricted problem. We want instead that | p + a d | <= delta and
@@ -748,6 +767,8 @@ ntrm_step_tilde <- function(Q, u, B, initial_value, delta, tau, idx_s) {
     # equation, the best coefficient for a feasible solution must be on the
     # boundary of the interval.
     if (dqf > 0) {
+      a <- dot / dqf
+      p_new <- p_old + a * d
       p_new_norm <- ntrm_norm(p_new)
 
       if (p_new_norm > delta) {
@@ -886,7 +907,7 @@ ntrm_update_nu <- function(nu, h, m0, mp) {
   } else {
     nu_lb <- h / denominator
 
-    if (is.nan(nu_lb) || is.infinite(nu_lb) || (nu >= nu_lb)) {
+    if (!is.finite(nu_lb) || (nu >= nu_lb)) {
       # old value satisfies the inequality or the new lower bound is invalid
       nu
     } else {
@@ -909,7 +930,7 @@ ntrm_update_nu <- function(nu, h, m0, mp) {
 ntrm_update_solution <- function(obj, candidate, gh, mu) {
   obj$x <- candidate$x
   obj$f <- candidate$f
-  obj$s <- candidate$s
+  obj$s <- ntrm_floor_slack(candidate$s)
   obj$r <- candidate$r
   obj$m0 <- candidate$m0
 
@@ -1056,11 +1077,13 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   for (i in seq_len(ncol(constraints$A))) {
     if (is_out[i]) {
       if (is.infinite(lower_bound[i])) {
-        # value is greater than the upper bound
-        cur_optimum[i] <- upper_bound[i] - 1
+        # value is greater than the upper bound: relative step from the bound
+        scale <- max(1, abs(upper_bound[i]))
+        cur_optimum[i] <- upper_bound[i] - 0.01 * scale
       } else if (is.infinite(upper_bound[i])) {
         # value is smaller than the lower bound
-        cur_optimum[i] <- lower_bound[i] + 1
+        scale <- max(1, abs(lower_bound[i]))
+        cur_optimum[i] <- lower_bound[i] + 0.01 * scale
       } else {
         # value is outside the finite interval
         cur_optimum[i] <- (lower_bound[i] + upper_bound[i]) / 2
@@ -1070,7 +1093,13 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
 
   # initial value should already be an optimum or close to it
   obj <- ntrm_init_obj(
-    fn, gh, C, cur_optimum, C(cur_optimum), constraints$A, 0
+    fn,
+    gh,
+    C,
+    cur_optimum,
+    C(cur_optimum),
+    constraints$A,
+    0
   )
   error <- ntrm_error(obj, 0)
 
@@ -1110,7 +1139,13 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
   )
 
   obj <- ntrm_init_obj(
-    fn, gh, C, cur_optimum, rep(s, nrow(constraints$A)), constraints$A, mu
+    fn,
+    gh,
+    C,
+    cur_optimum,
+    rep(s, nrow(constraints$A)),
+    constraints$A,
+    mu
   )
 
   i <- 0
@@ -1147,7 +1182,7 @@ ntrm_constrained <- function(fn, gh, init, max_iter, lower_bound, upper_bound) {
       candidate <- ntrm_step(obj, delta, tau)
       candidate$x <- obj$x + candidate$p_x
       candidate$f <- fn(candidate$x)
-      candidate$s <- obj$s + candidate$p_s
+      candidate$s <- ntrm_floor_slack(obj$s + candidate$p_s)
       candidate$r <- C(candidate$x) - candidate$s
       candidate$m0 <- ntrm_norm(candidate$r)
 

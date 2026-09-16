@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("Constructor", {
   x <- lltd$D$x
   y <- lltd$D$y
@@ -205,14 +207,6 @@ test_that("Function value", {
   )
 
   value <- loglogistic5_fn(x, theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
-  object <- structure(list(stats = lltd$stats_1), class = "loglogistic5")
-
-  value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
   expect_length(value, m)
@@ -747,20 +741,6 @@ test_that("Gradient and Hessian (2)", {
   )
 
   gh <- loglogistic5_gradient_hessian_2(x, theta)
-
-  expect_type(gh, "list")
-  expect_type(gh$G, "double")
-  expect_type(gh$H, "double")
-
-  expect_length(gh$G, m * 5)
-  expect_length(gh$H, m * 5 * 5)
-
-  expect_equal(gh$G, true_gradient)
-  expect_equal(gh$H, true_hessian)
-
-  object <- structure(list(stats = lltd$stats_1), class = "loglogistic5")
-
-  gh <- gradient_hessian(object, theta)
 
   expect_type(gh, "list")
   expect_type(gh$G, "double")
@@ -1656,7 +1636,8 @@ test_that("fisher_info", {
 
   sigma <- lltd$sigma
 
-  true_value <- matrix(c(
+  true_value <- matrix(
+    c(
       # alpha
       6206.9600000000000, 3572.2954245320960, 9.9745955351015971,
       258.77353469936811, -255.55983146098816, -361.21156590873761,
@@ -1726,7 +1707,7 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "loglogistic5",
-      lower_bound = c( 0, -Inf, -Inf, -Inf, -Inf),
+      lower_bound = c(0, -Inf, -Inf, -Inf, -Inf),
       upper_bound = c(-1, Inf, Inf, Inf, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
@@ -1876,6 +1857,15 @@ test_that("drda: 'start' argument errors", {
   )
 })
 
+test_that("drda: negative predictor errors", {
+  D <- data.frame(x = c(-1, 0, 1, 2), y = c(1, 0.8, 0.4, 0.1))
+
+  expect_error(
+    drda(y ~ x, data = D, mean_function = "loglogistic5"),
+    "predictor variable 'x' is negative"
+  )
+})
+
 test_that("nauc: decreasing", {
   x <- lltd$D$x
   y <- lltd$D$y
@@ -1942,4 +1932,46 @@ test_that("naac: increasing", {
     naac(result, xlim = c(5, 8), ylim = c(0.3, 0.7)), 1 - 0.79822066734103837
   )
   expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 0.0)
+})
+
+test_that("zero-weight restoration with extra formula terms", {
+  D <- lltd$D
+  D$z <- seq_len(nrow(D))
+
+  result <- drda(
+    y ~ x + z, data = D, weights = w, mean_function = "loglogistic5"
+  )
+
+  expect_length(result$weights, nrow(D))
+  expect_identical(as.numeric(result$weights), as.numeric(D$w))
+  expect_length(result$fitted.values, nrow(D))
+  expect_length(result$residuals, nrow(D))
+  expect_equal(
+    result$residuals,
+    D$y - result$fitted.values,
+    tolerance = 1.0e-12
+  )
+})
+
+test_that("single-model anova p-values", {
+  result <- drda(y ~ x, data = lltd$D, mean_function = "loglogistic5")
+  tab <- anova(result)
+
+  expect_s3_class(tab, "anova")
+  expect_true("Pr(>Chi)" %in% colnames(tab))
+  expect_true(is.na(tab[["Pr(>Chi)"]][1]))
+  expect_true(is.finite(tab[["Pr(>Chi)"]][2]))
+  expect_gte(tab[["Pr(>Chi)"]][2], 0)
+  expect_lte(tab[["Pr(>Chi)"]][2], 1)
+})
+
+test_that("inverse returns NA/Inf at asymptotes", {
+  result <- drda(y ~ x, data = lltd$D, mean_function = "loglogistic5")
+  alpha <- result$coefficients[1]
+  delta <- result$coefficients[2]
+
+  expect_identical(inverse_fn(result, alpha), 0)
+  expect_identical(inverse_fn(result, alpha + delta), Inf)
+  expect_true(is.na(inverse_fn(result, alpha - sign(delta))))
+  expect_true(is.na(inverse_fn(result, alpha + delta + sign(delta))))
 })

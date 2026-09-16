@@ -15,8 +15,14 @@
 #   parameters.
 #
 # @return An object of class `logistic*`.
-logistic6_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+logistic6_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 6) {
@@ -55,8 +61,6 @@ logistic6_new <-  function(
   object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 6)
     } else {
@@ -107,6 +111,7 @@ logistic6_new <-  function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object
@@ -153,13 +158,6 @@ logistic6_fn <- function(x, theta) {
   xi <- theta[6]
 
   alpha + delta / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)
-}
-
-# @rdname logistic6_fn
-#
-#' @export
-fn.logistic6 <- function(object, x, theta) {
-  logistic6_fn(x, theta)
 }
 
 # @rdname loglogistic6_fn
@@ -224,7 +222,7 @@ logistic6_gradient <- function(x, theta) {
   G[, 6] <- -(delta * g / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -300,7 +298,7 @@ logistic6_hessian <- function(x, theta) {
   H[, 6, 6] <- ((delta * g * (1 + 1 / nu) / nu) / f) / f
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -379,7 +377,7 @@ logistic6_gradient_hessian <- function(x, theta) {
   H[, 6, 6] <- ((delta * g * (1 + 1 / nu) / nu) / f) / f
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -391,7 +389,7 @@ logistic6_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -471,7 +469,7 @@ logistic6_gradient_2 <- function(x, theta) {
   G[, 6] <- -(delta * xi * g / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -544,7 +542,7 @@ logistic6_hessian_2 <- function(x, theta) {
   H[, 6, 6] <- (delta * xi * g * (xi * (1 + 1 / nu) / f - 1) / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -625,7 +623,7 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
   H[, 6, 6] <- (delta * xi * g * (xi * (1 + 1 / nu) / f - 1) / nu) / f
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -637,7 +635,7 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -650,31 +648,6 @@ logistic6_gradient_hessian_2 <- function(x, theta) {
   }
 
   list(G = G, H = H)
-}
-
-# 6-parameter logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 6-parameter logistic function.
-#
-# @details
-# The 6-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (xi + nu * exp(-eta * (x - phi)))^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`, `phi > 0`,
-# `nu > 0`, and `xi > 0`.
-#
-# @param object object of class `logistic6`.
-# @param theta numeric vector with the six parameters in the form
-#   `c(alpha, delta, eta, phi, nu, xi)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.logistic6 <- function(object, theta) {
-  logistic6_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -705,7 +678,7 @@ gradient_hessian.logistic6 <- function(object, theta) {
 rss.logistic6 <- function(object) {
   function(theta) {
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -718,12 +691,12 @@ rss_fixed.logistic6 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 6)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -757,8 +730,10 @@ rss_gradient_hessian.logistic6 <- function(object) {
   function(theta) {
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic6_fn(x, theta)
+    mu_gradient_hessian <- logistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -768,14 +743,21 @@ rss_gradient_hessian.logistic6 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 6, 6))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
+    # fmt: skip
     hessian[, , 6] <- object$stats[, 2] * (r * H[, , 6] + G[, 6] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -787,13 +769,15 @@ rss_gradient_hessian_fixed.logistic6 <- function(object, known_param) {
     idx <- is.na(known_param)
 
     theta <- rep(0, 6)
-    theta[ idx] <- z
+    theta[idx] <- z
     theta[!idx] <- known_param[!idx]
 
     theta[c(3, 5, 6)] <- exp(theta[c(3, 5, 6)])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic6_fn(x, theta)
+    mu_gradient_hessian <- logistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -803,15 +787,22 @@ rss_gradient_hessian_fixed.logistic6 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 6, 6))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
+    # fmt: skip
     hessian[, , 6] <- object$stats[, 2] * (r * H[, , 6] + G[, 6] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -878,6 +869,8 @@ mle_asy.logistic6 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.logistic6 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
@@ -916,6 +909,8 @@ init.logistic6 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -1014,7 +1009,8 @@ init.logistic6 <- function(object) {
       -1.97, -1.78, -1.32, -1.24, 0.59, 0.26, -0.33, 0.4, 0.62, -1.55, -2.17,
       0.01, 2.02, -0.18, 1.19, 1.76, -2.07, 1.57, 1.78, -1.77, -0.71, 0.64
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 6, ncol = v)
@@ -1049,19 +1045,23 @@ init.logistic6 <- function(object) {
     # fix the candidates to be within the constraints
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1236,7 +1236,7 @@ fisher_info.logistic6 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- logistic6_fn(x, theta) - y
 
   gh <- logistic6_gradient_hessian(x, theta)
 
@@ -1251,20 +1251,26 @@ fisher_info.logistic6 <- function(object, theta, sigma) {
   G[, 5] <- w * z * gh$G[, 5]
   G[, 6] <- w * z * gh$G[, 6]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 6, 6))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  # fmt: skip
   H[, , 5] <- w * (z * gh$H[, , 5] + gh$G[, 5] * gh$G)
+  # fmt: skip
   H[, , 6] <- w * (z * gh$H[, , 6] + gh$G[, 6] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- logistic6_fn(object$x, theta)
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
@@ -1301,10 +1307,15 @@ inverse_fn.logistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  x <- (delta / (y - alpha))^nu
-  x[!is.na(x) & (x > xi)] <- phi - log(
-    (x[!is.na(x) & (x > xi)] - xi) / nu
-  ) / eta
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
+  smxi <- xi * expm1(-nu * log(p[ok]) - log(xi))
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi + (log(nu) - log(smxi)) / eta
+  x[!is.na(p) & (p == 0)] <- -Inf
+  x[!is.na(p) & (p == g_max)] <- Inf
 
   x
 }
@@ -1332,17 +1343,23 @@ inverse_fn_gradient.logistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  z <- delta / (y - alpha)
-  s <- z^nu
-  u <- nu / (s - xi)
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
 
-  G <- matrix(1, nrow = length(y), ncol = 6)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 6)
+  if (any(ok)) {
+    # p^{-nu} - xi = xi * expm1(-nu * log(p) - log(xi))
+    e <- xi * expm1(-nu * log(p[ok]) - log(xi))
+    s <- e + xi
 
-  G[, 1] <- -z * s * u / (delta * eta)
-  G[, 2] <- -s * u / (delta * eta)
-  G[, 3] <- -log(u) / eta^2
-  G[, 5] <- (1 - s * log(z) * u) / (eta * nu)
-  G[, 6] <- u / (eta * nu)
+    G[ok, 1] <- -nu * s / (p[ok] * e * eta * delta)
+    G[ok, 2] <- -nu * s / (e * eta * delta)
+    G[ok, 3] <- -(log(nu) - log(e)) / eta^2
+    G[ok, 4] <- 1
+    G[ok, 5] <- (1 / nu + log(p[ok]) * s / e) / eta
+    G[ok, 6] <- 1 / (e * eta)
+  }
 
   G
 }

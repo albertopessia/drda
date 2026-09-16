@@ -1,6 +1,12 @@
 # @rdname loglogistic6_new
-loggompertz_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+loggompertz_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 4) {
@@ -35,8 +41,6 @@ loggompertz_new <-  function(
   object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 4)
     } else {
@@ -77,6 +81,7 @@ loggompertz_new <-  function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object
@@ -113,11 +118,6 @@ loggompertz_fn <- function(x, theta) {
   f[x == 0] <- alpha
 
   f
-}
-
-#' @export
-fn.loggompertz <- function(object, x, theta) {
-  loggompertz_fn(x, theta)
 }
 
 #' @export
@@ -173,7 +173,7 @@ loggompertz_gradient <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -232,7 +232,7 @@ loggompertz_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -294,7 +294,7 @@ loggompertz_gradient_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -306,7 +306,7 @@ loggompertz_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -378,7 +378,7 @@ loggompertz_gradient_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -433,7 +433,7 @@ loggompertz_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -495,7 +495,7 @@ loggompertz_gradient_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -507,7 +507,7 @@ loggompertz_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -520,35 +520,6 @@ loggompertz_gradient_hessian_2 <- function(x, theta) {
   }
 
   list(G = G, H = H)
-}
-
-# log-Gompertz function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# log-Gompertz function.
-#
-# @details
-# The log-Gompertz function `f(x; theta)` is defined here as
-#
-# `f(x; theta) = alpha + delta exp(-(phi / x)^eta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
-# `phi > 0`. By convention we set
-# `f(0; theta) = lim_{x -> 0} f(x; theta) = alpha`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)` and
-# `log(phi)`.
-#
-# @param object object of class `loggompertz`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, log(eta), log(phi))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loggompertz <- function(object, theta) {
-  loggompertz_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -580,7 +551,7 @@ gradient_hessian.loggompertz <- function(object, theta) {
 rss.loggompertz <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loggompertz_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -598,7 +569,7 @@ rss_fixed.loggompertz <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loggompertz_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -633,8 +604,10 @@ rss_gradient_hessian.loggompertz <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loggompertz_fn(x, theta)
+    mu_gradient_hessian <- loggompertz_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -644,12 +617,17 @@ rss_gradient_hessian.loggompertz <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -666,8 +644,10 @@ rss_gradient_hessian_fixed.loggompertz <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loggompertz_fn(x, theta)
+    mu_gradient_hessian <- loggompertz_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -677,13 +657,18 @@ rss_gradient_hessian_fixed.loggompertz <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -751,6 +736,8 @@ mle_asy.loggompertz <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.loggompertz <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
@@ -814,6 +801,8 @@ init.loggompertz <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -866,7 +855,8 @@ init.loggompertz <- function(object) {
       -12.29, -15.43, -10.48, -16.71, 0.97, 2.51, 7.63, -3.8, -5.32, 5.64,
       -7.34, -1.17, -10.01, -14.72, -13.37, -8.87
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
@@ -900,19 +890,23 @@ init.loggompertz <- function(object) {
   if (object$constrained) {
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1087,7 +1081,7 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loggompertz_fn(x, theta) - y
 
   gh <- loggompertz_gradient_hessian(x, theta)
 
@@ -1100,18 +1094,22 @@ fisher_info.loggompertz <- function(object, theta, sigma) {
   G[, 3] <- w * z * gh$G[, 3]
   G[, 4] <- w * z * gh$G[, 4]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loggompertz_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2
@@ -1146,8 +1144,13 @@ inverse_fn.loggompertz_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  x <- delta / (y - alpha)
-  x[!is.na(x) & (x > 0)] <- phi / log(x[!is.na(x) & (x > 0)])^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi / (-log(p[ok]))^(1 / eta)
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == 1)] <- Inf
 
   x
 }
@@ -1175,17 +1178,20 @@ inverse_fn_gradient.loggompertz_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  u <- 1 / log(z)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(0, nrow = length(y), ncol = 4)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 4)
+  if (any(ok)) {
+    h <- phi / eta
+    u <- 1 / (-log(p[ok]))
+    v <- u^(1 / eta)
 
-  G[, 1] <- -h * u * z * v / delta
-  G[, 2] <- -h * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
+    G[ok, 1] <- -h * u * v / (p[ok] * delta)
+    G[ok, 2] <- -h * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+  }
 
   G
 }

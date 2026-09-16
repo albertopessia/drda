@@ -1,6 +1,12 @@
 # @rdname logistic6_new
-logistic4_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+logistic4_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 4) {
@@ -31,8 +37,6 @@ logistic4_new <-  function(
   object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 4)
     } else {
@@ -63,6 +67,7 @@ logistic4_new <-  function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object
@@ -97,6 +102,8 @@ logistic4_new <-  function(
 #' @return Numeric vector of the same length of `x` with the values of the
 #'   logistic function.
 #'
+#' @importFrom stats plogis
+#'
 #' @export
 logistic4_fn <- function(x, theta) {
   alpha <- theta[1]
@@ -104,12 +111,7 @@ logistic4_fn <- function(x, theta) {
   eta <- theta[3]
   phi <- theta[4]
 
-  alpha + delta / (1 + exp(-eta * (x - phi)))
-}
-
-#' @export
-fn.logistic4 <- function(object, x, theta) {
-  logistic4_fn(x, theta)
+  alpha + delta * plogis(eta * (x - phi))
 }
 
 #' @export
@@ -162,7 +164,7 @@ logistic4_gradient <- function(x, theta) {
   G[, 4] <- delta * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -216,7 +218,7 @@ logistic4_hessian <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -271,7 +273,7 @@ logistic4_gradient_hessian <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -283,7 +285,7 @@ logistic4_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -353,7 +355,7 @@ logistic4_gradient_2 <- function(x, theta) {
   G[, 4] <- delta * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -404,7 +406,7 @@ logistic4_hessian_2 <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -461,7 +463,7 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
   H[, 4, 4] <- delta * (2 / f - 1 / b) * r * u
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -473,7 +475,7 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -486,30 +488,6 @@ logistic4_gradient_hessian_2 <- function(x, theta) {
   }
 
   list(G = G, H = H)
-}
-
-# 4-parameter logistic function
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 4-parameter logistic function.
-#
-# @details
-# The 4-parameter logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = 1 / (1 + exp(-eta * (x - phi)))`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `theta = c(alpha, delta, eta, phi)` and `eta > 0`.
-#
-# @param object object of class `logistic4`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, eta, phi)`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.logistic4 <- function(object, theta) {
-  logistic4_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -531,16 +509,17 @@ gradient_hessian.logistic4 <- function(object, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#' @export
 rss.logistic4 <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
-
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
 
 # @rdname rss.logistic4
+#' @export
 rss_fixed.logistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -551,7 +530,7 @@ rss_fixed.logistic4 <- function(object, known_param) {
 
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- logistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -578,12 +557,15 @@ rss_fixed.logistic4 <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#' @export
 rss_gradient_hessian.logistic4 <- function(object) {
   function(theta) {
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic4_fn(x, theta)
+    mu_gradient_hessian <- logistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -593,16 +575,22 @@ rss_gradient_hessian.logistic4 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
 # @rdname rss_gradient_hessian.logistic4
+#' @export
 rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -613,8 +601,10 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
 
     theta[3] <- exp(theta[3])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- logistic4_fn(x, theta)
+    mu_gradient_hessian <- logistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -624,13 +614,18 @@ rss_gradient_hessian_fixed.logistic4 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -695,6 +690,8 @@ mle_asy.logistic4 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.logistic4 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
@@ -730,6 +727,8 @@ init.logistic4 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -782,7 +781,8 @@ init.logistic4 <- function(object) {
       -12.29, -15.43, -10.48, -16.71, 0.97, 2.51, 7.63, -3.8, -5.32, 5.64,
       -7.34, -1.17, -10.01, -14.72, -13.37, -8.87
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
@@ -817,19 +817,23 @@ init.logistic4 <- function(object) {
     # fix the candidates to be within the constraints
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -998,7 +1002,7 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- logistic4_fn(x, theta) - y
 
   gh <- logistic4_gradient_hessian(x, theta)
 
@@ -1011,18 +1015,22 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
   G[, 3] <- w * z * gh$G[, 3]
   G[, 4] <- w * z * gh$G[, 4]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- logistic4_fn(object$x, theta)
   z <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, z)) / sigma^2
@@ -1049,6 +1057,8 @@ fisher_info.logistic4 <- function(object, theta, sigma) {
 # This function evaluates the inverse function of `f(x; theta)`, that is
 # if `y = fn(x; theta)` then `x = inverse_fn(y; theta)`.
 #
+#' @importFrom stats qlogis
+#'
 #' @export
 inverse_fn.logistic4_fit <- function(object, y) {
   alpha <- object$coefficients[1]
@@ -1056,8 +1066,13 @@ inverse_fn.logistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  x <- delta / (y - alpha)
-  x[!is.na(x) & (x > 1)] <- phi - log(x[!is.na(x) & (x > 1)] - 1) / eta
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi + qlogis(p[ok]) / eta
+  x[!is.na(p) & (p == 0)] <- -Inf
+  x[!is.na(p) & (p == 1)] <- Inf
 
   x
 }

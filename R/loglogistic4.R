@@ -1,6 +1,12 @@
 # @rdname loglogistic6_new
-loglogistic4_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+loglogistic4_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 4) {
@@ -35,8 +41,6 @@ loglogistic4_new <-  function(
   object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 4)
     } else {
@@ -77,6 +81,7 @@ loglogistic4_new <-  function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object
@@ -114,11 +119,6 @@ loglogistic4_fn <- function(x, theta) {
   t2 <- phi^eta
 
   alpha + delta * t1 / (t1 + t2)
-}
-
-#' @export
-fn.loglogistic4 <- function(object, x, theta) {
-  loglogistic4_fn(x, theta)
 }
 
 #' @export
@@ -177,7 +177,7 @@ loglogistic4_gradient <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -239,7 +239,7 @@ loglogistic4_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -303,7 +303,7 @@ loglogistic4_gradient_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -315,7 +315,7 @@ loglogistic4_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -390,7 +390,7 @@ loglogistic4_gradient_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -446,7 +446,7 @@ loglogistic4_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -511,7 +511,7 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -523,7 +523,7 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -536,35 +536,6 @@ loglogistic4_gradient_hessian_2 <- function(x, theta) {
   }
 
   list(G = G, H = H)
-}
-
-# 4-parameter log-logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 4-parameter log-logistic function.
-#
-# @details
-# The 4-parameter log-logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = x^eta / (x^eta + phi^eta)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi)`, `eta > 0`, and
-# `phi > 0`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)` and
-# `log(phi)`.
-#
-# @param object object of class `loglogistic4`.
-# @param theta numeric vector with the four parameters in the form
-#   `c(alpha, delta, log(eta), log(phi))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loglogistic4 <- function(object, theta) {
-  loglogistic4_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -591,15 +562,17 @@ gradient_hessian.loglogistic4 <- function(object, theta) {
 #
 # @return Function handle `f(theta)` to evaluate the RSS associated to a
 #   particular parameter choice `theta`.
+#' @export
 rss.loglogistic4 <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
 
 # @rdname rss.loglogistic4
+#' @export
 rss_fixed.loglogistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -610,7 +583,7 @@ rss_fixed.loglogistic4 <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic4_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -639,12 +612,15 @@ rss_fixed.loglogistic4 <- function(object, known_param) {
 #
 # @return Function handle `f(theta)` to evaluate the gradient and Hessian of
 #   the RSS associated to a particular parameter choice `theta`.
+#' @export
 rss_gradient_hessian.loglogistic4 <- function(object) {
   function(theta) {
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic4_fn(x, theta)
+    mu_gradient_hessian <- loglogistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -654,16 +630,22 @@ rss_gradient_hessian.loglogistic4 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
 # @rdname rss_gradient_hessian.loglogistic4
+#' @export
 rss_gradient_hessian_fixed.loglogistic4 <- function(object, known_param) {
   function(z) {
     idx <- is.na(known_param)
@@ -674,8 +656,10 @@ rss_gradient_hessian_fixed.loglogistic4 <- function(object, known_param) {
 
     theta[3:4] <- exp(theta[3:4])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic4_fn(x, theta)
+    mu_gradient_hessian <- loglogistic4_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -685,13 +669,18 @@ rss_gradient_hessian_fixed.loglogistic4 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 4, 4))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -742,8 +731,8 @@ mle_asy.loglogistic4 <- function(object, theta) {
   #
   # when x > phi then g is approximately 1 (case 1)
   # when x < phi then g is approximately 0 (case 2)
-  g[is.nan(g) & x > phi] <- 1
-  g[is.nan(g) & x < phi] <- 0
+  g[!is.finite(g) & x > phi] <- 1
+  g[!is.finite(g) & x < phi] <- 0
 
   t1 <- 0
   t2 <- 0
@@ -782,6 +771,8 @@ mle_asy.loglogistic4 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.loglogistic4 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
@@ -825,6 +816,8 @@ init.loglogistic4 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -877,7 +870,8 @@ init.loglogistic4 <- function(object) {
       -12.29, -15.43, -10.48, -16.71, 0.97, 2.51, 7.63, -3.8, -5.32, 5.64,
       -7.34, -1.17, -10.01, -14.72, -13.37, -8.87
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 4, ncol = v)
@@ -911,19 +905,23 @@ init.loglogistic4 <- function(object) {
   if (object$constrained) {
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1098,7 +1096,7 @@ fisher_info.loglogistic4 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loglogistic4_fn(x, theta) - y
 
   gh <- loglogistic4_gradient_hessian(x, theta)
 
@@ -1111,18 +1109,22 @@ fisher_info.loglogistic4 <- function(object, theta, sigma) {
   G[, 3] <- w * z * gh$G[, 3]
   G[, 4] <- w * z * gh$G[, 4]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 4, 4))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loglogistic4_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2
@@ -1156,7 +1158,15 @@ inverse_fn.loglogistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  phi / ((delta / (y - alpha)) - 1)^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi * (p[ok] / (1 - p[ok]))^(1 / eta)
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == 1)] <- Inf
+
+  x
 }
 
 # 4-parameter log-logistic fit
@@ -1181,17 +1191,21 @@ inverse_fn_gradient.loglogistic4_fit <- function(object, y) {
   eta <- object$coefficients[3]
   phi <- object$coefficients[4]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  u <- 1 / (z - 1)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(0, nrow = length(y), ncol = 4)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 4)
+  if (any(ok)) {
+    h <- phi / eta
+    u <- p[ok] / (1 - p[ok])
+    v <- u^(1 / eta)
+    z <- 1 / p[ok]
 
-  G[, 1] <- -h * z * z * u * v / delta
-  G[, 2] <- -h * z * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
+    G[ok, 1] <- -h * z * z * u * v / delta
+    G[ok, 2] <- -h * z * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+  }
 
   G
 }

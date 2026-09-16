@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("Constructor (decreasing)", {
   x <- ltd$D$x
   y <- ltd$D$y
@@ -235,14 +237,6 @@ test_that("Function value (decreasing)", {
   expect_length(value, m)
   expect_equal(value, true_value)
 
-  object <- structure(list(stats = ltd$stats_1), class = "logistic2")
-
-  value <- fn(object, object$stats[, 1], theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
   object <- structure(list(stats = ltd$stats_1), class = "logistic2_fit")
 
   value <- fn(object, object$stats[, 1], c(1, -1, theta[3:4]))
@@ -266,14 +260,6 @@ test_that("Function value (increasing)", {
   )
 
   value <- logistic2_fn(x, theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
-  object <- structure(list(stats = ltd$stats_1), class = "logistic2")
-
-  value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
   expect_length(value, m)
@@ -514,23 +500,6 @@ test_that("Gradient and Hessian (2)", {
   )
 
   gh <- logistic2_gradient_hessian_2(x, theta, -1)
-
-  expect_type(gh, "list")
-  expect_type(gh$G, "double")
-  expect_type(gh$H, "double")
-
-  expect_length(gh$G, m * 2)
-  expect_length(gh$H, m * 2 * 2)
-
-  expect_equal(gh$G, true_gradient)
-  expect_equal(gh$H, true_hessian)
-
-  object <- structure(
-    list(stats = ltd$stats_1, start = c(1, -1, NA_real_, NA_real_)),
-    class = "logistic2"
-  )
-
-  gh <- gradient_hessian(object, theta)
 
   expect_type(gh, "list")
   expect_type(gh$G, "double")
@@ -1398,7 +1367,8 @@ test_that("fisher_info", {
 
   sigma <- ltd$sigma
 
-  true_value <- matrix(c(
+  true_value <- matrix(
+    c(
       # eta
       3671.8976437329046, -79.729113965633577, -2000.7114186570950,
       # phi
@@ -1454,7 +1424,7 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "logistic2",
-      lower_bound = c( 0, -Inf),
+      lower_bound = c(0, -Inf),
       upper_bound = c(-1, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
@@ -1638,4 +1608,80 @@ test_that("naac: increasing", {
     naac(result, xlim = c(-5, -1), ylim = c(0.3, 0.7)), 1 - 0.76263081184979702
   )
   expect_equal(naac(result, xlim = c(10, 15), ylim = c(0.3, 0.7)), 0.0)
+})
+
+test_that("zero-weight restoration with extra formula terms", {
+  D <- ltd$D
+  D$z <- seq_len(nrow(D))
+
+  result <- drda(y ~ x + z, data = D, weights = w, mean_function = "logistic2")
+
+  expect_length(result$weights, nrow(D))
+  expect_identical(as.numeric(result$weights), as.numeric(D$w))
+  expect_length(result$fitted.values, nrow(D))
+  expect_length(result$residuals, nrow(D))
+  expect_equal(
+    result$residuals,
+    D$y - result$fitted.values,
+    tolerance = 1.0e-12
+  )
+})
+
+test_that("single-model anova p-values", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "logistic2")
+  tab <- anova(result)
+
+  expect_s3_class(tab, "anova")
+  expect_true("Pr(>Chi)" %in% colnames(tab))
+  expect_true(is.na(tab[["Pr(>Chi)"]][1]))
+  expect_true(is.finite(tab[["Pr(>Chi)"]][2]))
+  expect_gte(tab[["Pr(>Chi)"]][2], 0)
+  expect_lte(tab[["Pr(>Chi)"]][2], 1)
+})
+
+test_that("constrained vcov indexes Fisher correctly", {
+  result <- drda(
+    y ~ x,
+    data = ltd$D,
+    mean_function = "logistic2",
+    lower_bound = c(1.0e-3, -Inf),
+    upper_bound = c(Inf, Inf)
+  )
+
+  expect_true(result$constrained)
+  expect_equal(dim(result$fisher.info), c(3L, 3L))
+  expect_equal(dim(result$vcov), c(3L, 3L))
+  expect_equal(colnames(result$vcov), c("eta", "phi", "sigma"))
+  expect_equal(rownames(result$vcov), c("eta", "phi", "sigma"))
+  expect_true(is.finite(result$vcov["eta", "eta"]))
+  expect_true(is.finite(result$vcov["phi", "phi"]))
+  expect_true(is.finite(result$vcov["sigma", "sigma"]))
+
+  se <- predict(result, newdata = 0, se.fit = TRUE)$se.fit
+  expect_true(is.finite(se))
+})
+
+test_that("start parameter uses eta/phi only", {
+  result <- drda(
+    y ~ x,
+    data = ltd$D,
+    mean_function = "logistic2",
+    start = c(1.5, 0)
+  )
+
+  expect_s3_class(result, "logistic2_fit")
+  expect_true(result$converged)
+  expect_true(all(is.finite(result$coefficients[3:4])))
+  expect_gt(result$coefficients[3], 0)
+})
+
+test_that("inverse returns NA/Inf at asymptotes", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "logistic2")
+  alpha <- result$coefficients[1]
+  delta <- result$coefficients[2]
+
+  expect_identical(inverse_fn(result, alpha), -Inf)
+  expect_identical(inverse_fn(result, alpha + delta), Inf)
+  expect_true(is.na(inverse_fn(result, alpha - sign(delta))))
+  expect_true(is.na(inverse_fn(result, alpha + delta + sign(delta))))
 })

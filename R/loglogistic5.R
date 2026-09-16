@@ -1,6 +1,12 @@
 # @rdname loglogistic6_new
-loglogistic5_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+loglogistic5_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 5) {
@@ -39,8 +45,6 @@ loglogistic5_new <-  function(
   object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 5)
     } else {
@@ -91,6 +95,7 @@ loglogistic5_new <-  function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object
@@ -131,17 +136,10 @@ loglogistic5_fn <- function(x, theta) {
   phi <- theta[4]
   nu <- theta[5]
 
-  t1 <- x^eta
-  t2 <- phi^eta
+  a <- log(nu) + eta * (log(phi) - log(x))
+  log_term <- ifelse(a > 0, a + log1p(exp(-a)), log1p(exp(a)))
 
-  alpha + delta * (t1 / (t1 + nu * t2))^(1 / nu)
-}
-
-# @rdname loglogistic5_fn
-#
-#' @export
-fn.loglogistic5 <- function(object, x, theta) {
-  loglogistic5_fn(x, theta)
+  alpha + delta * exp(-log_term / nu)
 }
 
 # @rdname loglogistic5_fn
@@ -206,7 +204,7 @@ loglogistic5_gradient <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -279,7 +277,7 @@ loglogistic5_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -356,7 +354,7 @@ loglogistic5_gradient_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -368,7 +366,7 @@ loglogistic5_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -422,28 +420,24 @@ loglogistic5_gradient_2 <- function(x, theta) {
   phi <- theta[4]
   nu <- theta[5]
 
-  k1 <- eta / nu
-
   c1 <- x^eta
   c2 <- phi^eta
 
   f <- c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   p <- (x^eta / f)^(1 / nu)
   q <- p / f
   r <- eta * c2 * q
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- q * s
-  v <- q * t
+  z <- p * (y / nu + c2 / f)
 
   G <- matrix(1, nrow = k, ncol = 5)
 
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
-  G[, 5] <- -delta * (v - u)
+  G[, 5] <- -delta * z
 
   # gradient and Hessian might not be defined when we plug x = 0 directly into
   # the formula
@@ -451,7 +445,7 @@ loglogistic5_gradient_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -479,30 +473,26 @@ loglogistic5_hessian_2 <- function(x, theta) {
   phi <- theta[4]
   nu <- theta[5]
 
-  k1 <- eta / nu
-
   c1 <- x^eta
   c2 <- phi^eta
 
   f <- c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   l <- (1 + nu) * c2 / f
 
   p <- (x^eta / f)^(1 / nu)
   q <- p / f
   r <- eta * c2 * q
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- q * s
-  v <- q * t
-  y <- eta * log(x) - log(f)
+  z <- p * (y / nu + c2 / f)
+  s <- (f / nu) * y + c2
 
   H <- array(0, dim = c(k, 5, 5))
 
   H[, 3, 2] <- e * r
   H[, 4, 2] <- -r
-  H[, 5, 2] <- u - v
+  H[, 5, 2] <- -z
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- delta * e * (1 + eta * (l - 1) * e) * r
@@ -517,15 +507,14 @@ loglogistic5_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * q
+  H[, 5, 5] <- delta * ((l + y / nu) * c2 + (1 + y / nu) * s) * q
 
   # Hessian might not be defined when we plug x = 0 directly into the formula
   # however, the limits for x -> 0 are zero
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -553,37 +542,33 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
   phi <- theta[4]
   nu <- theta[5]
 
-  k1 <- eta / nu
-
   c1 <- x^eta
   c2 <- phi^eta
 
   f <- c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   l <- (1 + nu) * c2 / f
 
   p <- (x^eta / f)^(1 / nu)
   q <- p / f
   r <- eta * c2 * q
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- q * s
-  v <- q * t
-  y <- eta * log(x) - log(f)
+  z <- p * (y / nu + c2 / f)
+  s <- (f / nu) * y + c2
 
   G <- matrix(1, nrow = k, ncol = 5)
 
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
-  G[, 5] <- -delta * (v - u)
+  G[, 5] <- -delta * z
 
   H <- array(0, dim = c(k, 5, 5))
 
   H[, 3, 2] <- e * r
   H[, 4, 2] <- -r
-  H[, 5, 2] <- u - v
+  H[, 5, 2] <- -z
 
   H[, 2, 3] <- H[, 3, 2]
   H[, 3, 3] <- delta * e * (1 + eta * (l - 1) * e) * r
@@ -598,8 +583,7 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * q
+  H[, 5, 5] <- delta * ((l + y / nu) * c2 + (1 + y / nu) * s) * q
 
   # gradient and Hessian might not be defined when we plug x = 0 directly into
   # the formula
@@ -608,7 +592,7 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -620,7 +604,7 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -633,35 +617,6 @@ loglogistic5_gradient_hessian_2 <- function(x, theta) {
   }
 
   list(G = G, H = H)
-}
-
-# 5-parameter log-logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 5-parameter log-logistic function.
-#
-# @details
-# The 5-parameter log-logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = (x^eta / (x^eta + nu * phi^eta))^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu)`, `eta > 0`, `phi > 0`,
-# and `nu > 0`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)`,
-# `log(phi)`, and `log(nu)`.
-#
-# @param object object of class `loglogistic5`.
-# @param theta numeric vector with the five parameters in the form
-#   `c(alpha, delta, log(eta), log(phi), log(nu))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loglogistic5 <- function(object, theta) {
-  loglogistic5_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -693,7 +648,7 @@ gradient_hessian.loglogistic5 <- function(object, theta) {
 rss.loglogistic5 <- function(object) {
   function(theta) {
     theta[3:5] <- exp(theta[3:5])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic5_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -711,7 +666,7 @@ rss_fixed.loglogistic5 <- function(object, known_param) {
 
     theta[3:5] <- exp(theta[3:5])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic5_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -746,8 +701,10 @@ rss_gradient_hessian.loglogistic5 <- function(object) {
   function(theta) {
     theta[3:5] <- exp(theta[3:5])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic5_fn(x, theta)
+    mu_gradient_hessian <- loglogistic5_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -757,13 +714,19 @@ rss_gradient_hessian.loglogistic5 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 5, 5))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -780,8 +743,10 @@ rss_gradient_hessian_fixed.loglogistic5 <- function(object, known_param) {
 
     theta[3:5] <- exp(theta[3:5])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic5_fn(x, theta)
+    mu_gradient_hessian <- loglogistic5_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -791,14 +756,20 @@ rss_gradient_hessian_fixed.loglogistic5 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 5, 5))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -850,8 +821,8 @@ mle_asy.loglogistic5 <- function(object, theta) {
   #
   # when x > phi then g is approximately 1 (case 1)
   # when x < phi then g is approximately 0 (case 2)
-  g[is.nan(g) & x > phi] <- 1
-  g[is.nan(g) & x < phi] <- 0
+  g[!is.finite(g) & x > phi] <- 1
+  g[!is.finite(g) & x < phi] <- 0
 
   t1 <- 0
   t2 <- 0
@@ -890,6 +861,8 @@ mle_asy.loglogistic5 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.loglogistic5 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
@@ -936,6 +909,8 @@ init.loglogistic5 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -1011,7 +986,8 @@ init.loglogistic5 <- function(object) {
       -0.48, 0.49, 2.19, 1.62, -1.37, -0.71, -1.54, -0.89, 2.05, -1.53, -1.96,
       2.16, -0.79, 0.03, -1.31, -1.27, 2.05, -1.15, 1.68, -0.33, 0.98, 1.05
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 5, ncol = v)
@@ -1045,19 +1021,23 @@ init.loglogistic5 <- function(object) {
   if (object$constrained) {
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1232,7 +1212,7 @@ fisher_info.loglogistic5 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loglogistic5_fn(x, theta) - y
 
   gh <- loglogistic5_gradient_hessian(x, theta)
 
@@ -1246,19 +1226,24 @@ fisher_info.loglogistic5 <- function(object, theta, sigma) {
   G[, 4] <- w * z * gh$G[, 4]
   G[, 5] <- w * z * gh$G[, 5]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 5, 5))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  # fmt: skip
   H[, , 5] <- w * (z * gh$H[, , 5] + gh$G[, 5] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loglogistic5_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2
@@ -1294,7 +1279,15 @@ inverse_fn.loglogistic5_fit <- function(object, y) {
   phi <- object$coefficients[4]
   nu <- object$coefficients[5]
 
-  phi / (((delta / (y - alpha))^nu - 1) / nu)^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
+
+  x <- rep(NA_real_, length(y))
+  x[ok] <- phi * (nu / expm1(-nu * log(p[ok])))^(1 / eta)
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == 1)] <- Inf
+
+  x
 }
 
 # 5-parameter log-logistic fit
@@ -1321,19 +1314,23 @@ inverse_fn_gradient.loglogistic5_fit <- function(object, y) {
   phi <- object$coefficients[4]
   nu <- object$coefficients[5]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  s <- z^nu
-  u <- nu / (z^nu - 1)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  ok <- !is.na(p) & (p > 0) & (p < 1)
 
-  G <- matrix(0, nrow = length(y), ncol = 5)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 5)
+  if (any(ok)) {
+    h <- phi / eta
+    e <- expm1(-nu * log(p[ok]))
+    ep1 <- e + 1
+    u <- nu / e
+    v <- u^(1 / eta)
 
-  G[, 1] <- -h * z * s * u * v / delta
-  G[, 2] <- -h * s * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
-  G[, 5] <- -h * (log(z) * s * u - 1) * v / nu
+    G[ok, 1] <- -h * ep1 * u * v / (p[ok] * delta)
+    G[ok, 2] <- -h * ep1 * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+    G[ok, 5] <- h * v * (log(p[ok]) * ep1 / e + 1 / nu)
+  }
 
   G
 }

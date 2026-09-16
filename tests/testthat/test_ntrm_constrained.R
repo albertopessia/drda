@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("ntrm_constrained: Rosenbrock function", {
   set.seed(3470830)
 

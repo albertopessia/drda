@@ -79,7 +79,13 @@ knitr::opts_chunk$set(
 
 <<echo = FALSE, include = FALSE>>=
 library("drda")
-options(prompt = "R> ", continue = "+ ", width = 77, digits = 4, useFancyQuotes = FALSE)
+options(
+  prompt = "R> ",
+  continue = "+ ",
+  width = 77,
+  digits = 4,
+  useFancyQuotes = FALSE
+)
 
 colpal <- c(
   "#000000", "#004949", "#009292", "#ff6db6", "#ffb6db",
@@ -192,7 +198,9 @@ curve(
   ylab = expression(paste("f(x;", psi, ")")), xlab = "x", ylim = c(0, 1),
   main = expression(paste("Varying ", phi, " parameter", sep = ""))
 )
-mtext(expression(paste(alpha, "= 0.9,", delta, "= -0.8,", eta, "= 1,", nu, "= 1")))
+mtext(
+  expression(paste(alpha, "= 0.9,", delta, "= -0.8,", eta, "= 1,", nu, "= 1"))
+)
 curve(fnl5(x, c(0.9, -0.8, 1, 5, 1)), add = TRUE, col = colpal[2])
 curve(fnl5(x, c(0.9, -0.8, 1, 2, 1)), add = TRUE, col = colpal[3])
 curve(fnl5(x, c(0.9, -0.8, 1, -2, 1)), add = TRUE, col = colpal[4])
@@ -208,7 +216,9 @@ curve(
   ylab = expression(paste("f(x;", psi, ")")), xlab = "x", ylim = c(0, 1),
   main = expression(paste("Varying ", nu, " parameter", sep = ""))
 )
-mtext(expression(paste(alpha, "= 0.95,", delta, "= -0.9,", eta, "= 1,", phi, "= 0")))
+mtext(
+  expression(paste(alpha, "= 0.95,", delta, "= -0.9,", eta, "= 1,", phi, "= 0"))
+)
 curve(fnl5(x, c(0.95, -0.9, 1, 0, 0.1)), add = TRUE, col = colpal[2])
 curve(fnl5(x, c(0.95, -0.9, 1, 0, 0.5)), add = TRUE, col = colpal[3])
 curve(fnl5(x, c(0.95, -0.9, 1, 0, 2.5)), add = TRUE, col = colpal[4])

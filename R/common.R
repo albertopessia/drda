@@ -28,13 +28,18 @@ suff_stats <- function(x, y, w) {
     m <- sum(q * z) / t
     v <- sum(q * (z - m)^2) / t
 
+    if (t == 0) {
+      m <- 0
+      v <- 0
+    }
+
     stats[i, 1] <- unique_x[i]
     stats[i, 2] <- t
     stats[i, 3] <- m
     stats[i, 4] <- v
   }
 
-  stats
+  stats[stats[, 2] > 0, ]
 }
 
 # Variance estimator
@@ -169,20 +174,28 @@ fit_nlminb <- function(object, start, max_iter) {
   fit_fn <- if (!object$constrained) {
     function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h,
+        start = x,
+        objective = f,
+        gradient = g,
+        hessian = h,
         control = list(eval.max = k, iter.max = k)
       )
 
       list(
-        par = mle_asy(object, y$par), niter = y$iterations
+        par = mle_asy(object, y$par),
+        niter = y$iterations
       )
     }
   } else {
     function(x, k) {
       y <- nlminb(
-        start = x, objective = f, gradient = g, hessian = h,
+        start = x,
+        objective = f,
+        gradient = g,
+        hessian = h,
         control = list(eval.max = k, iter.max = k),
-        lower = object$lower_bound, upper = object$upper_bound
+        lower = object$lower_bound,
+        upper = object$upper_bound
       )
 
       list(par = y$par, niter = y$iterations)
@@ -204,7 +217,7 @@ fit_nlminb <- function(object, start, max_iter) {
       max_iter <- max(0, max_iter - tmp$niter)
       niter <- niter + tmp$niter
 
-      if (!is.nan(current_rss) && (current_rss < best_rss)) {
+      if (is.finite(current_rss) && (current_rss < best_rss)) {
         best_par <- tmp$par
         best_rss <- current_rss
       }
@@ -276,20 +289,84 @@ find_optimum_constrained <- function(object, constraint, known_param) {
       ntrm(rss_fn, rss_gh, theta[idx], max_iter)
     } else {
       ntrm_constrained(
-        rss_fn, rss_gh, theta[idx], max_iter, object$lower_bound[idx],
+        rss_fn,
+        rss_gh,
+        theta[idx],
+        max_iter,
+        object$lower_bound[idx],
         object$upper_bound[idx]
       )
     }
+  } else if (all(constraint[, 1])) {
+    # all bounds are infinite: no active constraints
+    rss_fn <- rss(object)
+    rss_gh <- rss_gradient_hessian(object)
+    ntrm(rss_fn, rss_gh, theta, max_iter)
   } else {
     rss_fn <- rss(object)
     rss_gh <- rss_gradient_hessian(object)
 
     ntrm_constrained(
-      rss_fn, rss_gh, theta, max_iter, object$lower_bound, object$upper_bound
+      rss_fn,
+      rss_gh,
+      theta,
+      max_iter,
+      object$lower_bound,
+      object$upper_bound
     )
   }
 
   solution$iterations <- solution$iterations + start$niter
 
   solution
+}
+
+# Get formula for a given mean function
+#
+# @param x `drda` object
+#
+# @return Formula as a string.
+get_formula <- function(x) {
+  switch(
+    x$mean_function,
+    logistic2 = if (x$coefficients[2] >= 0) {
+      "1 / (1 + exp(-e * (x - p)))"
+    } else {
+      "1 - 1 / (1 + exp(-e * (x - p)))"
+    },
+    logistic4 = "a + d / (1 + exp(-e * (x - p)))",
+    logistic5 = "a + d / (1 + n * exp(-e * (x - p)))^(1 / n) (Full)",
+    logistic6 = "a + d / (w + n * exp(-e * (x - p)))^(1 / n) (Full)",
+    gompertz = "a + d * exp(-exp(-e * (x - p)))",
+    loglogistic2 = if (x$coefficients[2] >= 0) {
+      "x^e / (x^e + p^e)"
+    } else {
+      "1 - x^e / (x^e + p^e)"
+    },
+    loglogistic4 = "a + d * x^e / (x^e + p^e)",
+    loglogistic5 = "a + d * (x^e / (x^e + n * p^e))^(1 / n) (Full)",
+    loglogistic6 = "a + d * (x^e / (w * x^e + n * p^e))^(1 / n) (Full)",
+    loggompertz = "a + d * exp(-(p / x)^e)"
+  )
+}
+
+# Get model identifier
+#
+# @param x `drda` object
+#
+# @return Model identifier for sorting.
+get_model_identifier <- function(x) {
+  switch(
+    x$mean_function,
+    logistic2 = 1,
+    logistic4 = 2,
+    logistic5 = 3,
+    logistic6 = 4,
+    gompertz = 5,
+    loglogistic2 = 1,
+    loglogistic4 = 2,
+    loglogistic5 = 3,
+    loglogistic6 = 4,
+    loggompertz = 5
+  )
 }

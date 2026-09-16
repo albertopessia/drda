@@ -1,3 +1,5 @@
+# fmt: skip file
+
 test_that("Constructor", {
   x <- ltd$D$x
   y <- ltd$D$y
@@ -214,14 +216,6 @@ test_that("Function value", {
   )
 
   value <- logistic6_fn(x, theta)
-
-  expect_type(value, "double")
-  expect_length(value, m)
-  expect_equal(value, true_value)
-
-  object <- structure(list(stats = ltd$stats_1), class = "logistic6")
-
-  value <- fn(object, object$stats[, 1], theta)
 
   expect_type(value, "double")
   expect_length(value, m)
@@ -934,20 +928,6 @@ test_that("Gradient and Hessian (2)", {
   )
 
   gh <- logistic6_gradient_hessian_2(x, theta)
-
-  expect_type(gh, "list")
-  expect_type(gh$G, "double")
-  expect_type(gh$H, "double")
-
-  expect_length(gh$G, m * 6)
-  expect_length(gh$H, m * 6 * 6)
-
-  expect_equal(gh$G, true_gradient)
-  expect_equal(gh$H, true_hessian)
-
-  object <- structure(list(stats = ltd$stats_1), class = "logistic6")
-
-  gh <- gradient_hessian(object, theta)
 
   expect_type(gh, "list")
   expect_type(gh$G, "double")
@@ -1802,7 +1782,8 @@ test_that("fisher_info", {
 
   sigma <- ltd$sigma
 
-  true_value <- matrix(c(
+  true_value <- matrix(
+    c(
       # alpha
       6206.96, 2093.9776752822887, 153.30946172983291, 153.11183995442809,
       -221.36872037331707, 148.97949961445271, 11595.531011291549,
@@ -1881,7 +1862,7 @@ test_that("drda: 'lower_bound' argument errors", {
   expect_error(
     drda(
       y ~ x, mean_function = "logistic6",
-      lower_bound = c( 0, -Inf, -Inf, -Inf, -Inf, -Inf),
+      lower_bound = c(0, -Inf, -Inf, -Inf, -Inf, -Inf),
       upper_bound = c(-1, Inf, Inf, Inf, Inf, Inf)
     ),
     "'lower_bound' cannot be larger than 'upper_bound'"
@@ -2097,4 +2078,70 @@ test_that("naac: increasing", {
     naac(result, xlim = c(-5, -1), ylim = c(0.3, 0.7)), 1 - 0.62649140813097662
   )
   expect_equal(naac(result, xlim = c(9, 12), ylim = c(0.3, 0.7)), 0.0)
+})
+
+test_that("zero-weight restoration with extra formula terms", {
+  D <- ltd$D
+  D$z <- seq_len(nrow(D))
+
+  result <- drda(y ~ x + z, data = D, weights = w, mean_function = "logistic6")
+
+  expect_length(result$weights, nrow(D))
+  expect_identical(as.numeric(result$weights), as.numeric(D$w))
+  expect_length(result$fitted.values, nrow(D))
+  expect_length(result$residuals, nrow(D))
+  expect_equal(
+    result$residuals,
+    D$y - result$fitted.values,
+    tolerance = 1.0e-12
+  )
+})
+
+test_that("single-model anova p-values", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "logistic6")
+  tab <- anova(result)
+
+  expect_s3_class(tab, "anova")
+  expect_true("Pr(>Chi)" %in% colnames(tab))
+  expect_true(is.na(tab[["Pr(>Chi)"]][1]))
+  expect_true(is.finite(tab[["Pr(>Chi)"]][2]))
+  expect_gte(tab[["Pr(>Chi)"]][2], 0)
+  expect_lte(tab[["Pr(>Chi)"]][2], 1)
+})
+
+test_that("effective_dose uses nu", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "logistic6")
+
+  result$coefficients[5] <- 2
+  result$coefficients[6] <- 4
+
+  # With nu = 2 and xi = 4, relative y = 0.5 targets
+  # alpha + 0.5 * delta * xi^(-1/nu) = alpha + 0.5 * delta * 0.5,
+  # not alpha + 0.5 * delta * xi^(-1) (old wrong version)
+  ed <- effective_dose(result, y = 0.5, type = "relative", level = 0.95)
+
+  y_target <- result$coefficients[1] +
+    0.5 * result$coefficients[2] *
+      result$coefficients[6]^(-1 / result$coefficients[5])
+
+  expect_equal(
+    unname(inverse_fn(result, y_target)),
+    unname(ed[, "Estimate"]),
+    tolerance = 1.0e-8
+  )
+})
+
+test_that("inverse returns NA/Inf at asymptotes", {
+  result <- drda(y ~ x, data = ltd$D, mean_function = "logistic6")
+  alpha <- result$coefficients[1]
+  delta <- result$coefficients[2]
+  nu <- result$coefficients[5]
+  xi <- result$coefficients[6]
+
+  y_target <- alpha + delta * xi^(-1 / nu)
+
+  expect_identical(inverse_fn(result, alpha), -Inf)
+  expect_identical(inverse_fn(result, y_target), Inf)
+  expect_true(is.na(inverse_fn(result, alpha - sign(delta))))
+  expect_true(is.na(inverse_fn(result, y_target + sign(delta))))
 })

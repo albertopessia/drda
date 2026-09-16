@@ -1,3 +1,15 @@
+# Keep slack variables away from zero
+#
+# Floor slack variables away from zero to keep barrier / KKT algebra finite.
+#
+# @param s Slack variables.
+# @param s_min Minimum value for slack variables.
+#
+# @return Slack variables `s` floored away from zero.
+ntrm_floor_slack <- function(s) {
+  pmax(s, .Machine$double.eps)
+}
+
 # Hessian matrix correction
 #
 # Correct the Hessian matrix to be positive definite

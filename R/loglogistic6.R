@@ -15,8 +15,14 @@
 #   parameters.
 #
 # @return An object of class `loglogistic*`.
-loglogistic6_new <-  function(
-  x, y, w, start, max_iter, lower_bound, upper_bound
+loglogistic6_new <- function(
+  x,
+  y,
+  w,
+  start,
+  max_iter,
+  lower_bound,
+  upper_bound
 ) {
   if (!is.null(start)) {
     if (length(start) != 6) {
@@ -59,8 +65,6 @@ loglogistic6_new <-  function(
   object$m <- nrow(object$stats)
 
   if (!is.null(lower_bound) || !is.null(upper_bound)) {
-    object$constrained <- TRUE
-
     if (is.null(lower_bound)) {
       lower_bound <- rep(-Inf, 6)
     } else {
@@ -121,6 +125,7 @@ loglogistic6_new <-  function(
 
     object$lower_bound <- lower_bound
     object$upper_bound <- upper_bound
+    object$constrained <- any(is.finite(lower_bound) | is.finite(upper_bound))
   }
 
   object
@@ -165,19 +170,16 @@ loglogistic6_fn <- function(x, theta) {
   eta <- theta[3]
   phi <- theta[4]
   nu <- theta[5]
-  xi <- theta[6]
+  log_xi <- log(theta[6])
 
-  t1 <- x^eta
-  t2 <- phi^eta
+  a <- log(nu) + eta * (log(phi) - log(x))
+  log_term <- ifelse(
+    a > log_xi,
+    a + log1p(exp(log_xi - a)),
+    log_xi + log1p(exp(a - log_xi))
+  )
 
-  alpha + delta * (t1 / (xi * t1 + nu * t2))^(1 / nu)
-}
-
-# @rdname loglogistic6_fn
-#
-#' @export
-fn.loglogistic6 <- function(object, x, theta) {
-  loglogistic6_fn(x, theta)
+  alpha + delta * exp(-log_term / nu)
 }
 
 # @rdname loglogistic6_fn
@@ -248,7 +250,7 @@ loglogistic6_gradient <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -331,7 +333,7 @@ loglogistic6_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -419,7 +421,7 @@ loglogistic6_gradient_hessian <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -431,7 +433,7 @@ loglogistic6_gradient_hessian <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -490,7 +492,6 @@ loglogistic6_gradient_2 <- function(x, theta) {
   nu <- theta[5]
   xi <- theta[6]
 
-  k1 <- eta / nu
   k2 <- xi / nu
 
   c1 <- x^eta
@@ -498,21 +499,19 @@ loglogistic6_gradient_2 <- function(x, theta) {
 
   f <- xi * c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   p <- (x^eta / f)^(1 / nu)
   r <- eta * c2 * p / f
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- (p * s) / f
-  v <- (p * t) / f
   w <- k2 * p * c1 / f
+  z <- p * (y / nu + c2 / f)
 
   G <- matrix(1, nrow = k, ncol = 6)
 
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
-  G[, 5] <- -delta * (v - u)
+  G[, 5] <- -delta * z
   G[, 6] <- -delta * w
 
   # gradient and Hessian might not be defined when we plug x = 0 directly into
@@ -521,7 +520,7 @@ loglogistic6_gradient_2 <- function(x, theta) {
   G[x_zero, -1] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -550,7 +549,6 @@ loglogistic6_hessian_2 <- function(x, theta) {
   nu <- theta[5]
   xi <- theta[6]
 
-  k1 <- eta / nu
   k2 <- xi / nu
 
   c1 <- x^eta
@@ -558,24 +556,22 @@ loglogistic6_hessian_2 <- function(x, theta) {
 
   f <- xi * c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   l <- (1 + nu) * c2 / f
   m <- (1 + nu) * xi * c1 / (nu * f)
 
   p <- (x^eta / f)^(1 / nu)
   r <- eta * c2 * p / f
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- (p * s) / f
-  v <- (p * t) / f
   w <- k2 * p * c1 / f
-  y <- eta * log(x) - log(f)
+  z <- p * (y / nu + c2 / f)
+  s <- (f / nu) * y + c2
 
   H <- array(0, dim = c(k, 6, 6))
 
   H[, 3, 2] <- e * r
   H[, 4, 2] <- -r
-  H[, 5, 2] <- u - v
+  H[, 5, 2] <- -z
   H[, 6, 2] <- -w
 
   H[, 2, 3] <- H[, 3, 2]
@@ -593,8 +589,8 @@ loglogistic6_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+  H[, 5, 5] <- delta * ((l + y / nu) * c2 + (1 + y / nu) * s) * p / f
+
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
   H[, 2, 6] <- H[, 6, 2]
@@ -608,7 +604,7 @@ loglogistic6_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -637,7 +633,6 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   nu <- theta[5]
   xi <- theta[6]
 
-  k1 <- eta / nu
   k2 <- xi / nu
 
   c1 <- x^eta
@@ -645,32 +640,30 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
 
   f <- xi * c1 + nu * c2
   e <- log(x) - log(phi)
+  y <- eta * log(x) - log(f)
 
   l <- (1 + nu) * c2 / f
   m <- (1 + nu) * xi * c1 / (nu * f)
 
   p <- (x^eta / f)^(1 / nu)
   r <- eta * c2 * p / f
-  s <- f * log(f) / nu - c2
-  t <- k1 * log(x) * f
-  u <- (p * s) / f
-  v <- (p * t) / f
   w <- k2 * p * c1 / f
-  y <- eta * log(x) - log(f)
+  z <- p * (y / nu + c2 / f)
+  s <- (f / nu) * y + c2
 
   G <- matrix(1, nrow = k, ncol = 6)
 
   G[, 2] <- p
   G[, 3] <- delta * e * r
   G[, 4] <- -delta * r
-  G[, 5] <- -delta * (v - u)
+  G[, 5] <- -delta * z
   G[, 6] <- -delta * w
 
   H <- array(0, dim = c(k, 6, 6))
 
   H[, 3, 2] <- e * r
   H[, 4, 2] <- -r
-  H[, 5, 2] <- u - v
+  H[, 5, 2] <- -z
   H[, 6, 2] <- -w
 
   H[, 2, 3] <- H[, 3, 2]
@@ -688,8 +681,8 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   H[, 2, 5] <- H[, 5, 2]
   H[, 3, 5] <- H[, 5, 3]
   H[, 4, 5] <- H[, 5, 4]
-  H[, 5, 5] <- delta * ((l + y / nu) * c2 +
-    (1 + y / nu) * (k1 * log(x) * f - s)) * p / f
+  H[, 5, 5] <- delta * ((l + y / nu) * c2 + (1 + y / nu) * s) * p / f
+
   H[, 6, 5] <- delta * (1 + l + y / nu) * w
 
   H[, 2, 6] <- H[, 6, 2]
@@ -705,7 +698,7 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   H[x_zero, , ] <- 0
 
   # any NaN is because of corner cases where the derivatives are zero
-  is_nan <- is.nan(G)
+  is_nan <- !is.finite(G)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -717,7 +710,7 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
     G[is_nan] <- 0
   }
 
-  is_nan <- is.nan(H)
+  is_nan <- !is.finite(H)
   if (any(is_nan)) {
     warning(
       paste0(
@@ -730,35 +723,6 @@ loglogistic6_gradient_hessian_2 <- function(x, theta) {
   }
 
   list(G = G, H = H)
-}
-
-# 6-parameter log-logistic function gradient and Hessian
-#
-# Evaluate at a particular set of parameters the gradient and Hessian of the
-# 6-parameter log-logistic function.
-#
-# @details
-# The 6-parameter log-logistic function `f(x; theta)` is defined here as
-#
-# `g(x; theta) = x^(eta / nu) / (xi * x^eta + nu * phi^eta)^(1 / nu)`
-# `f(x; theta) = alpha + delta g(x; theta)`
-#
-# where `x >= 0`, `theta = c(alpha, delta, eta, phi, nu, xi)`, `eta > 0`,
-# `phi > 0`, `nu > 0`, and `xi > 0`.
-#
-# To avoid issues with the non-negative constraints we consider in our
-# optimization algorithm the alternative parameterization `log(eta)`,
-# `log(phi)`, `log(xi)`, and `log(nu)`.
-#
-# @param object object of class `loglogistic6`.
-# @param theta numeric vector with the six parameters in the form
-#   `c(alpha, delta, log(eta), log(phi), log(nu), log(xi))`.
-#
-# @return List of two elements: `G` the gradient and `H` the Hessian.
-#
-#' @export
-gradient_hessian.loglogistic6 <- function(object, theta) {
-  loglogistic6_gradient_hessian_2(object$stats[, 1], theta)
 }
 
 # Residual sum of squares
@@ -790,7 +754,7 @@ gradient_hessian.loglogistic6 <- function(object, theta) {
 rss.loglogistic6 <- function(object) {
   function(theta) {
     theta[3:6] <- exp(theta[3:6])
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -808,7 +772,7 @@ rss_fixed.loglogistic6 <- function(object, known_param) {
 
     theta[3:6] <- exp(theta[3:6])
 
-    mu <- fn(object, object$stats[, 1], theta)
+    mu <- loglogistic6_fn(object$stats[, 1], theta)
     sum(object$stats[, 2] * (object$stats[, 3] - mu)^2)
   }
 }
@@ -843,8 +807,10 @@ rss_gradient_hessian.loglogistic6 <- function(object) {
   function(theta) {
     theta[3:6] <- exp(theta[3:6])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic6_fn(x, theta)
+    mu_gradient_hessian <- loglogistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -854,14 +820,21 @@ rss_gradient_hessian.loglogistic6 <- function(object) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 6, 6))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
+    # fmt: skip
     hessian[, , 6] <- object$stats[, 2] * (r * H[, , 6] + G[, 6] * G)
 
-    list(G = apply(gradient, 2, sum), H = apply(hessian, 2:3, sum))
+    list(G = colSums(gradient), H = apply(hessian, 2:3, sum))
   }
 }
 
@@ -878,8 +851,10 @@ rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
 
     theta[3:6] <- exp(theta[3:6])
 
-    mu <- fn(object, object$stats[, 1], theta)
-    mu_gradient_hessian <- gradient_hessian(object, theta)
+    x <- object$stats[, 1]
+
+    mu <- loglogistic6_fn(x, theta)
+    mu_gradient_hessian <- loglogistic6_gradient_hessian_2(x, theta)
 
     r <- mu - object$stats[, 3]
 
@@ -889,15 +864,22 @@ rss_gradient_hessian_fixed.loglogistic6 <- function(object, known_param) {
     gradient <- object$stats[, 2] * r * G
 
     hessian <- array(0, dim = c(nrow(object$stats), 6, 6))
+
+    # fmt: skip
     hessian[, , 1] <- object$stats[, 2] * (r * H[, , 1] + G[, 1] * G)
+    # fmt: skip
     hessian[, , 2] <- object$stats[, 2] * (r * H[, , 2] + G[, 2] * G)
+    # fmt: skip
     hessian[, , 3] <- object$stats[, 2] * (r * H[, , 3] + G[, 3] * G)
+    # fmt: skip
     hessian[, , 4] <- object$stats[, 2] * (r * H[, , 4] + G[, 4] * G)
+    # fmt: skip
     hessian[, , 5] <- object$stats[, 2] * (r * H[, , 5] + G[, 5] * G)
+    # fmt: skip
     hessian[, , 6] <- object$stats[, 2] * (r * H[, , 6] + G[, 6] * G)
 
     list(
-      G = apply(gradient[, idx, drop = FALSE], 2, sum),
+      G = colSums(gradient[, idx, drop = FALSE]),
       H = apply(hessian[, idx, idx, drop = FALSE], 2:3, sum)
     )
   }
@@ -950,8 +932,8 @@ mle_asy.loglogistic6 <- function(object, theta) {
   #
   # when x > phi then g is approximately xi^(-1 / nu) (case 1)
   # when x < phi then g is approximately 0 (case 2)
-  g[is.nan(g) & x > phi] <- xi^(-1 / nu)
-  g[is.nan(g) & x < phi] <- 0
+  g[!is.finite(g) & x > phi] <- xi^(-1 / nu)
+  g[!is.finite(g) & x < phi] <- 0
 
   t1 <- 0
   t2 <- 0
@@ -990,6 +972,8 @@ mle_asy.loglogistic6 <- function(object, theta) {
 #' @importFrom stats lm
 #'
 #' @noRd
+#'
+#' @export
 init.loglogistic6 <- function(object) {
   stats <- object$stats
   rss_fn <- rss(object)
@@ -1036,6 +1020,8 @@ init.loglogistic6 <- function(object) {
 
   # this is a space-filling design using a max entropy grid
   v <- 250
+
+  # fmt: skip
   param_set <- matrix(
     c(
       # log_eta
@@ -1134,7 +1120,8 @@ init.loglogistic6 <- function(object) {
       -1.97, -1.78, -1.32, -1.24, 0.59, 0.26, -0.33, 0.4, 0.62, -1.55, -2.17,
       0.01, 2.02, -0.18, 1.19, 1.76, -2.07, 1.57, 1.78, -1.77, -0.71, 0.64
     ),
-    ncol = v, byrow = TRUE
+    ncol = v,
+    byrow = TRUE
   )
 
   theta_tmp <- matrix(nrow = 6, ncol = v)
@@ -1168,19 +1155,23 @@ init.loglogistic6 <- function(object) {
   if (object$constrained) {
     theta <- pmax(
       pmin(theta, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_1 <- pmax(
       pmin(theta_1, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_2 <- pmax(
       pmin(theta_2, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
     theta_3 <- pmax(
       pmin(theta_3, object$upper_bound, na.rm = TRUE),
-      object$lower_bound, na.rm = TRUE
+      object$lower_bound,
+      na.rm = TRUE
     )
   }
 
@@ -1355,7 +1346,7 @@ fisher_info.loglogistic6 <- function(object, theta, sigma) {
   x <- object$stats[, 1]
   y <- object$stats[, 3]
   w <- object$stats[, 2]
-  z <- fn(object, x, theta) - y
+  z <- loglogistic6_fn(x, theta) - y
 
   gh <- loglogistic6_gradient_hessian(x, theta)
 
@@ -1370,20 +1361,26 @@ fisher_info.loglogistic6 <- function(object, theta, sigma) {
   G[, 5] <- w * z * gh$G[, 5]
   G[, 6] <- w * z * gh$G[, 6]
 
-  G <- apply(G, 2, sum)
+  G <- colSums(G)
 
   H <- array(0, dim = c(object$m, 6, 6))
 
+  # fmt: skip
   H[, , 1] <- w * (z * gh$H[, , 1] + gh$G[, 1] * gh$G)
+  # fmt: skip
   H[, , 2] <- w * (z * gh$H[, , 2] + gh$G[, 2] * gh$G)
+  # fmt: skip
   H[, , 3] <- w * (z * gh$H[, , 3] + gh$G[, 3] * gh$G)
+  # fmt: skip
   H[, , 4] <- w * (z * gh$H[, , 4] + gh$G[, 4] * gh$G)
+  # fmt: skip
   H[, , 5] <- w * (z * gh$H[, , 5] + gh$G[, 5] * gh$G)
+  # fmt: skip
   H[, , 6] <- w * (z * gh$H[, , 6] + gh$G[, 6] * gh$G)
 
   H <- apply(H, 2:3, sum)
 
-  mu <- fn(object, object$x, theta)
+  mu <- loglogistic6_fn(object$x, theta)
   v <- 3 * sum(object$w * (object$y - mu)^2) / sigma^2 - sum(object$w > 0)
 
   fim <- rbind(cbind(H, -2 * G / sigma), c(-2 * G / sigma, v)) / sigma^2
@@ -1422,7 +1419,19 @@ inverse_fn.loglogistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  phi / (((delta / (y - alpha))^nu - xi) / nu)^(1 / eta)
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
+
+  x <- rep(NA_real_, length(y))
+  if (any(ok)) {
+    e <- xi * expm1(-nu * log(p[ok]) - log(xi))
+    x[ok] <- phi * (nu / e)^(1 / eta)
+  }
+  x[!is.na(p) & (p == 0)] <- 0
+  x[!is.na(p) & (p == g_max)] <- Inf
+
+  x
 }
 
 # 6-parameter log-logistic fit
@@ -1452,20 +1461,25 @@ inverse_fn_gradient.loglogistic6_fit <- function(object, y) {
   nu <- object$coefficients[5]
   xi <- object$coefficients[6]
 
-  h <- phi / eta
-  z <- delta / (y - alpha)
-  s <- z^nu
-  u <- nu / (z^nu - xi)
-  v <- u^(1 / eta)
+  p <- (y - alpha) / delta
+  g_max <- xi^(-1 / nu)
+  ok <- !is.na(p) & (p > 0) & (p < g_max)
 
-  G <- matrix(0, nrow = length(y), ncol = 6)
+  G <- matrix(NA_real_, nrow = length(y), ncol = 6)
+  if (any(ok)) {
+    h <- phi / eta
+    e <- xi * expm1(-nu * log(p[ok]) - log(xi))
+    s <- e + xi
+    u <- nu / e
+    v <- u^(1 / eta)
 
-  G[, 1] <- -h * z * s * u * v / delta
-  G[, 2] <- -h * s * u * v / delta
-  G[, 3] <- -h * log(u) * v / eta
-  G[, 4] <- v
-  G[, 5] <- -h * (log(z) * s * u - 1) * v / nu
-  G[, 6] <- h * u * v / nu
+    G[ok, 1] <- -h * s * u * v / (p[ok] * delta)
+    G[ok, 2] <- -h * s * u * v / delta
+    G[ok, 3] <- -h * log(u) * v / eta
+    G[ok, 4] <- v
+    G[ok, 5] <- h * v * (log(p[ok]) * s / e + 1 / nu)
+    G[ok, 6] <- h * u * v / nu
+  }
 
   G
 }
