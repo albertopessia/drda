@@ -1,20 +1,20 @@
 # cran-comments
 
-## 2025-01-16
+## 2026-09-16
 
 - Initiating submission process
 
-## drda 2.0.5
+## drda 2.1.0
 
-This release adds an argument to the `plot` function for returning a list with
-graphical parameters instead of showing the figure.
+This release removes the automatic fit of a 5-parameter (log-)logistic function
+from `anova` and fixes numerical errors and bugs.
 
 ## Test environments
 
-- Windows 11 22H2 (22621.4602), local, R 4.4.2
-- macOS 14.7.2 (23H311), GitHub Actions, R 4.4.2
-- Windows Server 2022 (10.0.20348), GitHub Actions, R 4.4.2
-- Ubuntu 24.04.1 LTS, GitHub Actions, R 4.3.3, R 4.4.2, r-devel
+- Windows 11 25H2 (26200.9168), local, R 4.6.1
+- macOS 26.6.2 (25G83), GitHub Actions, R 4.6.1
+- Windows Server 2025 (10.0.26100), GitHub Actions, R 4.6.1
+- Ubuntu 24.04.5 LTS, GitHub Actions, R 4.5.3, R 4.6.1, r-devel
 
 ## R CMD check results
 
